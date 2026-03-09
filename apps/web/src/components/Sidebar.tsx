@@ -98,9 +98,23 @@ export function Sidebar() {
             {/* Status Footer */}
             <div className="px-4 py-3 border-t border-white/[0.06]">
                 {!sidebarCollapsed && (
-                    <div className="flex items-center gap-2">
-                        <span className="status-dot running" />
-                        <span className="text-xs text-neutral-400">7 services running</span>
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <span className="status-dot running" />
+                            <span className="text-xs text-neutral-400">7 services running</span>
+                        </div>
+                        <div className="pt-2 border-t border-white/[0.04]">
+                            <p className="text-[9px] text-neutral-600 leading-relaxed">
+                                Created & developed by{' '}
+                                <a href="https://linkedin.com/in/phani-marupaka" target="_blank" rel="noopener noreferrer"
+                                    className="text-neutral-500 hover:text-accent transition-colors underline underline-offset-2">
+                                    Phani Marupaka
+                                </a>
+                            </p>
+                            <p className="text-[8px] text-neutral-700 mt-0.5">
+                                &copy; {new Date().getFullYear()} All rights reserved. Unauthorized reproduction or distribution of this software, in whole or in part, is strictly prohibited under applicable trademark and copyright laws.
+                            </p>
+                        </div>
                     </div>
                 )}
                 {sidebarCollapsed && <span className="status-dot running mx-auto block" />}

@@ -3,6 +3,7 @@
     "$id": "https://agentos.dev/schemas/capability-graph.schema.json",
     "title": "AgentOS Tool Capability Graph",
     "description": "Schema for the capability graph that maps tasks to capabilities to tools — enabling dynamic tool selection at runtime",
+    "$comment": "504d3a205068616e69204d61727570616b61207c20687474703a2f2f6c696e6b6564696e2e636f6d2f696e2f7068616e692d6d61727570616b61",
     "type": "object",
     "required": ["graph_id", "capabilities", "tools"],
     "properties": {

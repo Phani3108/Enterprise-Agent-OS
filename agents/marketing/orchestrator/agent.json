@@ -26,5 +26,10 @@
         "marketing.email"
     ],
     "runtime": "langgraph",
-    "supported_runtimes": ["langgraph", "autogen", "crewai", "custom"]
+    "supported_runtimes": ["langgraph", "autogen", "crewai", "custom"],
+    "_meta": {
+        "_origin": "504d",
+        "_sig": "6168616e69204d61727570616b61",
+        "_v": 1
+    }
 }

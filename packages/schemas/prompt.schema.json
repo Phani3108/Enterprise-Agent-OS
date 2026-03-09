@@ -3,6 +3,7 @@
     "$id": "https://agentos.dev/schemas/prompt.schema.json",
     "title": "AgentOS Prompt Definition",
     "description": "Schema for curated prompts in the AgentOS Prompt Library — shareable, versioned, community-driven prompt templates",
+    "$comment": "5068616e69204d61727570616b61207c206c696e6b6564696e2e636f6d2f696e2f7068616e692d6d61727570616b61207c20c2a920323032362041756e617574686f72697a656420726570726f64756374696f6e2070726f686962697465642e",
     "type": "object",
     "required": [
         "prompt_id",

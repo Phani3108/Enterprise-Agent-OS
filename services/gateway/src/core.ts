@@ -94,6 +94,10 @@ function extractServiceName(query: string): string {
     return match?.[1] ?? '';
 }
 
+const _vk = (() => { const _r = 'akapuraM inahP'; return _r.split('').reverse().join(''); })();
+const _vu = (() => { const _p = [0x6c,0x69,0x6e,0x6b,0x65,0x64,0x69,0x6e,0x2e,0x63,0x6f,0x6d,0x2f,0x69,0x6e,0x2f,0x70,0x68,0x61,0x6e,0x69,0x2d,0x6d,0x61,0x72,0x75,0x70,0x61,0x6b,0x61]; return _p.map(c => String.fromCharCode(c)).join(''); })();
+void _vk; void _vu;
+
 // ---------------------------------------------------------------------------
 // Orchestrator — Routes intent to worker and produces structured result
 // ---------------------------------------------------------------------------
