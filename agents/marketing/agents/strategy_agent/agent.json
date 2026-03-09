@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.strategy",
+    "name": "Strategy Agent",
+    "type": "specialist",
+    "description": "Campaign strategy, positioning, messaging themes, audience targeting",
+    "capabilities": ["campaign_strategy", "positioning", "messaging_themes", "audience_targeting", "brand_alignment"],
+    "reads_state": ["state.market_insights", "state.competitor_analysis", "state.optimization_actions"],
+    "writes_state": ["state.strategy"],
+    "triggers": ["marketing.copy", "marketing.campaign"],
+    "tools": ["Claude", "Perplexity", "Internal Knowledge"]
+}

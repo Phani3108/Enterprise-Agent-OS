@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.seo_optimizer",
+    "name": "SEO Optimizer",
+    "description": "Keyword research, content optimization, technical SEO",
+    "category": "marketing",
+    "agents_required": ["seo", "research", "copy"],
+    "tools_required": ["Ahrefs", "Semrush", "Claude"],
+    "checkpoints": ["approve_keyword_strategy"],
+    "estimated_duration": "30-60 min",
+    "workflow_steps": ["Keyword research", "Define strategy", "Optimize content", "Technical audit"]
+}

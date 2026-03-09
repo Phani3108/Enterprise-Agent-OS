@@ -1,0 +1,54 @@
+# GitHub Connector
+# Bridges AgentOS workers with GitHub repositories
+
+name: github
+description: >
+  GitHub connector enables workers to manage pull requests, issues, reviews,
+  code, and CI/CD actions across GitHub repositories.
+
+version: "1.0"
+
+auth:
+  type: oauth2
+  scopes:
+    - repo
+    - pull_requests
+    - issues
+    - actions
+  secret_ref: vault://connectors/github
+
+capabilities:
+  inbound:
+    - event: pull_request.opened
+    - event: pull_request.synchronize
+    - event: pull_request.closed
+    - event: push
+    - event: issue.opened
+    - event: issue.commented
+    - event: workflow_run.completed
+
+  outbound:
+    - action: github.pull_request.read
+      description: Read PR details, diff, and files
+    - action: github.pull_request.comment
+      description: Post a comment on a PR
+    - action: github.pull_request.review
+      description: Submit a review (approve/request changes)
+    - action: github.issue.create
+      description: Create a new issue
+    - action: github.issue.comment
+      description: Comment on an issue
+    - action: github.file.read
+      description: Read file contents from a repo
+    - action: github.file.write
+      description: Create or update a file via commit
+    - action: github.actions.trigger
+      description: Trigger a GitHub Actions workflow
+
+rate_limits:
+  max_per_minute: 30
+  max_per_hour: 500
+
+health_check:
+  endpoint: https://api.github.com/rate_limit
+  interval_seconds: 60

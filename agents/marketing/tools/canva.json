@@ -1,0 +1,10 @@
+{
+    "tool_id": "canva",
+    "name": "Canva",
+    "category": "design",
+    "auth_type": "oauth",
+    "capabilities": ["create_design", "create_layout", "export_asset"],
+    "api_base": "https://api.canva.com/v1",
+    "actions": ["create_design", "upload_asset", "export_png", "export_pdf", "list_templates"],
+    "rate_limits": { "requests_per_minute": 100 }
+}

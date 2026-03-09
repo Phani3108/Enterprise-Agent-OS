@@ -1,0 +1,232 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://agentos.dev/schemas/policy.schema.json",
+    "title": "AgentOS Policy Rule",
+    "description": "Schema for defining governance policy rules in AgentOS",
+    "type": "object",
+    "required": [
+        "name",
+        "scope",
+        "condition",
+        "action"
+    ],
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Unique policy identifier"
+        },
+        "description": {
+            "type": "string",
+            "description": "Human-readable description of what this policy enforces"
+        },
+        "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the policy is active"
+        },
+        "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "default": 100,
+            "description": "Higher priority policies are evaluated first"
+        },
+        "scope": {
+            "$ref": "#/definitions/PolicyScope"
+        },
+        "condition": {
+            "$ref": "#/definitions/PolicyCondition"
+        },
+        "action": {
+            "$ref": "#/definitions/PolicyAction"
+        },
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "PolicyScope": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "global",
+                        "cluster",
+                        "worker",
+                        "tool",
+                        "workflow"
+                    ],
+                    "description": "What this policy applies to"
+                },
+                "cluster": {
+                    "type": "string",
+                    "description": "Cluster name (when type is 'cluster')"
+                },
+                "worker": {
+                    "type": "string",
+                    "description": "Worker ID (when type is 'worker')"
+                },
+                "tool": {
+                    "type": "string",
+                    "description": "Tool name (when type is 'tool')"
+                },
+                "workflow": {
+                    "type": "string",
+                    "description": "Workflow ID (when type is 'workflow')"
+                }
+            }
+        },
+        "PolicyCondition": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "description": "Single field condition",
+                    "required": [
+                        "field"
+                    ],
+                    "properties": {
+                        "field": {
+                            "type": "string",
+                            "description": "Field path to evaluate"
+                        },
+                        "equals": {
+                            "description": "Exact match"
+                        },
+                        "not_equals": {
+                            "description": "Not equal"
+                        },
+                        "in": {
+                            "type": "array",
+                            "description": "Value in list"
+                        },
+                        "not_in": {
+                            "type": "array",
+                            "description": "Value not in list"
+                        },
+                        "greater_than": {
+                            "type": "number"
+                        },
+                        "less_than": {
+                            "type": "number"
+                        },
+                        "matches": {
+                            "type": "string",
+                            "description": "Regex pattern"
+                        },
+                        "exists": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "description": "Compound condition (AND)",
+                    "required": [
+                        "all"
+                    ],
+                    "properties": {
+                        "all": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PolicyCondition"
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "description": "Compound condition (OR)",
+                    "required": [
+                        "any"
+                    ],
+                    "properties": {
+                        "any": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PolicyCondition"
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "description": "Negation condition (NOT)",
+                    "required": [
+                        "not"
+                    ],
+                    "properties": {
+                        "not": {
+                            "$ref": "#/definitions/PolicyCondition"
+                        }
+                    }
+                }
+            ]
+        },
+        "PolicyAction": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "allow",
+                        "deny",
+                        "require_approval",
+                        "rate_limit",
+                        "transform"
+                    ],
+                    "description": "Action to take when policy matches"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Human-readable reason (for deny)"
+                },
+                "approvers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Approver identifiers (for require_approval)"
+                },
+                "timeout_minutes": {
+                    "type": "integer",
+                    "description": "Approval timeout (for require_approval)"
+                },
+                "escalation": {
+                    "type": "string",
+                    "description": "Escalation target on timeout"
+                },
+                "max_per_minute": {
+                    "type": "integer",
+                    "description": "Rate limit (for rate_limit)"
+                },
+                "transformer": {
+                    "type": "string",
+                    "description": "Transformer function name (for transform)"
+                }
+            }
+        }
+    }
+}

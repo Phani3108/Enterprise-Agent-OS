@@ -1,0 +1,134 @@
+# Workflow: Incident Response
+# Automated incident detection, triage, remediation, and postmortem
+
+name: incident-response
+description: >
+  Automated incident response pipeline. Detects anomalies, triages severity,
+  coordinates remediation, notifies stakeholders, and generates postmortems.
+
+version: "1.0"
+
+trigger:
+  event: system.alert
+  filter: "severity in ['warning', 'critical']"
+
+timeout_ms: 3600000  # 60 minutes
+
+priority: critical
+
+retry:
+  max_attempts: 3
+  backoff: exponential
+  initial_delay_ms: 2000
+
+steps:
+  - id: triage
+    name: Triage Incident
+    worker: strategy-analyst
+    action: triage-incident
+    input:
+      alert: "{{ trigger }}"
+      recent_changes: "{{ context.recent_deployments }}"
+      system_metrics: "{{ context.current_metrics }}"
+    output:
+      - severity         # P0, P1, P2, P3
+      - affected_services
+      - probable_cause
+      - recommended_actions
+
+  - id: notify-team
+    name: Notify On-Call Team
+    worker: campaign-manager
+    action: send-notification
+    depends_on: [triage]
+    input:
+      channel: slack
+      target: "#incidents"
+      urgency: "{{ steps.triage.output.severity }}"
+      message: |
+        🚨 Incident Detected
+        Severity: {{ steps.triage.output.severity }}
+        Services: {{ steps.triage.output.affected_services | join(', ') }}
+        Probable Cause: {{ steps.triage.output.probable_cause }}
+
+  - id: diagnose
+    name: Deep Diagnosis
+    worker: code-reviewer
+    action: diagnose-issue
+    depends_on: [triage]
+    input:
+      probable_cause: "{{ steps.triage.output.probable_cause }}"
+      affected_services: "{{ steps.triage.output.affected_services }}"
+      logs_query: "last 30 minutes, error level"
+    output:
+      - root_cause
+      - evidence
+      - remediation_plan
+
+  - id: remediate
+    name: Execute Remediation
+    worker: deployer
+    action: remediate
+    depends_on: [diagnose]
+    approval:
+      required: true
+      approvers: [devops-oncall, engineering-lead]
+      timeout_minutes: 15
+      escalation: engineering-director
+    input:
+      remediation_plan: "{{ steps.diagnose.output.remediation_plan }}"
+      affected_services: "{{ steps.triage.output.affected_services }}"
+    output:
+      - actions_taken
+      - remediation_status
+
+  - id: verify-fix
+    name: Verify Remediation
+    worker: test-runner
+    action: verify-health
+    depends_on: [remediate]
+    input:
+      services: "{{ steps.triage.output.affected_services }}"
+      timeout_ms: 120000
+    output:
+      - all_healthy
+      - health_details
+
+  - id: postmortem
+    name: Generate Postmortem
+    worker: exec-summarizer
+    action: write-postmortem
+    depends_on: [verify-fix]
+    input:
+      incident_timeline:
+        detected: "{{ trigger.time }}"
+        triaged: "{{ steps.triage.completed_at }}"
+        remediated: "{{ steps.remediate.completed_at }}"
+        verified: "{{ steps.verify-fix.completed_at }}"
+      root_cause: "{{ steps.diagnose.output.root_cause }}"
+      evidence: "{{ steps.diagnose.output.evidence }}"
+      actions_taken: "{{ steps.remediate.output.actions_taken }}"
+      outcome: "{{ steps.verify-fix.output.all_healthy }}"
+    output:
+      - postmortem_document
+      - action_items
+
+  - id: close-incident
+    name: Close and Notify
+    worker: campaign-manager
+    action: send-notification
+    depends_on: [postmortem]
+    input:
+      channel: slack
+      target: "#incidents"
+      message: |
+        ✅ Incident Resolved
+        Root Cause: {{ steps.diagnose.output.root_cause }}
+        Resolution: {{ steps.remediate.output.actions_taken | join(', ') }}
+        Postmortem: {{ steps.postmortem.output.postmortem_document.url }}
+        Action Items: {{ steps.postmortem.output.action_items | length }} items
+
+on_failure:
+  - action: escalate
+    target: engineering-director
+    message: "🚨 CRITICAL: Incident response pipeline failed — manual intervention required"

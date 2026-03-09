@@ -1,0 +1,123 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://agentos.dev/schemas/prompt.schema.json",
+    "title": "AgentOS Prompt Definition",
+    "description": "Schema for curated prompts in the AgentOS Prompt Library — shareable, versioned, community-driven prompt templates",
+    "type": "object",
+    "required": [
+        "prompt_id",
+        "title",
+        "content",
+        "category",
+        "type"
+    ],
+    "properties": {
+        "prompt_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "URL-safe unique identifier (slug)"
+        },
+        "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200
+        },
+        "description": {
+            "type": "string",
+            "maxLength": 1000
+        },
+        "content": {
+            "type": "string",
+            "minLength": 10,
+            "description": "The full prompt template text"
+        },
+        "type": {
+            "type": "string",
+            "enum": ["text", "json", "yaml", "markdown"],
+            "default": "text",
+            "description": "Structured format of the prompt content"
+        },
+        "category": {
+            "type": "string",
+            "description": "Functional category slug (e.g., engineering, quality-assurance)"
+        },
+        "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [],
+            "description": "SDLC-phase or topic tags for filtering"
+        },
+        "source": {
+            "type": "string",
+            "enum": ["platform", "community", "user"],
+            "default": "platform",
+            "description": "Origin: built-in, imported from community, or user-created"
+        },
+        "source_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Original URL if imported from a community repo"
+        },
+        "target_tools": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "cursor",
+                    "github-copilot",
+                    "claude",
+                    "chatgpt",
+                    "office-copilot",
+                    "atlassian-rovo",
+                    "universal"
+                ]
+            },
+            "default": ["universal"],
+            "description": "AI tools this prompt is designed for"
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^v\\d+\\.\\d+\\.\\d+$",
+            "default": "v1.0.0"
+        },
+        "is_featured": {
+            "type": "boolean",
+            "default": false
+        },
+        "is_pinned": {
+            "type": "boolean",
+            "default": false
+        },
+        "is_private": {
+            "type": "boolean",
+            "default": false
+        },
+        "engagement": {
+            "type": "object",
+            "properties": {
+                "upvotes": { "type": "integer", "minimum": 0, "default": 0 },
+                "downvotes": { "type": "integer", "minimum": 0, "default": 0 },
+                "fork_count": { "type": "integer", "minimum": 0, "default": 0 },
+                "usage_count": { "type": "integer", "minimum": 0, "default": 0 },
+                "flag_count": { "type": "integer", "minimum": 0, "default": 0 }
+            }
+        },
+        "forked_from": {
+            "type": "string",
+            "description": "prompt_id of the original prompt if this is a fork"
+        },
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "author": { "type": "string" },
+                "author_id": { "type": "string" },
+                "created_at": { "type": "string", "format": "date-time" },
+                "updated_at": { "type": "string", "format": "date-time" },
+                "status": {
+                    "type": "string",
+                    "enum": ["draft", "published", "archived", "flagged"]
+                }
+            }
+        }
+    }
+}

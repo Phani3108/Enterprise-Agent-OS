@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.seo",
+    "name": "SEO Agent",
+    "type": "specialist",
+    "description": "Keyword research, on-page optimization, technical SEO audits",
+    "capabilities": ["keyword_research", "on_page_optimization", "technical_seo", "content_optimization"],
+    "reads_state": ["state.market_insights"],
+    "writes_state": ["state.seo_insights"],
+    "triggers": ["marketing.copy"],
+    "tools": ["Ahrefs", "Semrush", "Google Search Console"]
+}

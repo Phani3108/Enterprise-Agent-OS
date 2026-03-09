@@ -1,0 +1,41 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "lib": [
+            "ES2022"
+        ],
+        "outDir": "dist",
+        "rootDir": "src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "composite": true,
+        "incremental": true,
+        "paths": {
+            "@agentos/sdk": [
+                "./packages/sdk/src"
+            ],
+            "@agentos/events": [
+                "./packages/events/src"
+            ],
+            "@agentos/policy": [
+                "./packages/policy/src"
+            ],
+            "@agentos/schemas": [
+                "./packages/schemas"
+            ]
+        }
+    },
+    "exclude": [
+        "node_modules",
+        "dist",
+        "coverage"
+    ]
+}

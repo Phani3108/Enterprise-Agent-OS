@@ -1,0 +1,110 @@
+# Leadership Skills
+# Prompt capabilities for the leadership worker cluster
+
+- skill_id: leadership.strategy_analysis
+  name: Strategic Decision Analyzer
+  domain: leadership
+  version: v1.0.0
+  description: >
+    Analyzes strategic decisions with frameworks like Porter's Five Forces,
+    SWOT, and scenario planning for executive-level recommendations.
+  system_prompt: |
+    You are a strategic advisor to the CTO and executive team. Analyze the
+    given strategic question using rigorous frameworks.
+
+    Apply:
+    1. SWOT Analysis — internal strengths/weaknesses, external opportunities/threats
+    2. Porter's Five Forces — competitive landscape assessment
+    3. Scenario Planning — 3 scenarios (optimistic, base, pessimistic)
+    4. Risk Matrix — identified risks with probability × impact scoring
+    5. Recommendation — clear recommendation with confidence level and alternatives
+    6. Decision Framework — criteria for evaluating the recommendation
+
+    Quantify where possible. Reference market data and internal metrics.
+    Present trade-offs honestly.
+  compatible_workers:
+    - strategy-analyst
+    - exec-summarizer
+  allowed_tools:
+    - internal_docs.read
+    - analytics.query
+  memory_sources:
+    - strategy_docs
+    - board_materials
+    - market_research
+  knowledge_sources:
+    - decision
+    - project
+    - pattern
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: true
+    max_tokens: 8000
+    max_tool_calls: 5
+    require_citations: true
+    red_team_verified: false
+    custom_rules:
+      - "Never recommend a single option without presenting alternatives"
+      - "Always include a 'do nothing' scenario"
+  evaluation_tests:
+    - eval.leadership.strategy
+  tags:
+    - strategy
+    - executive
+    - decision
+  metadata:
+    author: leadership-team
+    team: leadership
+    status: published
+
+- skill_id: leadership.decision_summary
+  name: Executive Decision Summarizer
+  domain: leadership
+  version: v1.0.0
+  description: >
+    Synthesizes complex information into executive-ready decision briefs
+    with clear recommendations and supporting evidence.
+  system_prompt: |
+    You are an executive communication specialist. Convert the provided
+    analysis into a concise decision brief for C-level executives.
+
+    Format:
+    1. Executive Summary — 2-3 sentences, bottom-line-up-front
+    2. Context — why this decision matters now
+    3. Options — 2-3 options with pros/cons and cost estimates
+    4. Recommendation — clear pick with confidence level
+    5. Risk Summary — top 3 risks and mitigations
+    6. Next Steps — 3-5 concrete actions with owners and deadlines
+
+    Keep total length under 1 page. Use bullet points. No jargon.
+    Every number must have context (%, $, vs. last quarter, etc.).
+  compatible_workers:
+    - exec-summarizer
+    - strategy-analyst
+  allowed_tools:
+    - internal_docs.read
+  memory_sources:
+    - strategy_docs
+    - meeting_notes
+  knowledge_sources:
+    - decision
+    - project
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: false
+    max_tokens: 3000
+    max_tool_calls: 3
+    require_citations: false
+    red_team_verified: false
+    custom_rules:
+      - "Never exceed 1 page equivalent in output"
+  evaluation_tests:
+    - eval.leadership.executive_brief
+  tags:
+    - executive
+    - summary
+    - brief
+  metadata:
+    author: leadership-team
+    team: leadership
+    status: published

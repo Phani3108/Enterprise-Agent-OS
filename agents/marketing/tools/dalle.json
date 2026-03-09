@@ -1,0 +1,10 @@
+{
+    "tool_id": "dalle",
+    "name": "DALL-E",
+    "category": "design",
+    "auth_type": "api_key",
+    "capabilities": ["generate_visual"],
+    "api_base": "https://api.openai.com/v1/images",
+    "actions": ["generate_visual", "create_variation", "edit_image"],
+    "rate_limits": { "requests_per_minute": 50 }
+}

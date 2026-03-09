@@ -1,0 +1,136 @@
+# Workflow: Content Pipeline
+# End-to-end content creation and publishing workflow
+
+name: content-pipeline
+description: >
+  Automated content creation pipeline. Takes a content brief, generates a
+  draft, runs SEO analysis, editorial review, and publishes to CMS.
+
+version: "1.0"
+
+trigger:
+  event: content.brief_submitted
+  filter: "type in ['blog_post', 'landing_page', 'case_study']"
+
+timeout_ms: 1800000  # 30 minutes
+
+retry:
+  max_attempts: 2
+  backoff: exponential
+  initial_delay_ms: 10000
+
+steps:
+  - id: research
+    name: Research Topic
+    worker: content-writer
+    action: research-topic
+    input:
+      brief: "{{ trigger.brief }}"
+      target_audience: "{{ trigger.target_audience }}"
+      keywords: "{{ trigger.keywords }}"
+    output:
+      - research_summary
+      - competitive_content
+      - suggested_outline
+
+  - id: seo-research
+    name: SEO Keyword Research
+    worker: seo-analyst
+    action: keyword-research
+    depends_on: [research]
+    input:
+      topic: "{{ trigger.brief.topic }}"
+      primary_keywords: "{{ trigger.keywords }}"
+      competitive_content: "{{ steps.research.output.competitive_content }}"
+    output:
+      - target_keywords
+      - search_volume
+      - difficulty_scores
+      - content_gap_analysis
+
+  - id: draft
+    name: Write First Draft
+    worker: content-writer
+    action: write-draft
+    depends_on: [research, seo-research]
+    input:
+      brief: "{{ trigger.brief }}"
+      outline: "{{ steps.research.output.suggested_outline }}"
+      research: "{{ steps.research.output.research_summary }}"
+      target_keywords: "{{ steps.seo-research.output.target_keywords }}"
+      content_gaps: "{{ steps.seo-research.output.content_gap_analysis }}"
+      tone: "{{ trigger.brief.tone || 'professional' }}"
+      word_count_target: "{{ trigger.brief.word_count || 1500 }}"
+    output:
+      - draft_content
+      - meta_title
+      - meta_description
+
+  - id: seo-audit
+    name: SEO Audit
+    worker: seo-analyst
+    action: audit-content
+    depends_on: [draft]
+    input:
+      content: "{{ steps.draft.output.draft_content }}"
+      target_keywords: "{{ steps.seo-research.output.target_keywords }}"
+      meta_title: "{{ steps.draft.output.meta_title }}"
+      meta_description: "{{ steps.draft.output.meta_description }}"
+    output:
+      - seo_score
+      - improvement_suggestions
+      - readability_score
+
+  - id: revise
+    name: Revise Based on SEO Feedback
+    worker: content-writer
+    action: revise-draft
+    depends_on: [seo-audit]
+    condition: "steps.seo-audit.output.seo_score < 80"
+    input:
+      draft: "{{ steps.draft.output.draft_content }}"
+      suggestions: "{{ steps.seo-audit.output.improvement_suggestions }}"
+    output:
+      - revised_content
+
+  - id: editorial-review
+    name: Editorial Review
+    worker: content-writer
+    action: editorial-review
+    depends_on: [revise, seo-audit]
+    input:
+      content: "{{ steps.revise.output.revised_content || steps.draft.output.draft_content }}"
+    approval:
+      required: true
+      approvers: [content-lead]
+      timeout_minutes: 120
+    output:
+      - final_content
+      - editorial_notes
+
+  - id: publish
+    name: Publish to CMS
+    worker: campaign-manager
+    action: publish-content
+    depends_on: [editorial-review]
+    input:
+      content: "{{ steps.editorial-review.output.final_content }}"
+      meta_title: "{{ steps.draft.output.meta_title }}"
+      meta_description: "{{ steps.draft.output.meta_description }}"
+      publish_date: "{{ trigger.brief.publish_date || 'now' }}"
+      status: draft
+    output:
+      - cms_url
+      - publish_status
+
+on_failure:
+  - action: notify
+    channel: slack
+    target: "#content-team"
+    message: "Content pipeline failed for '{{ trigger.brief.title }}': {{ error.message }}"
+
+on_success:
+  - action: notify
+    channel: slack
+    target: "#content-team"
+    message: "✅ Content published: {{ steps.publish.output.cms_url }}"

@@ -1,0 +1,27 @@
+{
+    "agent_id": "marketing.optimization",
+    "name": "Optimization Agent",
+    "type": "specialist",
+    "description": "Analyzes campaign performance signals and decides what to change — regenerate copy, adjust targeting, refresh creative, update landing page, or shift budget",
+    "capabilities": [
+        "performance_analysis",
+        "ab_test_design",
+        "budget_reallocation",
+        "creative_rotation",
+        "audience_refinement"
+    ],
+    "reads_state": ["state.analytics", "state.campaign", "state.creatives", "state.messaging"],
+    "writes_state": ["state.optimization_actions"],
+    "triggers": ["marketing.strategy", "marketing.copy", "marketing.design", "marketing.campaign"],
+    "tools": ["GA4", "HubSpot", "Claude", "Internal Memory"],
+    "optimization_modes": {
+        "manual": "Suggest changes, human approves",
+        "assisted": "Propose updates, auto-approve below threshold",
+        "autonomous": "Optimize continuously with circuit breakers"
+    },
+    "performance_signals": [
+        "ctr", "conversion_rate", "cpa", "engagement_rate",
+        "bounce_rate", "time_on_page", "email_open_rate", "roas"
+    ],
+    "loop_frequency": "24h or performance_trigger"
+}

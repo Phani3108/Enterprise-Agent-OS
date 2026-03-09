@@ -1,0 +1,88 @@
+# Worker: Marketing Cluster
+# Defines the AI worker processes for marketing and content tasks
+
+name: marketing
+description: >
+  Marketing cluster handles content creation, SEO optimization, analytics
+  reporting, and campaign management. Workers interact with CMS platforms,
+  analytics APIs, and communication channels.
+
+model_default: gpt-4o
+max_concurrent_workers: 8
+policies:
+  - content-brand-guidelines
+  - require-approval-for-external-publish
+  - max-tokens-per-task: 12000
+
+workers:
+  - name: content-writer
+    description: Creates blog posts, landing pages, and marketing copy
+    model: gpt-4o
+    tools:
+      - file.write
+      - seo.analyze
+      - seo.keyword_research
+      - cms.publish_draft
+      - image.generate
+    context_sources:
+      - type: vector
+        namespace: brand-guidelines
+      - type: vector
+        namespace: content-history
+      - type: episode
+        filter: { worker: content-writer, limit: 10 }
+    sandbox:
+      max_tokens: 16000
+      max_tool_calls: 20
+      timeout_ms: 180000
+
+  - name: seo-analyst
+    description: Audits pages and provides SEO optimization recommendations
+    model: gpt-4o-mini
+    tools:
+      - seo.audit
+      - seo.keyword_research
+      - seo.competitor_analysis
+      - analytics.query
+      - analytics.report
+    context_sources:
+      - type: vector
+        namespace: seo-playbook
+    sandbox:
+      max_tokens: 8000
+      max_tool_calls: 15
+      timeout_ms: 120000
+
+  - name: campaign-manager
+    description: Plans and executes multi-channel marketing campaigns
+    model: gpt-4o
+    tools:
+      - email.draft
+      - email.send
+      - slack.post
+      - social.schedule
+      - analytics.query
+    policies:
+      - require-approval-for-email-blast
+      - rate-limit-social-posts
+    context_sources:
+      - type: vector
+        namespace: campaign-history
+    sandbox:
+      max_tokens: 10000
+      max_tool_calls: 25
+      timeout_ms: 180000
+
+  - name: analytics-reporter
+    description: Generates data-driven marketing reports and dashboards
+    model: gpt-4o-mini
+    tools:
+      - analytics.query
+      - analytics.report
+      - chart.render
+      - spreadsheet.write
+      - email.draft
+    sandbox:
+      max_tokens: 8000
+      max_tool_calls: 15
+      timeout_ms: 120000

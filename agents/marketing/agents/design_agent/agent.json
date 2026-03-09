@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.design",
+    "name": "Design Agent",
+    "type": "specialist",
+    "description": "Ad creatives, banners, social graphics, visual assets",
+    "capabilities": ["ad_creatives", "banner_design", "social_graphics", "visual_branding"],
+    "reads_state": ["state.messaging", "state.optimization_actions"],
+    "writes_state": ["state.creatives"],
+    "triggers": ["marketing.campaign", "marketing.landing"],
+    "tools": ["Nano Banana", "DALL-E", "Midjourney", "Canva", "Figma"]
+}

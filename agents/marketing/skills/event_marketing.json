@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.event_marketing",
+    "name": "Event Marketing",
+    "description": "Webinar promotion, event pages, attendee follow-up",
+    "category": "marketing",
+    "agents_required": ["strategy", "copy", "design", "campaign", "email"],
+    "tools_required": ["Claude", "Canva", "HubSpot", "LinkedIn Ads"],
+    "checkpoints": ["approve_event_page", "approve_promo_campaign"],
+    "estimated_duration": "60-120 min",
+    "workflow_steps": ["Define event", "Create event page", "Build promo campaign", "Setup email follow-up", "Launch"]
+}

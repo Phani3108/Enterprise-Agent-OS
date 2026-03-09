@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.analytics",
+    "name": "Analytics Agent",
+    "type": "specialist",
+    "description": "Campaign performance tracking, attribution, optimization recommendations",
+    "capabilities": ["performance_tracking", "attribution_analysis", "reporting", "optimization_recommendations"],
+    "reads_state": ["state.campaign"],
+    "writes_state": ["state.analytics"],
+    "triggers": ["marketing.optimization"],
+    "tools": ["GA4", "HubSpot", "Salesforce", "Amplitude", "Mixpanel"]
+}

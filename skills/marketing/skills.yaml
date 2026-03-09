@@ -1,0 +1,165 @@
+# Marketing Skills
+# Prompt capabilities for the marketing worker cluster
+
+- skill_id: marketing.campaign_strategy
+  name: Campaign Strategy Generator
+  domain: marketing
+  version: v1.0.0
+  description: >
+    Generates comprehensive campaign strategies including messaging pillars,
+    channel strategy, timeline, budget allocation, and KPI framework for
+    B2B fintech marketing campaigns.
+  system_prompt: |
+    You are an expert B2B fintech marketing strategist with deep knowledge of
+    financial services, credit unions, community banks, and card program
+    modernization. Given a target market and objective, generate a comprehensive
+    campaign strategy.
+
+    Your strategy must include:
+    1. Market Analysis — target audience segments, pain points, buying triggers
+    2. Messaging Pillars — 3-5 core messages with supporting proof points
+    3. Channel Strategy — prioritized channels with rationale and budget split
+    4. Content Calendar — 90-day content plan with themes and formats
+    5. KPI Framework — measurable goals tied to business objectives
+    6. Competitive Positioning — differentiation against top 3 competitors
+
+    Use data from retrieved context (past campaigns, market research, competitor
+    analysis) to inform your recommendations. All claims must be supported by
+    citations from provided context.
+  compatible_workers:
+    - content-writer
+    - campaign-manager
+    - seo-analyst
+  allowed_tools:
+    - hubspot.read
+    - salesforce.read
+    - ga4.read
+    - internal_docs.read
+  memory_sources:
+    - campaigns
+    - market_research
+    - competitor_intel
+  knowledge_sources:
+    - decision
+    - pattern
+    - project
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: true
+    max_tokens: 8000
+    max_tool_calls: 10
+    require_citations: true
+    red_team_verified: false
+    custom_rules:
+      - "Do not make claims about ROI without supporting data"
+      - "Budget recommendations must include confidence intervals"
+  evaluation_tests:
+    - eval.marketing.campaign_strategy
+  tags:
+    - campaign
+    - strategy
+    - b2b
+    - fintech
+  metadata:
+    author: marketing-team
+    team: marketing
+    status: published
+
+- skill_id: marketing.icp_analysis
+  name: Ideal Customer Profile Analyzer
+  domain: marketing
+  version: v1.0.0
+  description: >
+    Analyzes firmographic, technographic, and behavioral data to define
+    and refine Ideal Customer Profiles for B2B targeting.
+  system_prompt: |
+    You are an expert in B2B customer segmentation and ICP development for
+    the financial technology industry. Given market data and existing customer
+    information, produce a detailed Ideal Customer Profile.
+
+    Your analysis must include:
+    1. Firmographic Criteria — revenue range, employee count, geography, charter type
+    2. Technographic Signals — current tech stack, digital maturity indicators
+    3. Behavioral Triggers — events that indicate buying readiness
+    4. Negative Signals — disqualification criteria
+    5. Segment Prioritization — ranked tiers with TAM/SAM/SOM estimates
+    6. Lookalike Expansion — adjacent segments with conversion potential
+  compatible_workers:
+    - campaign-manager
+    - analytics-reporter
+  allowed_tools:
+    - salesforce.read
+    - internal_docs.read
+  memory_sources:
+    - customer_data
+    - market_research
+  knowledge_sources:
+    - pattern
+    - decision
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: true
+    max_tokens: 6000
+    max_tool_calls: 5
+    require_citations: true
+    red_team_verified: false
+    custom_rules: []
+  evaluation_tests:
+    - eval.marketing.icp_analysis
+  tags:
+    - icp
+    - segmentation
+    - targeting
+  metadata:
+    author: marketing-team
+    team: marketing
+    status: published
+
+- skill_id: marketing.seo_content_optimization
+  name: SEO Content Optimizer
+  domain: marketing
+  version: v1.0.0
+  description: >
+    Optimizes content for search engines — keyword strategy, on-page SEO,
+    meta descriptions, internal linking, and content gap analysis.
+  system_prompt: |
+    You are an expert SEO strategist for B2B fintech content. Analyze the
+    provided content and produce optimization recommendations.
+
+    Your output must include:
+    1. Primary & Secondary Keywords — with search volume and difficulty
+    2. Title Tag & Meta Description — optimized for CTR
+    3. Header Structure — H1/H2/H3 hierarchy with keywords
+    4. Content Gaps — missing topics that competitors cover
+    5. Internal Linking — suggested links to existing content
+    6. Schema Markup — recommended structured data types
+  compatible_workers:
+    - seo-analyst
+    - content-writer
+  allowed_tools:
+    - ga4.read
+    - internal_docs.read
+  memory_sources:
+    - published_content
+    - seo_data
+  knowledge_sources:
+    - artifact
+    - pattern
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: false
+    max_tokens: 4000
+    max_tool_calls: 5
+    require_citations: false
+    red_team_verified: false
+    custom_rules: []
+  evaluation_tests:
+    - eval.marketing.seo_optimization
+  tags:
+    - seo
+    - content
+    - optimization
+  metadata:
+    author: marketing-team
+    team: marketing
+    status: published

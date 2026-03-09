@@ -1,0 +1,36 @@
+{
+    "name": "@agentos/kernel",
+    "version": "0.1.0",
+    "private": true,
+    "description": "EAOS Kernel — agent lifecycle, cluster orchestration, state persistence, security isolation",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@agentos/runtime": "workspace:*",
+        "@agentos/events": "workspace:*",
+        "@agentos/sandbox": "workspace:*",
+        "@agentos/secrets": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0",
+        "vitest": "^1.6.0"
+    }
+}

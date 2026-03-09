@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.campaign",
+    "name": "Campaign Agent",
+    "type": "specialist",
+    "description": "Ad campaign setup, budget allocation, scheduling, launch",
+    "capabilities": ["campaign_setup", "budget_allocation", "scheduling", "launch_management"],
+    "reads_state": ["state.creatives", "state.messaging", "state.landing_page"],
+    "writes_state": ["state.campaign"],
+    "triggers": ["marketing.analytics"],
+    "tools": ["LinkedIn Ads", "Google Ads", "Meta Ads", "HubSpot"]
+}

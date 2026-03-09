@@ -1,0 +1,27 @@
+{
+    "memory_id": "marketing.campaign_memory",
+    "name": "Marketing Campaign Memory",
+    "description": "Persistent memory store for campaign performance history — agents learn from past outcomes",
+    "collections": {
+        "campaigns": {
+            "fields": ["campaign_id", "name", "platform", "audience", "budget", "start_date", "end_date", "status"],
+            "indexes": ["platform", "status", "start_date"]
+        },
+        "creatives": {
+            "fields": ["creative_id", "campaign_id", "type", "copy", "visual_url", "format", "performance"],
+            "indexes": ["campaign_id", "type"]
+        },
+        "audiences": {
+            "fields": ["audience_id", "name", "targeting_criteria", "size", "engagement_rate"],
+            "indexes": ["engagement_rate"]
+        },
+        "performance": {
+            "fields": ["record_id", "campaign_id", "date", "impressions", "clicks", "conversions", "spend", "ctr", "cpa", "roas"],
+            "indexes": ["campaign_id", "date"]
+        },
+        "optimization_log": {
+            "fields": ["log_id", "campaign_id", "action", "reason", "before_metrics", "after_metrics", "timestamp"],
+            "indexes": ["campaign_id", "timestamp"]
+        }
+    }
+}

@@ -1,0 +1,141 @@
+# Workflow: Employee Onboarding
+# Automated new employee onboarding and provisioning
+
+name: onboarding
+description: >
+  End-to-end employee onboarding pipeline. Provisions accounts, sets up
+  access, assigns training, and verifies completion.
+
+version: "1.0"
+
+trigger:
+  event: hr.employee_hired
+  filter: "start_date <= now() + 7d"
+
+timeout_ms: 86400000  # 24 hours (some steps require human action)
+
+steps:
+  - id: provision-accounts
+    name: Provision Accounts
+    worker: deployer
+    action: provision-user
+    input:
+      employee: "{{ trigger.employee }}"
+      accounts:
+        - type: email
+          domain: "{{ config.email_domain }}"
+        - type: slack
+          workspace: "{{ config.slack_workspace }}"
+        - type: github
+          org: "{{ config.github_org }}"
+        - type: jira
+          project: "{{ trigger.employee.team }}"
+    output:
+      - provisioned_accounts
+      - credentials_vault_path
+
+  - id: setup-access
+    name: Configure Access & Permissions
+    worker: deployer
+    action: configure-access
+    depends_on: [provision-accounts]
+    input:
+      employee: "{{ trigger.employee }}"
+      role: "{{ trigger.employee.role }}"
+      team: "{{ trigger.employee.team }}"
+      access_template: "{{ config.access_templates[trigger.employee.role] }}"
+    output:
+      - access_grants
+      - vpn_config
+
+  - id: create-welcome-package
+    name: Create Welcome Package
+    worker: content-writer
+    action: generate-welcome
+    depends_on: [provision-accounts]
+    input:
+      employee: "{{ trigger.employee }}"
+      team: "{{ trigger.employee.team }}"
+      role: "{{ trigger.employee.role }}"
+      manager: "{{ trigger.employee.manager }}"
+    output:
+      - welcome_doc
+      - team_intro
+      - first_week_plan
+
+  - id: assign-training
+    name: Assign Training Modules
+    worker: okr-tracker
+    action: assign-training
+    depends_on: [setup-access]
+    input:
+      employee: "{{ trigger.employee }}"
+      role: "{{ trigger.employee.role }}"
+      training_catalog: "{{ config.training_catalog }}"
+    output:
+      - assigned_modules
+      - completion_deadlines
+
+  - id: notify-team
+    name: Notify Team & Manager
+    worker: campaign-manager
+    action: send-notification
+    depends_on: [create-welcome-package]
+    input:
+      channel: slack
+      target: "{{ trigger.employee.team_channel }}"
+      message: |
+        👋 Welcome {{ trigger.employee.name }}!
+        Role: {{ trigger.employee.role }}
+        Manager: {{ trigger.employee.manager }}
+        Start Date: {{ trigger.employee.start_date }}
+
+  - id: schedule-1on1
+    name: Schedule Intro Meetings
+    worker: exec-summarizer
+    action: schedule-meetings
+    depends_on: [notify-team]
+    input:
+      employee: "{{ trigger.employee }}"
+      meetings:
+        - type: manager-1on1
+          with: "{{ trigger.employee.manager }}"
+          duration_min: 30
+          within_days: 1
+        - type: team-intro
+          with: "{{ trigger.employee.team }}"
+          duration_min: 60
+          within_days: 3
+        - type: buddy-intro
+          with: "{{ trigger.employee.buddy }}"
+          duration_min: 30
+          within_days: 1
+
+  - id: verify-onboarding
+    name: Verify Onboarding Complete
+    worker: okr-tracker
+    action: verify-onboarding
+    depends_on: [assign-training, schedule-1on1, setup-access]
+    input:
+      employee: "{{ trigger.employee }}"
+      checklist:
+        - accounts_provisioned
+        - access_configured
+        - training_assigned
+        - team_notified
+        - meetings_scheduled
+    output:
+      - onboarding_status
+      - incomplete_items
+
+on_success:
+  - action: notify
+    channel: slack
+    target: "#hr-ops"
+    message: "✅ Onboarding complete for {{ trigger.employee.name }}"
+
+on_failure:
+  - action: notify
+    channel: slack
+    target: "#hr-ops"
+    message: "⚠️ Onboarding incomplete for {{ trigger.employee.name }}: {{ error.message }}"

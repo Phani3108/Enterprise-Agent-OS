@@ -1,0 +1,177 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://agentos.dev/schemas/skill.schema.json",
+    "title": "AgentOS Skill Definition",
+    "description": "Schema for defining AI skill modules — versioned, testable prompt capabilities that workers bind to at runtime",
+    "type": "object",
+    "required": [
+        "skill_id",
+        "name",
+        "domain",
+        "description",
+        "version",
+        "system_prompt",
+        "compatible_workers",
+        "guardrails"
+    ],
+    "properties": {
+        "skill_id": {
+            "type": "string",
+            "pattern": "^[a-z]+\\.[a-z_]+$",
+            "description": "Unique skill identifier in domain.name format (e.g., marketing.campaign_strategy)"
+        },
+        "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100
+        },
+        "domain": {
+            "type": "string",
+            "enum": [
+                "engineering",
+                "marketing",
+                "leadership",
+                "operations",
+                "security",
+                "analytics",
+                "custom"
+            ]
+        },
+        "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^v\\d+\\.\\d+\\.\\d+$"
+        },
+        "system_prompt": {
+            "type": "string",
+            "minLength": 50,
+            "description": "The core system prompt that defines this skill's capability"
+        },
+        "output_schema": {
+            "type": "object",
+            "description": "JSON Schema for structured output validation"
+        },
+        "compatible_workers": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "description": "Workers that can use this skill. Use '*' for universal."
+        },
+        "allowed_tools": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": [],
+            "description": "Tools this skill is permitted to invoke"
+        },
+        "memory_sources": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": [],
+            "description": "Vector memory namespaces to query for context"
+        },
+        "knowledge_sources": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "concept",
+                    "decision",
+                    "pattern",
+                    "person",
+                    "team",
+                    "tool",
+                    "service",
+                    "artifact",
+                    "policy",
+                    "incident",
+                    "project"
+                ]
+            },
+            "default": [],
+            "description": "Knowledge graph node types to retrieve"
+        },
+        "guardrails": {
+            "type": "object",
+            "required": [
+                "max_tokens",
+                "max_tool_calls"
+            ],
+            "properties": {
+                "no_data_exfiltration": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "enforce_output_schema": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "max_tokens": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 128000
+                },
+                "max_tool_calls": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 50
+                },
+                "require_citations": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "red_team_verified": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "custom_rules": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "evaluation_tests": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "IDs of evaluation test suites for this skill"
+        },
+        "tags": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "team": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published",
+                        "deprecated"
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.landing",
+    "name": "Landing Agent",
+    "type": "specialist",
+    "description": "Landing pages, conversion optimization, A/B layouts",
+    "capabilities": ["landing_page_builder", "conversion_optimization", "ab_layouts"],
+    "reads_state": ["state.messaging", "state.creatives"],
+    "writes_state": ["state.landing_page"],
+    "triggers": ["marketing.campaign"],
+    "tools": ["Lovable", "Framer", "Webflow", "Next.js"]
+}

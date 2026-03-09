@@ -1,0 +1,10 @@
+{
+    "tool_id": "linkedin_ads",
+    "name": "LinkedIn Ads",
+    "category": "ads",
+    "auth_type": "oauth",
+    "capabilities": ["create_campaign", "upload_creative", "publish_campaign", "manage_budget", "track_performance"],
+    "api_base": "https://api.linkedin.com/rest",
+    "actions": ["create_campaign", "upload_creative", "publish_campaign", "manage_budget", "track_performance"],
+    "rate_limits": { "requests_per_minute": 100 }
+}

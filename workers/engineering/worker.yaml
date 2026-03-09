@@ -1,0 +1,104 @@
+# Worker: Engineering Cluster
+# Defines the AI worker processes for software engineering tasks
+
+name: engineering
+description: >
+  Engineering cluster handles code generation, review, testing, deployment,
+  and documentation tasks. Workers in this cluster interact with GitHub,
+  CI/CD pipelines, and development tooling.
+
+model_default: gpt-4o
+max_concurrent_workers: 10
+policies:
+  - require-approval-for-production-deploy
+  - max-tokens-per-task: 16000
+  - no-force-push-to-main
+
+workers:
+  - name: code-generator
+    description: Generates code from specifications and requirements
+    model: gpt-4o
+    tools:
+      - file.read
+      - file.write
+      - git.commit
+      - git.branch
+      - shell.exec
+    context_sources:
+      - type: vector
+        namespace: codebase
+      - type: episode
+        filter: { worker: code-generator, limit: 20 }
+    sandbox:
+      max_tokens: 16000
+      max_tool_calls: 30
+      timeout_ms: 180000
+
+  - name: code-reviewer
+    description: Reviews pull requests and provides actionable feedback
+    model: gpt-4o
+    tools:
+      - github.pull_request.read
+      - github.pull_request.comment
+      - github.pull_request.review
+      - code.static_analysis
+      - code.complexity_analysis
+    triggers:
+      - event: pull_request.opened
+        filter: "base == 'main'"
+      - event: pull_request.synchronize
+    context_sources:
+      - type: vector
+        namespace: code-style-guide
+      - type: episode
+        filter: { worker: code-reviewer, limit: 10 }
+    sandbox:
+      max_tokens: 12000
+      max_tool_calls: 15
+      timeout_ms: 120000
+
+  - name: test-runner
+    description: Executes test suites and interprets results
+    model: gpt-4o-mini
+    tools:
+      - shell.exec
+      - test.run
+      - test.coverage
+      - file.read
+    sandbox:
+      max_tokens: 8000
+      max_tool_calls: 20
+      timeout_ms: 300000
+
+  - name: deployer
+    description: Manages build and deployment pipelines
+    model: gpt-4o-mini
+    tools:
+      - docker.build
+      - docker.push
+      - k8s.apply
+      - k8s.status
+      - slack.notify
+    policies:
+      - require-approval-for-production-deploy
+      - require-green-tests-before-deploy
+    sandbox:
+      max_tokens: 4000
+      max_tool_calls: 10
+      timeout_ms: 600000
+
+  - name: doc-writer
+    description: Generates and updates technical documentation
+    model: gpt-4o
+    tools:
+      - file.read
+      - file.write
+      - markdown.render
+      - git.commit
+    context_sources:
+      - type: vector
+        namespace: documentation
+    sandbox:
+      max_tokens: 12000
+      max_tool_calls: 20
+      timeout_ms: 120000

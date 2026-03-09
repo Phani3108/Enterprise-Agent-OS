@@ -1,0 +1,160 @@
+# Domain-Specific Starter Workflows
+# These extend the core starters with cross-domain flows
+
+# ============================================================================
+# CROSS-DOMAIN: Feature Release → Docs + Training + Marketing
+# ============================================================================
+- id: flow.feature_release
+  name: Feature Release Knowledge Flow
+  description: >
+    When engineering releases a new feature, automatically:
+    1. Generate internal documentation
+    2. Create a learning module
+    3. Draft marketing messaging
+  trigger:
+    type: event
+    event: feature.released
+  domain: cross-domain
+  steps:
+    - id: docs
+      worker: code-reviewer
+      skill: engineering.runbook_generation
+      tools: [github.file.read, internal_docs.read]
+      input:
+        feature: "{{trigger.data.feature}}"
+        repo: "{{trigger.data.repo}}"
+
+    - id: training
+      worker: learning-agent
+      skill: learning.rag_tutorial
+      depends_on: [docs]
+      input:
+        topic: "{{trigger.data.feature}}"
+        level: intermediate
+
+    - id: messaging
+      worker: content-writer
+      skill: marketing.campaign_strategy
+      depends_on: [docs]
+      requiresApproval: true
+      input:
+        product: "{{trigger.data.feature}}"
+
+# ============================================================================
+# CROSS-DOMAIN: Incident Resolved → Runbook + Playbook
+# ============================================================================
+- id: flow.incident_learning
+  name: Incident Learning Flow
+  description: >
+    After an incident is resolved, capture learnings:
+    1. Update service runbook
+    2. Create troubleshooting playbook
+    3. Update patterns for future routing
+  trigger:
+    type: event
+    event: incident.resolved
+  domain: cross-domain
+  steps:
+    - id: runbook
+      worker: code-reviewer
+      skill: engineering.runbook_generation
+      tools: [jira.issue.read, grafana.query]
+      input:
+        service: "{{trigger.data.service}}"
+        incident: "{{trigger.data.incidentId}}"
+
+    - id: playbook
+      worker: learning-agent
+      skill: learning.observability_ai
+      depends_on: [runbook]
+      input:
+        topic: "{{trigger.data.rootCause}}"
+
+# ============================================================================
+# ENGINEERING: On-Call Morning Brief
+# ============================================================================
+- id: starter.eng.on_call_brief
+  name: On-Call Morning Brief
+  description: >
+    Daily brief for the on-call engineer — overnight alerts,
+    active incidents, recent deployments, recommended actions.
+  trigger:
+    type: schedule
+    cron: "0 8 * * *"
+  domain: engineering
+  steps:
+    - id: alerts
+      worker: code-reviewer
+      tools: [grafana.alerts.list]
+      input:
+        timeframe: "last 12 hours"
+
+    - id: deployments
+      worker: code-reviewer
+      tools: [github.deployments.list]
+      input:
+        timeframe: "last 24 hours"
+
+    - id: brief
+      worker: code-reviewer
+      depends_on: [alerts, deployments]
+      tools: [slack.message.send]
+      input:
+        channel: "#on-call"
+        alerts: "{{alerts.output}}"
+        deployments: "{{deployments.output}}"
+
+# ============================================================================
+# MARKETING: Competitive Intelligence Digest
+# ============================================================================
+- id: starter.mkt.competitive_digest
+  name: Weekly Competitive Digest
+  description: >
+    Weekly digest of competitor activity — product launches,
+    announcements, hires, content strategy changes.
+  trigger:
+    type: schedule
+    cron: "0 9 * * FRI"
+  domain: marketing
+  steps:
+    - id: scan
+      worker: content-writer
+      tools: [internal_docs.read, analytics.query]
+      input:
+        competitors: "{{config.competitors}}"
+        timeframe: "last 7 days"
+
+    - id: digest
+      worker: content-writer
+      depends_on: [scan]
+      tools: [slack.message.send]
+      input:
+        channel: "#marketing-intel"
+        content: "{{scan.output}}"
+
+# ============================================================================
+# LEARNING: Weekly AI Skills Digest
+# ============================================================================
+- id: starter.learn.weekly_digest
+  name: AI Learning Weekly Digest
+  description: >
+    Weekly digest of new AI capabilities, updated skills,
+    model improvements, and recommended learning modules.
+  trigger:
+    type: schedule
+    cron: "0 10 * * MON"
+  domain: learning
+  steps:
+    - id: updates
+      worker: learning-agent
+      tools: [skills.list_updated, internal_docs.read]
+      input:
+        timeframe: "last 7 days"
+
+    - id: digest
+      worker: learning-agent
+      depends_on: [updates]
+      tools: [slack.message.send]
+      input:
+        channel: "#ai-guild"
+        content: "{{updates.output}}"

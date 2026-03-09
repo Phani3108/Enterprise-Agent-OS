@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.email_automation",
+    "name": "Email Automation",
+    "description": "Email sequences, drip campaigns, newsletter workflows",
+    "category": "marketing",
+    "agents_required": ["copy", "email", "analytics"],
+    "tools_required": ["HubSpot", "Claude"],
+    "checkpoints": ["approve_sequence", "approve_send"],
+    "estimated_duration": "30-60 min",
+    "workflow_steps": ["Define sequence", "Write emails", "Design templates", "Configure automations", "Launch"]
+}

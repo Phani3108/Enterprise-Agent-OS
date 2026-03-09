@@ -1,0 +1,67 @@
+# Set explicit project name to avoid directory-based prefixing
+name: agentos-prompt-library
+
+services:
+
+  agentos-prompt-library-db:
+    image: postgres:15
+    container_name: agentos-prompt-library-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-agentos_prompt_library_pg}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-agentos_prompt_library_pg}
+    volumes:
+      - agentos-prompt-library-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agentos_prompt_library_pg} -d ${POSTGRES_DB:-agentos_prompt_library_pg}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - agentos-prompt-library-network
+
+  agentos-prompt-library:
+    image: agentos-prompt-library:latest
+    container_name: agentos-prompt-library
+    restart: unless-stopped
+    environment:
+      # Database connection
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-agentos_prompt_library_pg}:${POSTGRES_PASSWORD}@agentos-prompt-library-db:5432/${POSTGRES_DB:-agentos_prompt_library_pg}?sslmode=disable
+      - DIRECT_URL=postgresql://${POSTGRES_USER:-agentos_prompt_library_pg}:${POSTGRES_PASSWORD}@agentos-prompt-library-db:5432/${POSTGRES_DB:-agentos_prompt_library_pg}?sslmode=disable
+      
+      # Authentication - NextAuth.js
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:4445}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      
+      # Optional: AI features (requires OpenAI API key)
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Optional: Enable database seeding on first run
+      # - SEED_DATABASE=true
+    ports:
+      - "4445:3000"
+    depends_on:
+      agentos-prompt-library-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks:
+      - agentos-prompt-library-network
+
+networks:
+  agentos-prompt-library-network:
+    name: agentos-prompt-library-network
+    driver: bridge
+
+volumes:
+  agentos-prompt-library-db-data:
+    name: agentos-prompt-library-db-data

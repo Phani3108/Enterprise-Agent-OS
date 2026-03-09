@@ -1,0 +1,90 @@
+# Skill Evaluation Tests
+# Test cases for validating skill quality
+
+- suite_id: eval.marketing.campaign_strategy
+  name: Campaign Strategy Evaluation
+  method: llm-judge
+  cases:
+    - id: cs-001
+      input:
+        target_market: "US Credit Unions"
+        objective: "Increase adoption of digital card programs"
+        budget: "$50,000/quarter"
+      expected:
+        messaging_pillars: true
+        channel_strategy: true
+        content_calendar: true
+        kpi_framework: true
+        competitive_positioning: true
+      rubric: |
+        Score 1-10 on each dimension:
+        - Relevance to target market (credit unions specifically)
+        - Actionability of recommendations
+        - Budget-awareness in channel strategy
+        - Specificity of KPIs (not generic metrics)
+        - Competitive differentiation strength
+      weight: 1.0
+      tags: [credit-unions, digital-cards]
+
+    - id: cs-002
+      input:
+        target_market: "Community Banks under $5B assets"
+        objective: "Drive awareness of fraud prevention solutions"
+        budget: "$25,000/quarter"
+      expected:
+        messaging_pillars: true
+        channel_strategy: true
+      rubric: |
+        Evaluate for:
+        - Understanding of community bank pain points
+        - Appropriate channel mix for small budget
+        - Fraud-specific messaging quality
+      weight: 0.8
+      tags: [community-banks, fraud]
+
+- suite_id: eval.engineering.pr_review
+  name: PR Review Quality Evaluation
+  method: llm-judge
+  cases:
+    - id: pr-001
+      input:
+        diff: |
+          +  const password = "admin123";
+          +  const apiKey = process.env.API_KEY;
+          -  await db.query(`SELECT * FROM users WHERE id = ${userId}`);
+          +  await db.query(`SELECT * FROM users WHERE id = $1`, [userId]);
+        language: typescript
+        file_count: 3
+      expected:
+        catches_hardcoded_secret: true
+        approves_sql_fix: true
+        suggests_env_validation: true
+      rubric: |
+        Must catch:
+        - Hardcoded password (critical security issue)
+        - Approve SQL injection fix
+        - Suggest environment variable validation
+      weight: 1.0
+      tags: [security, sql-injection]
+
+- suite_id: eval.engineering.rca
+  name: Root Cause Analysis Evaluation
+  method: llm-judge
+  cases:
+    - id: rca-001
+      input:
+        incident: "503 errors spike on payment API"
+        duration: "45 minutes"
+        logs: "Connection pool exhausted, max connections reached"
+        metrics: "DB connections: 100/100, P99 latency: 12s"
+      expected:
+        identifies_connection_pool: true
+        timeline_present: true
+        prevention_recommendations: true
+      rubric: |
+        Evaluate:
+        - Correctly identifies connection pool exhaustion
+        - Provides coherent timeline
+        - Recommends connection pool sizing + circuit breaker
+      weight: 1.0
+      tags: [database, connection-pool]

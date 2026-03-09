@@ -1,0 +1,10 @@
+{
+    "tool_id": "nano_banana",
+    "name": "Nano Banana",
+    "category": "design",
+    "auth_type": "api_key",
+    "capabilities": ["generate_visual", "generate_banner"],
+    "api_base": "https://api.nanobanana.com/v1",
+    "actions": ["generate_visual", "generate_banner"],
+    "rate_limits": { "requests_per_minute": 60 }
+}

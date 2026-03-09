@@ -1,0 +1,10 @@
+{
+    "tool_id": "ga4",
+    "name": "Google Analytics 4",
+    "category": "analytics",
+    "auth_type": "oauth",
+    "capabilities": ["track_performance", "query_metrics", "attribution"],
+    "api_base": "https://analyticsdata.googleapis.com/v1beta",
+    "actions": ["track_performance", "query_metrics", "attribution", "run_report", "get_metadata"],
+    "rate_limits": { "requests_per_minute": 2000 }
+}

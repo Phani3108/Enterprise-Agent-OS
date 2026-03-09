@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.email",
+    "name": "Email Agent",
+    "type": "specialist",
+    "description": "Email sequences, drip campaigns, newsletter content",
+    "capabilities": ["email_sequences", "drip_campaigns", "newsletter", "personalization"],
+    "reads_state": ["state.messaging"],
+    "writes_state": ["state.email_campaigns"],
+    "triggers": [],
+    "tools": ["HubSpot", "Salesforce", "Mailchimp"]
+}

@@ -1,0 +1,10 @@
+{
+    "tool_id": "framer",
+    "name": "Framer",
+    "category": "landing_pages",
+    "auth_type": "oauth",
+    "capabilities": ["build_page"],
+    "api_base": "https://api.framer.com/v1",
+    "actions": ["build_page", "create_site", "publish_page", "update_content"],
+    "rate_limits": { "requests_per_minute": 60 }
+}

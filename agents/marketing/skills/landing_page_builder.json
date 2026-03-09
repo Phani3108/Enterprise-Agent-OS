@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.landing_page_builder",
+    "name": "Landing Page Builder",
+    "description": "Conversion-optimized landing pages",
+    "category": "marketing",
+    "agents_required": ["copy", "design", "landing"],
+    "tools_required": ["Claude", "Lovable", "Framer"],
+    "checkpoints": ["approve_copy", "approve_design", "approve_publish"],
+    "estimated_duration": "45-90 min",
+    "workflow_steps": ["Define value prop", "Write copy", "Design layout", "Build page", "Optimize", "Publish"]
+}

@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.competitor",
+    "name": "Competitor Agent",
+    "type": "specialist",
+    "description": "Competitor analysis, product positioning, campaign benchmarking",
+    "capabilities": ["competitor_analysis", "product_positioning", "campaign_benchmarking", "gap_analysis"],
+    "reads_state": ["state.market_insights"],
+    "writes_state": ["state.competitor_analysis"],
+    "triggers": ["marketing.strategy"],
+    "tools": ["Perplexity", "Semrush", "Ahrefs"]
+}

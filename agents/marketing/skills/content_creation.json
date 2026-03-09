@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.content_creation",
+    "name": "Content Creation",
+    "description": "Blog posts, articles, social content",
+    "category": "marketing",
+    "agents_required": ["research", "copy", "design"],
+    "tools_required": ["Claude", "Perplexity", "Canva"],
+    "checkpoints": ["approve_outline", "approve_draft", "approve_final"],
+    "estimated_duration": "30-60 min",
+    "workflow_steps": ["Research topic", "Create outline", "Write draft", "Design visuals", "Finalize content"]
+}

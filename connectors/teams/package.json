@@ -1,0 +1,19 @@
+{
+    "name": "@agentos/connector-teams",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Microsoft Teams connector for EAOS",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/bot.js",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx watch src/bot.ts",
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0",
+        "tsx": "^4.7.0"
+    }
+}

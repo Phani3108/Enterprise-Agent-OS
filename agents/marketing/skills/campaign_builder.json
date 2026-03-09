@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.campaign_builder",
+    "name": "Campaign Builder",
+    "description": "End-to-end campaign creation from research to launch",
+    "category": "marketing",
+    "agents_required": ["research", "strategy", "copy", "design", "campaign"],
+    "tools_required": ["Perplexity", "Claude", "Nano Banana", "Canva", "LinkedIn Ads"],
+    "checkpoints": ["approve_messaging", "approve_creatives", "approve_campaign_launch", "approve_budget"],
+    "estimated_duration": "45-90 min",
+    "workflow_steps": ["Research ICP & market", "Define strategy", "Generate messaging", "Create visuals", "Layout ads", "Setup campaign", "Launch"]
+}

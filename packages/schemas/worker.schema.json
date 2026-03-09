@@ -1,0 +1,210 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://agentos.dev/schemas/worker.schema.json",
+    "title": "AgentOS Worker Definition",
+    "description": "Schema for defining AI worker clusters and individual workers in AgentOS",
+    "type": "object",
+    "required": [
+        "name",
+        "description",
+        "workers"
+    ],
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Unique cluster identifier (lowercase, alphanumeric, hyphens)"
+        },
+        "description": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Human-readable cluster description"
+        },
+        "model_default": {
+            "type": "string",
+            "description": "Default LLM model for workers in this cluster",
+            "examples": [
+                "gpt-4o",
+                "gpt-4o-mini",
+                "claude-3-opus"
+            ]
+        },
+        "max_concurrent_workers": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "description": "Maximum workers running simultaneously"
+        },
+        "policies": {
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    {
+                        "type": "string"
+                    },
+                    {
+                        "type": "object",
+                        "maxProperties": 1,
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "number",
+                                "boolean"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "description": "Cluster-wide policy references"
+        },
+        "workers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "$ref": "#/definitions/Worker"
+            },
+            "description": "List of worker definitions"
+        }
+    },
+    "definitions": {
+        "Worker": {
+            "type": "object",
+            "required": [
+                "name",
+                "description",
+                "tools"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$",
+                    "description": "Unique worker identifier within cluster"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "What this worker does"
+                },
+                "model": {
+                    "type": "string",
+                    "description": "LLM model (overrides cluster default)"
+                },
+                "tools": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Tool identifiers this worker can invoke"
+                },
+                "policies": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "description": "Worker-specific policy references"
+                },
+                "triggers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Trigger"
+                    },
+                    "description": "Events that auto-spawn this worker"
+                },
+                "context_sources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ContextSource"
+                    },
+                    "description": "Memory sources for RAG context"
+                },
+                "sandbox": {
+                    "$ref": "#/definitions/Sandbox"
+                }
+            }
+        },
+        "Trigger": {
+            "type": "object",
+            "required": [
+                "event"
+            ],
+            "properties": {
+                "event": {
+                    "type": "string",
+                    "description": "Event type to trigger on"
+                },
+                "filter": {
+                    "type": "string",
+                    "description": "Expression to filter matching events"
+                }
+            }
+        },
+        "ContextSource": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "vector",
+                        "episode"
+                    ],
+                    "description": "Memory source type"
+                },
+                "namespace": {
+                    "type": "string",
+                    "description": "Vector store namespace"
+                },
+                "filter": {
+                    "type": "object",
+                    "description": "Query filter for episode memory"
+                }
+            }
+        },
+        "Sandbox": {
+            "type": "object",
+            "properties": {
+                "max_tokens": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "default": 8000,
+                    "description": "Max tokens per task"
+                },
+                "max_tool_calls": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 20,
+                    "description": "Max tool invocations per task"
+                },
+                "timeout_ms": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "default": 120000,
+                    "description": "Task execution timeout in milliseconds"
+                },
+                "max_memory_mb": {
+                    "type": "integer",
+                    "minimum": 64,
+                    "default": 512,
+                    "description": "Memory limit in MB"
+                },
+                "max_cpu_percent": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 50,
+                    "description": "CPU quota percentage"
+                }
+            }
+        }
+    }
+}

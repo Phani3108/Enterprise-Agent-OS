@@ -1,0 +1,68 @@
+# Slack Connector
+# Bridges AgentOS workers with Slack workspaces
+
+name: slack
+description: >
+  Slack connector enables workers to read and write messages, react to events,
+  manage threads, and receive real-time notifications from Slack workspaces.
+
+version: "1.0"
+
+auth:
+  type: oauth2
+  scopes:
+    - channels:read
+    - channels:write
+    - chat:write
+    - reactions:read
+    - reactions:write
+    - users:read
+  secret_ref: vault://connectors/slack
+
+capabilities:
+  inbound:
+    - event: message.received
+      description: New message posted in a channel or DM
+    - event: reaction.added
+      description: Reaction added to a message
+    - event: mention
+      description: Bot mentioned in a channel
+    - event: slash_command
+      description: Slash command invoked
+
+  outbound:
+    - action: slack.post
+      description: Post a message to a channel
+      input:
+        channel: { type: string, required: true }
+        text: { type: string, required: true }
+        thread_ts: { type: string, required: false }
+        blocks: { type: array, required: false }
+
+    - action: slack.reply
+      description: Reply to a thread
+      input:
+        channel: { type: string, required: true }
+        thread_ts: { type: string, required: true }
+        text: { type: string, required: true }
+
+    - action: slack.react
+      description: Add a reaction to a message
+      input:
+        channel: { type: string, required: true }
+        timestamp: { type: string, required: true }
+        emoji: { type: string, required: true }
+
+    - action: slack.dm
+      description: Send a direct message
+      input:
+        user_id: { type: string, required: true }
+        text: { type: string, required: true }
+
+rate_limits:
+  max_per_minute: 50
+  max_per_hour: 500
+
+health_check:
+  endpoint: https://slack.com/api/api.test
+  interval_seconds: 60

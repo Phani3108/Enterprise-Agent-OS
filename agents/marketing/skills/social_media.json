@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.social_media",
+    "name": "Social Media",
+    "description": "Content calendar, posts, engagement, scheduling",
+    "category": "marketing",
+    "agents_required": ["copy", "design", "analytics"],
+    "tools_required": ["Claude", "Canva", "Buffer"],
+    "checkpoints": ["approve_posts", "approve_schedule"],
+    "estimated_duration": "30-60 min",
+    "workflow_steps": ["Plan calendar", "Create posts", "Design visuals", "Schedule", "Monitor engagement"]
+}

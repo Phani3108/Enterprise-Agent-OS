@@ -1,0 +1,36 @@
+{
+    "name": "@agentos/skills",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Skills Runtime — versioned prompt capabilities with registry, compiler, and executor",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@agentos/sdk": "workspace:*",
+        "@agentos/events": "workspace:*",
+        "@agentos/router": "workspace:*",
+        "@agentos/sandbox": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0",
+        "vitest": "^1.6.0"
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "name": "@agentos/schemas",
+    "version": "0.1.0",
+    "private": true,
+    "description": "JSON Schema contracts for AgentOS primitives",
+    "license": "MIT",
+    "main": "index.js",
+    "types": "index.d.ts",
+    "files": [
+        "*.schema.json",
+        "index.js",
+        "index.d.ts"
+    ],
+    "scripts": {
+        "build": "echo 'Static schemas — no build step'",
+        "validate": "node -e \"const fs=require('fs');const schemas=fs.readdirSync('.').filter(f=>f.endsWith('.schema.json'));schemas.forEach(s=>{JSON.parse(fs.readFileSync(s,'utf8'));console.log('✓',s)})\""
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "tool_id": "ahrefs",
+    "name": "Ahrefs",
+    "category": "seo",
+    "auth_type": "api_key",
+    "capabilities": ["seo_analysis", "competitor_analysis"],
+    "api_base": "https://api.ahrefs.com/v3",
+    "actions": ["seo_analysis", "competitor_analysis", "domain_rating", "backlinks", "keywords"],
+    "rate_limits": { "requests_per_minute": 5 }
+}

@@ -1,0 +1,10 @@
+{
+    "tool_id": "meta_ads",
+    "name": "Meta Ads",
+    "category": "ads",
+    "auth_type": "oauth",
+    "capabilities": ["create_campaign", "upload_creative", "publish_campaign", "manage_budget", "track_performance"],
+    "api_base": "https://graph.facebook.com/v21.0",
+    "actions": ["create_campaign", "upload_creative", "publish_campaign", "manage_budget", "track_performance"],
+    "rate_limits": { "requests_per_minute": 200 }
+}

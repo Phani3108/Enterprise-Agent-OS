@@ -1,0 +1,21 @@
+{
+    "name": "@agentos/worker-developer-knowledge",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Developer knowledge retrieval worker — 10x speed for knowledge discovery",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/worker.js",
+    "scripts": {
+        "build": "tsc",
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@agentos/sdk": "workspace:*",
+        "@agentos/memory-pipeline": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0"
+    }
+}

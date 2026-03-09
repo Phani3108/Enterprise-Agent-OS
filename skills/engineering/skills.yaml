@@ -1,0 +1,164 @@
+# Engineering Skills
+# Prompt capabilities for the engineering worker cluster
+
+- skill_id: engineering.pr_architecture_review
+  name: PR Architecture Reviewer
+  domain: engineering
+  version: v1.0.0
+  description: >
+    Reviews pull requests for architectural consistency, design patterns,
+    security concerns, and scalability implications.
+  system_prompt: |
+    You are a senior software architect reviewing a pull request. Your review
+    must go beyond surface-level code quality to assess architectural impact.
+
+    Evaluate:
+    1. Architecture Alignment — does this follow established patterns?
+    2. Design Patterns — appropriate use of abstractions, DRY, SOLID
+    3. Security — injection risks, auth gaps, data exposure
+    4. Scalability — will this work at 10x/100x current load?
+    5. Error Handling — failure modes, recovery paths, observability
+    6. Breaking Changes — API compatibility, migration needs
+    7. Test Coverage — critical paths tested, edge cases covered
+
+    Be specific. Reference exact files and line numbers. Suggest concrete
+    improvements with code examples where helpful.
+  compatible_workers:
+    - code-reviewer
+    - doc-writer
+  allowed_tools:
+    - github.pull_request.read
+    - github.file.read
+    - internal_docs.read
+  memory_sources:
+    - codebase_docs
+    - architecture_decisions
+  knowledge_sources:
+    - decision
+    - pattern
+    - service
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: false
+    max_tokens: 8000
+    max_tool_calls: 15
+    require_citations: true
+    red_team_verified: false
+    custom_rules:
+      - "Always check for hardcoded secrets"
+      - "Flag any direct database queries from API handlers"
+  evaluation_tests:
+    - eval.engineering.pr_review
+  tags:
+    - code-review
+    - architecture
+    - security
+  metadata:
+    author: engineering-team
+    team: engineering
+    status: published
+
+- skill_id: engineering.incident_root_cause
+  name: Incident Root Cause Analyzer
+  domain: engineering
+  version: v1.0.0
+  description: >
+    Analyzes incidents to identify root cause, contributing factors,
+    and generates actionable remediation recommendations.
+  system_prompt: |
+    You are an expert SRE analyzing a production incident. Given the incident
+    timeline, logs, metrics, and context, perform a thorough root cause analysis.
+
+    Your analysis must include:
+    1. Incident Timeline — reconstructed sequence of events
+    2. Root Cause — the primary technical failure
+    3. Contributing Factors — conditions that enabled the failure
+    4. Blast Radius — affected systems, users, and data
+    5. Remediation Steps — immediate fixes with priority
+    6. Prevention — systemic changes to prevent recurrence
+    7. Detection Gaps — monitoring/alerting that should have caught this earlier
+
+    Reference specific log entries, metrics, and configurations.
+  compatible_workers:
+    - code-reviewer
+    - deployer
+  allowed_tools:
+    - github.file.read
+    - jira.issue.create
+    - internal_docs.read
+  memory_sources:
+    - incident_history
+    - runbooks
+  knowledge_sources:
+    - incident
+    - service
+    - decision
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: true
+    max_tokens: 6000
+    max_tool_calls: 10
+    require_citations: true
+    red_team_verified: true
+    custom_rules:
+      - "Never recommend 'just restart the service' as a long-term fix"
+  evaluation_tests:
+    - eval.engineering.rca
+  tags:
+    - incident
+    - rca
+    - sre
+  metadata:
+    author: engineering-team
+    team: engineering
+    status: published
+
+- skill_id: engineering.runbook_generation
+  name: Runbook Generator
+  domain: engineering
+  version: v1.0.0
+  description: >
+    Generates operational runbooks from architecture docs, incident
+    history, and service topology.
+  system_prompt: |
+    You are a technical writer creating an operational runbook for an SRE team.
+    Given service architecture and incident history, produce a comprehensive
+    runbook that enables on-call engineers to handle common scenarios.
+
+    Include:
+    1. Service Overview — architecture, dependencies, SLOs
+    2. Common Issues — symptoms, diagnosis steps, resolution
+    3. Escalation Paths — when and whom to escalate to
+    4. Recovery Procedures — step-by-step rollback and recovery
+    5. Monitoring Dashboards — links and key metrics to watch
+    6. Change Management — safe deployment and config change procedures
+  compatible_workers:
+    - doc-writer
+  allowed_tools:
+    - github.file.read
+    - internal_docs.read
+  memory_sources:
+    - architecture_docs
+    - incident_history
+  knowledge_sources:
+    - service
+    - incident
+    - pattern
+  guardrails:
+    no_data_exfiltration: true
+    enforce_output_schema: false
+    max_tokens: 10000
+    max_tool_calls: 8
+    require_citations: true
+    red_team_verified: false
+    custom_rules: []
+  evaluation_tests:
+    - eval.engineering.runbook
+  tags:
+    - runbook
+    - documentation
+    - sre
+  metadata:
+    author: engineering-team
+    team: engineering
+    status: published

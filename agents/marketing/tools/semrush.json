@@ -1,0 +1,10 @@
+{
+    "tool_id": "semrush",
+    "name": "SEMrush",
+    "category": "seo",
+    "auth_type": "api_key",
+    "capabilities": ["seo_analysis", "competitor_analysis", "web_search"],
+    "api_base": "https://api.semrush.com",
+    "actions": ["seo_analysis", "competitor_analysis", "web_search", "domain_overview", "keyword_analysis"],
+    "rate_limits": { "requests_per_minute": 10 }
+}

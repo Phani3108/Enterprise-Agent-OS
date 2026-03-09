@@ -1,0 +1,105 @@
+# Workflow: PR Review Pipeline
+# Automated code review workflow triggered by pull request events
+
+name: pr-review
+description: >
+  End-to-end pull request review pipeline. Runs linting, tests, AI-powered
+  code review, and auto-merges if all checks pass with approval.
+
+version: "1.0"
+
+trigger:
+  event: pull_request.opened
+  filter: "base == 'main' && draft == false"
+
+timeout_ms: 600000  # 10 minutes
+
+retry:
+  max_attempts: 2
+  backoff: exponential
+  initial_delay_ms: 5000
+
+steps:
+  - id: fetch-context
+    name: Fetch PR Context
+    worker: code-generator
+    action: fetch-pr-details
+    input:
+      pr_url: "{{ trigger.pull_request.url }}"
+      include_diff: true
+      include_comments: true
+    output:
+      - diff
+      - files_changed
+      - pr_description
+
+  - id: lint
+    name: Run Linting
+    worker: test-runner
+    action: run-lint
+    depends_on: [fetch-context]
+    input:
+      files: "{{ steps.fetch-context.output.files_changed }}"
+    output:
+      - lint_results
+      - lint_passed
+
+  - id: test
+    name: Run Test Suite
+    worker: test-runner
+    action: run-tests
+    depends_on: [fetch-context]
+    input:
+      files: "{{ steps.fetch-context.output.files_changed }}"
+      coverage: true
+    output:
+      - test_results
+      - tests_passed
+      - coverage_percent
+
+  - id: review
+    name: AI Code Review
+    worker: code-reviewer
+    action: review-pr
+    depends_on: [lint, test]
+    condition: "steps.lint.output.lint_passed && steps.test.output.tests_passed"
+    input:
+      diff: "{{ steps.fetch-context.output.diff }}"
+      pr_description: "{{ steps.fetch-context.output.pr_description }}"
+      lint_results: "{{ steps.lint.output.lint_results }}"
+      test_results: "{{ steps.test.output.test_results }}"
+      coverage: "{{ steps.test.output.coverage_percent }}"
+    output:
+      - review_verdict    # approved | changes_requested
+      - review_comments
+      - risk_score
+
+  - id: post-review
+    name: Post Review Comments
+    worker: code-reviewer
+    action: post-review
+    depends_on: [review]
+    input:
+      pr_url: "{{ trigger.pull_request.url }}"
+      verdict: "{{ steps.review.output.review_verdict }}"
+      comments: "{{ steps.review.output.review_comments }}"
+
+  - id: merge
+    name: Auto-Merge
+    worker: deployer
+    action: merge-pr
+    depends_on: [post-review]
+    condition: "steps.review.output.review_verdict == 'approved' && steps.review.output.risk_score < 0.3"
+    approval:
+      required: true
+      approvers: [engineering-lead]
+      timeout_minutes: 30
+    input:
+      pr_url: "{{ trigger.pull_request.url }}"
+      merge_method: squash
+
+on_failure:
+  - action: notify
+    channel: slack
+    target: "#engineering-alerts"
+    message: "PR review pipeline failed for {{ trigger.pull_request.url }}: {{ error.message }}"

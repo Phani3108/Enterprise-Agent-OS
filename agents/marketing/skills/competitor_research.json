@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.competitor_research",
+    "name": "Competitor Research",
+    "description": "Competitive analysis, positioning, benchmarking",
+    "category": "marketing",
+    "agents_required": ["competitor", "research", "analytics"],
+    "tools_required": ["Perplexity", "Semrush", "Crunchbase"],
+    "checkpoints": ["approve_analysis"],
+    "estimated_duration": "30-60 min",
+    "workflow_steps": ["Identify competitors", "Gather data", "Analyze positioning", "Benchmark", "Create report"]
+}

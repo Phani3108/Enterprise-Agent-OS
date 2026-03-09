@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.creative_design",
+    "name": "Creative Design",
+    "description": "Visual assets — ads, banners, social graphics",
+    "category": "marketing",
+    "agents_required": ["copy", "design"],
+    "tools_required": ["Nano Banana", "DALL-E", "Canva", "Figma"],
+    "checkpoints": ["approve_concept", "approve_final_design"],
+    "estimated_duration": "20-45 min",
+    "workflow_steps": ["Define concepts", "Generate copy", "Create visuals", "Refine design", "Export assets"]
+}

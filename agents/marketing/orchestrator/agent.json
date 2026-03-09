@@ -1,0 +1,30 @@
+{
+    "agent_id": "marketing.orchestrator",
+    "name": "Marketing Orchestrator",
+    "type": "orchestrator",
+    "description": "Mother agent that detects intent, maps skills, deploys agent graphs, selects tools, manages checkpoints, and handles optimization loops",
+    "capabilities": [
+        "intent_detection",
+        "skill_mapping",
+        "agent_deployment",
+        "tool_selection",
+        "workflow_monitoring",
+        "checkpoint_handling",
+        "optimization_loop"
+    ],
+    "children": [
+        "marketing.strategy",
+        "marketing.research",
+        "marketing.competitor",
+        "marketing.copy",
+        "marketing.design",
+        "marketing.landing",
+        "marketing.campaign",
+        "marketing.analytics",
+        "marketing.optimization",
+        "marketing.seo",
+        "marketing.email"
+    ],
+    "runtime": "langgraph",
+    "supported_runtimes": ["langgraph", "autogen", "crewai", "custom"]
+}

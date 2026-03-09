@@ -1,0 +1,10 @@
+{
+    "tool_id": "lovable",
+    "name": "Lovable",
+    "category": "landing_pages",
+    "auth_type": "oauth",
+    "capabilities": ["build_page"],
+    "api_base": "https://api.lovable.app/v1",
+    "actions": ["build_page", "create_project", "deploy_page", "update_page"],
+    "rate_limits": { "requests_per_minute": 60 }
+}

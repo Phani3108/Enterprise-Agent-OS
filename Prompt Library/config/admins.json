@@ -1,0 +1,6 @@
+{
+  "_comment": "Declarative list of AgentOS Prompt Library admins. Add GitHub-verified email addresses here. Run 'make sync-admins' after changes to apply roles.",
+  "admins": [
+    "admin@agentos.dev"
+  ]
+}

@@ -1,0 +1,210 @@
+# Opinionated Starter Workflows
+# These work out of the box — just deploy and use.
+
+# ============================================================================
+# ENGINEERING: Incident Triage
+# ============================================================================
+- id: starter.eng.incident_triage
+  name: Incident Triage
+  description: >
+    Automatically analyze a production incident — root cause, blast radius,
+    remediation steps, and Jira ticket creation.
+  trigger:
+    type: event
+    event: incident.created
+  domain: engineering
+  estimatedLatency: "<30s"
+  exampleInput: "503 errors spiking on payments API, started 10 minutes ago"
+  steps:
+    - id: gather
+      worker: code-reviewer
+      skill: engineering.incident_root_cause
+      tools: [github.file.read, internal_docs.read]
+      input:
+        incident: "{{trigger.data}}"
+
+    - id: create_ticket
+      worker: deployer
+      depends_on: [gather]
+      tools: [jira.issue.create]
+      input:
+        summary: "{{gather.output.title}}"
+        description: "{{gather.output.analysis}}"
+        priority: "{{gather.output.severity}}"
+
+    - id: notify
+      worker: deployer
+      depends_on: [create_ticket]
+      tools: [slack.message.send]
+      input:
+        channel: "#incidents"
+        message: "🚨 {{gather.output.title}} — {{create_ticket.output.key}}"
+
+# ============================================================================
+# ENGINEERING: PR Architecture Review
+# ============================================================================
+- id: starter.eng.pr_review
+  name: PR Architecture Review
+  description: >
+    Triggered on new PRs — reviews for architecture, security, patterns.
+  trigger:
+    type: webhook
+    event: github.pull_request.opened
+  domain: engineering
+  estimatedLatency: "<20s"
+  exampleInput: "PR #456 on repo payments-api"
+  steps:
+    - id: review
+      worker: code-reviewer
+      skill: engineering.pr_architecture_review
+      tools: [github.pull_request.read, github.file.read]
+      input:
+        pr_url: "{{trigger.data.pull_request.url}}"
+
+    - id: comment
+      worker: code-reviewer
+      depends_on: [review]
+      tools: [github.pull_request.comment]
+      input:
+        body: "{{review.output.review}}"
+
+# ============================================================================
+# MARKETING: Campaign Planning
+# ============================================================================
+- id: starter.mkt.campaign
+  name: Campaign Strategy Generator
+  description: >
+    Generate full campaign strategy — ICP, messaging, channels, calendar, KPIs.
+  trigger:
+    type: api
+    endpoint: POST /api/workflows/campaign
+  domain: marketing
+  estimatedLatency: "<25s"
+  exampleInput: "Create campaign targeting credit unions for digital card modernization"
+  steps:
+    - id: icp
+      worker: campaign-manager
+      skill: marketing.icp_analysis
+      tools: [salesforce.read, internal_docs.read]
+      input:
+        market: "{{request.target_market}}"
+
+    - id: strategy
+      worker: content-writer
+      skill: marketing.campaign_strategy
+      depends_on: [icp]
+      tools: [hubspot.read, ga4.read, internal_docs.read]
+      input:
+        target_market: "{{request.target_market}}"
+        objective: "{{request.objective}}"
+        icp: "{{icp.output}}"
+
+    - id: seo
+      worker: seo-analyst
+      skill: marketing.seo_content_optimization
+      depends_on: [strategy]
+      tools: [ga4.read]
+      input:
+        content: "{{strategy.output.messaging_pillars}}"
+
+    - id: deliver
+      worker: content-writer
+      depends_on: [strategy, seo]
+      input:
+        strategy: "{{strategy.output}}"
+        seo_recommendations: "{{seo.output}}"
+
+# ============================================================================
+# MARKETING: Newsletter Generation
+# ============================================================================
+- id: starter.mkt.newsletter
+  name: Weekly Newsletter Generator
+  description: >
+    Auto-generate weekly newsletter from recent blog posts, product updates,
+    and industry news.
+  trigger:
+    type: schedule
+    cron: "0 9 * * MON"
+  domain: marketing
+  estimatedLatency: "<20s"
+  exampleInput: "Generate this week's newsletter"
+  steps:
+    - id: gather
+      worker: content-writer
+      tools: [internal_docs.read]
+      input:
+        timeframe: "last 7 days"
+        sources: [blog, product_updates, press]
+
+    - id: write
+      worker: content-writer
+      depends_on: [gather]
+      input:
+        content: "{{gather.output}}"
+        format: newsletter
+        tone: professional
+
+# ============================================================================
+# LEADERSHIP: Office Hours Insights
+# ============================================================================
+- id: starter.lead.office_hours
+  name: Office Hours Summary
+  description: >
+    After an office hours session, auto-generate summary with action items,
+    decisions made, and follow-up tasks.
+  trigger:
+    type: api
+    endpoint: POST /api/workflows/office-hours
+  domain: leadership
+  estimatedLatency: "<20s"
+  exampleInput: "Summarize today's engineering office hours"
+  steps:
+    - id: summarize
+      worker: exec-summarizer
+      skill: leadership.decision_summary
+      tools: [internal_docs.read]
+      input:
+        transcript: "{{request.transcript}}"
+
+    - id: tickets
+      worker: deployer
+      depends_on: [summarize]
+      tools: [jira.issue.create]
+      input:
+        action_items: "{{summarize.output.next_steps}}"
+
+    - id: share
+      worker: deployer
+      depends_on: [summarize, tickets]
+      tools: [slack.message.send]
+      input:
+        channel: "#leadership"
+        message: "📋 Office Hours Summary:\n{{summarize.output.executive_summary}}"
+
+# ============================================================================
+# LEADERSHIP: Strategy Analysis
+# ============================================================================
+- id: starter.lead.strategy
+  name: Strategic Decision Brief
+  description: >
+    Analyze a strategic question with SWOT, scenarios, and executive brief.
+  trigger:
+    type: api
+    endpoint: POST /api/workflows/strategy
+  domain: leadership
+  estimatedLatency: "<25s"
+  exampleInput: "Should we enter the neobank market?"
+  steps:
+    - id: analyze
+      worker: strategy-analyst
+      skill: leadership.strategy_analysis
+      tools: [internal_docs.read, analytics.query]
+      input:
+        question: "{{request.question}}"
+
+    - id: brief
+      worker: exec-summarizer
+      skill: leadership.decision_summary
+      depends_on: [analyze]
+      input:
+        analysis: "{{analyze.output}}"

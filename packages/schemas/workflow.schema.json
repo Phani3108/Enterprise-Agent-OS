@@ -1,0 +1,229 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://agentos.dev/schemas/workflow.schema.json",
+    "title": "AgentOS Workflow Definition",
+    "description": "Schema for defining DAG-based workflows in AgentOS",
+    "type": "object",
+    "required": [
+        "name",
+        "description",
+        "trigger",
+        "steps"
+    ],
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Unique workflow identifier"
+        },
+        "description": {
+            "type": "string",
+            "description": "Human-readable workflow description"
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+$",
+            "description": "Workflow version"
+        },
+        "trigger": {
+            "$ref": "#/definitions/Trigger"
+        },
+        "timeout_ms": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "Workflow-level timeout"
+        },
+        "priority": {
+            "type": "string",
+            "enum": [
+                "low",
+                "normal",
+                "high",
+                "critical"
+            ],
+            "default": "normal"
+        },
+        "retry": {
+            "$ref": "#/definitions/RetryConfig"
+        },
+        "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "$ref": "#/definitions/Step"
+            },
+            "description": "Ordered list of workflow steps"
+        },
+        "on_failure": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/Hook"
+            },
+            "description": "Actions to execute on workflow failure"
+        },
+        "on_success": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/Hook"
+            },
+            "description": "Actions to execute on workflow success"
+        }
+    },
+    "definitions": {
+        "Trigger": {
+            "type": "object",
+            "required": [
+                "event"
+            ],
+            "properties": {
+                "event": {
+                    "type": "string",
+                    "description": "Event type that triggers the workflow"
+                },
+                "filter": {
+                    "type": "string",
+                    "description": "Expression to filter matching events"
+                }
+            }
+        },
+        "Step": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "worker"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$",
+                    "description": "Unique step identifier within workflow"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Human-readable step name"
+                },
+                "worker": {
+                    "type": "string",
+                    "description": "Worker to execute this step"
+                },
+                "action": {
+                    "type": "string",
+                    "description": "Specific action for the worker to perform"
+                },
+                "depends_on": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Step IDs that must complete before this step"
+                },
+                "condition": {
+                    "type": "string",
+                    "description": "Expression that must be true to execute this step"
+                },
+                "input": {
+                    "type": "object",
+                    "description": "Input data for the step (supports template expressions)"
+                },
+                "output": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Named output fields produced by this step"
+                },
+                "approval": {
+                    "$ref": "#/definitions/ApprovalConfig"
+                },
+                "retry": {
+                    "$ref": "#/definitions/RetryConfig"
+                },
+                "timeout_ms": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "description": "Step-level timeout"
+                }
+            }
+        },
+        "ApprovalConfig": {
+            "type": "object",
+            "properties": {
+                "required": {
+                    "type": "boolean",
+                    "description": "Whether approval is required"
+                },
+                "approvers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of approver identifiers"
+                },
+                "timeout_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Approval timeout"
+                },
+                "escalation": {
+                    "type": "string",
+                    "description": "Escalation target on timeout"
+                }
+            }
+        },
+        "RetryConfig": {
+            "type": "object",
+            "properties": {
+                "max_attempts": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "default": 3
+                },
+                "backoff": {
+                    "type": "string",
+                    "enum": [
+                        "fixed",
+                        "linear",
+                        "exponential"
+                    ],
+                    "default": "exponential"
+                },
+                "initial_delay_ms": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "default": 1000
+                }
+            }
+        },
+        "Hook": {
+            "type": "object",
+            "required": [
+                "action"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "notify",
+                        "escalate",
+                        "webhook"
+                    ],
+                    "description": "Hook action type"
+                },
+                "channel": {
+                    "type": "string",
+                    "description": "Notification channel"
+                },
+                "target": {
+                    "type": "string",
+                    "description": "Target for the action"
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Message template"
+                }
+            }
+        }
+    }
+}

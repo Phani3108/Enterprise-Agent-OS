@@ -1,0 +1,11 @@
+{
+    "skill_id": "marketing.analytics_reporting",
+    "name": "Analytics Reporting",
+    "description": "Campaign performance, attribution, ROI analysis",
+    "category": "marketing",
+    "agents_required": ["analytics"],
+    "tools_required": ["GA4", "HubSpot", "Salesforce"],
+    "checkpoints": [],
+    "estimated_duration": "15-30 min",
+    "workflow_steps": ["Pull data", "Calculate metrics", "Assess attribution", "Generate report"]
+}

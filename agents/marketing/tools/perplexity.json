@@ -1,0 +1,10 @@
+{
+    "tool_id": "perplexity",
+    "name": "Perplexity",
+    "category": "research",
+    "auth_type": "api_key",
+    "capabilities": ["web_search", "competitor_analysis"],
+    "api_base": "https://api.perplexity.ai",
+    "actions": ["web_search", "competitor_analysis", "chat_completions"],
+    "rate_limits": { "requests_per_minute": 60 }
+}

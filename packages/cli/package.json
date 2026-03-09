@@ -1,0 +1,21 @@
+{
+    "name": "@agentos/cli",
+    "version": "0.1.0",
+    "private": true,
+    "description": "EAOS CLI — eaos up/down/exec/status/skills/capabilities",
+    "license": "MIT",
+    "type": "module",
+    "bin": {
+        "eaos": "dist/index.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx src/index.ts",
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0",
+        "tsx": "^4.7.0"
+    }
+}

@@ -1,0 +1,45 @@
+# Jira Connector
+# Bridges AgentOS workers with Jira projects
+
+name: jira
+description: >
+  Jira connector enables workers to manage issues, boards, sprints,
+  and project tracking across Jira projects.
+
+version: "1.0"
+
+auth:
+  type: api_key
+  secret_ref: vault://connectors/jira
+
+capabilities:
+  inbound:
+    - event: issue.created
+    - event: issue.updated
+    - event: issue.transitioned
+    - event: sprint.started
+    - event: sprint.completed
+
+  outbound:
+    - action: jira.issue.create
+      description: Create a new issue
+    - action: jira.issue.update
+      description: Update issue fields
+    - action: jira.issue.transition
+      description: Transition issue status
+    - action: jira.issue.comment
+      description: Add a comment to an issue
+    - action: jira.query
+      description: Search issues with JQL
+    - action: jira.sprint.get
+      description: Get current sprint info
+    - action: jira.board.get
+      description: Get board with issues
+
+rate_limits:
+  max_per_minute: 30
+  max_per_hour: 500
+
+health_check:
+  endpoint: /rest/api/3/serverInfo
+  interval_seconds: 60

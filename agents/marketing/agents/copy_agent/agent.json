@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.copy",
+    "name": "Copy Agent",
+    "type": "specialist",
+    "description": "Ads, emails, landing pages, blogs, social posts with brand voice",
+    "capabilities": ["ad_copy", "email_writing", "blog_posts", "landing_page_copy", "social_posts"],
+    "reads_state": ["state.strategy", "state.optimization_actions"],
+    "writes_state": ["state.messaging"],
+    "triggers": ["marketing.design", "marketing.landing", "marketing.email", "marketing.campaign"],
+    "tools": ["Claude", "GPT", "Brand Voice DB"]
+}

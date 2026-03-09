@@ -1,0 +1,73 @@
+# Learning & AI Upskilling Skills
+# These power the Learning OS domain agent
+
+- id: learning.rag_tutorial
+  name: RAG Pipeline Tutorial
+  domain: learning
+  description: >
+    Teach how to build a Retrieval-Augmented Generation pipeline
+    using our internal stack (pgvector, NATS, EAOS runtime).
+  output_format: LearningModule
+  knowledge_sources:
+    - internal_docs
+    - github_repos
+    - architecture_docs
+  guardrails:
+    - Use internal examples and repos
+    - Include runnable code
+    - Always reference Zeta-specific patterns
+
+- id: learning.prompt_engineering
+  name: Prompt Engineering Guide
+  domain: learning
+  description: >
+    Comprehensive guide to prompt engineering — from basics to advanced
+    techniques with internal prompt library examples.
+  output_format: LearningModule
+  knowledge_sources:
+    - skills_registry
+    - internal_docs
+
+- id: learning.agent_architecture
+  name: Agent Architecture Patterns
+  domain: learning
+  description: >
+    Explain agent architectures (ReAct, CoT, Tree-of-Thought, debate),
+    when to use each, and how they map to EAOS patterns.
+  output_format: LearningModule
+  knowledge_sources:
+    - architecture_docs
+    - internal_docs
+
+- id: learning.model_selection
+  name: Model Selection Guide
+  domain: learning
+  description: >
+    Compare LLM models for different tasks — cost, latency, quality
+    tradeoffs with Zeta-specific benchmarks.
+  output_format: ModelComparison
+  knowledge_sources:
+    - evaluation_results
+    - internal_benchmarks
+
+- id: learning.observability_ai
+  name: AI Observability Patterns
+  domain: learning
+  description: >
+    How to monitor, trace, and debug AI systems in production —
+    using EAOS observability stack.
+  output_format: LearningModule
+  knowledge_sources:
+    - architecture_docs
+    - grafana_dashboards
+
+- id: learning.safety_guardrails
+  name: AI Safety & Guardrails
+  domain: learning
+  description: >
+    Enterprise AI safety — hallucination prevention, output validation,
+    PII detection, bias mitigation, audit trails.
+  output_format: LearningModule
+  knowledge_sources:
+    - policy_docs
+    - compliance_docs

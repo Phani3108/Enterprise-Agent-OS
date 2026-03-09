@@ -1,0 +1,194 @@
+# EAOS Docker Compose — Single-command deployment
+# Usage: cd deploy && docker compose up -d
+
+services:
+  # -------------------------------------------------------------------------
+  # Infrastructure
+  # -------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: eaos
+      POSTGRES_USER: eaos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eaos-dev-password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eaos"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  nats:
+    image: nats:2-alpine
+    command: ["--jetstream", "--store_dir=/data"]
+    volumes:
+      - natsdata:/data
+    ports:
+      - "4222:4222"
+      - "8222:8222"  # monitoring
+    healthcheck:
+      test: ["CMD", "nats-server", "--help"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # -------------------------------------------------------------------------
+  # Core Services
+  # -------------------------------------------------------------------------
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NATS_URL: nats://nats:4222
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://eaos:${POSTGRES_PASSWORD:-eaos-dev-password}@postgres:5432/eaos
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      nats: { condition: service_healthy }
+
+  orchestrator:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: orchestrator
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      NATS_URL: nats://nats:4222
+      DATABASE_URL: postgresql://eaos:${POSTGRES_PASSWORD:-eaos-dev-password}@postgres:5432/eaos
+      COGNITIVE_ENGINE_URL: http://cognitive-engine:3005
+    depends_on:
+      - gateway
+      - nats
+
+  memory:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: memory
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://eaos:${POSTGRES_PASSWORD:-eaos-dev-password}@postgres:5432/eaos
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  skills-runtime:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: skills-runtime
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      SKILL_SOURCE_URL: ${SKILL_SOURCE_URL:-https://skills.zeta.tech}
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - nats
+
+  cognitive-engine:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: cognitive-engine
+    ports:
+      - "3005:3005"
+    environment:
+      PORT: 3005
+      NATS_URL: nats://nats:4222
+      MEMORY_URL: http://memory:3002
+      SKILLS_URL: http://skills-runtime:3004
+      RELIABILITY_URL: http://reliability-engine:3006
+    depends_on:
+      - memory
+      - skills-runtime
+
+  reliability-engine:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: reliability-engine
+    ports:
+      - "3006:3006"
+    environment:
+      PORT: 3006
+      MIN_CONFIDENCE: ${MIN_CONFIDENCE:-0.7}
+
+  learning-engine:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        SERVICE: learning-engine
+    ports:
+      - "3007:3007"
+    environment:
+      PORT: 3007
+      NATS_URL: nats://nats:4222
+      SKILLS_URL: http://skills-runtime:3004
+    depends_on:
+      - nats
+      - skills-runtime
+
+  # -------------------------------------------------------------------------
+  # Observability
+  # -------------------------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    volumes:
+      - ./otel-config.yaml:/etc/otelcol/config.yaml
+    ports:
+      - "4317:4317"   # gRPC
+      - "4318:4318"   # HTTP
+
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:10.3.3
+    ports:
+      - "3003:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafanadata:/var/lib/grafana
+
+volumes:
+  pgdata:
+  natsdata:
+  grafanadata:

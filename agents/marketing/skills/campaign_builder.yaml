@@ -1,0 +1,57 @@
+skill_id: marketing.campaign_builder
+name: Campaign Builder
+category: marketing
+description: End-to-end campaign creation from research to launch with human checkpoints
+
+agents_required:
+  - marketing.research
+  - marketing.strategy
+  - marketing.copy
+  - marketing.design
+  - marketing.campaign
+
+tools_required:
+  - research: [perplexity, semrush]
+  - copy: [claude, gpt]
+  - design: [nano_banana, dalle, canva]
+  - campaign: [linkedin_ads, google_ads, meta_ads]
+  - analytics: [hubspot, ga4]
+
+workflow:
+  - step: 1
+    action: research_icp
+    agent: marketing.research
+    tool: perplexity
+  - step: 2
+    action: define_strategy
+    agent: marketing.strategy
+    tool: claude
+  - step: 3
+    action: generate_messaging
+    agent: marketing.copy
+    tool: claude
+    checkpoint: approve_messaging
+  - step: 4
+    action: generate_creatives
+    agent: marketing.design
+    tool: nano_banana
+    checkpoint: approve_creatives
+  - step: 5
+    action: layout_ads
+    agent: marketing.design
+    tool: canva
+  - step: 6
+    action: setup_campaign
+    agent: marketing.campaign
+    tool: linkedin_ads
+    checkpoint: approve_campaign_launch
+  - step: 7
+    action: monitor_performance
+    agent: marketing.analytics
+    tool: hubspot
+
+checkpoints:
+  - approve_messaging
+  - approve_creatives
+  - approve_campaign_launch
+  - approve_budget

@@ -1,0 +1,83 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://agentos.dev/schemas/capability-graph.schema.json",
+    "title": "AgentOS Tool Capability Graph",
+    "description": "Schema for the capability graph that maps tasks to capabilities to tools — enabling dynamic tool selection at runtime",
+    "type": "object",
+    "required": ["graph_id", "capabilities", "tools"],
+    "properties": {
+        "graph_id": {
+            "type": "string",
+            "description": "Unique identifier for the capability graph"
+        },
+        "capabilities": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["id", "name", "category"],
+                "properties": {
+                    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.]*$" },
+                    "name": { "type": "string" },
+                    "category": {
+                        "type": "string",
+                        "enum": ["content", "visual", "layout", "campaign", "analytics", "research", "storage", "communication", "development"]
+                    },
+                    "description": { "type": "string" }
+                }
+            }
+        },
+        "tools": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["id", "name", "capabilities"],
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "capabilities": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "Capability IDs this tool supports"
+                    },
+                    "auth_type": {
+                        "type": "string",
+                        "enum": ["oauth", "api_key", "mcp", "none"]
+                    },
+                    "priority": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10,
+                        "default": 5,
+                        "description": "Selection priority when multiple tools match (higher = preferred)"
+                    },
+                    "cost_tier": {
+                        "type": "string",
+                        "enum": ["free", "low", "medium", "high"]
+                    },
+                    "latency_tier": {
+                        "type": "string",
+                        "enum": ["instant", "fast", "moderate", "slow"]
+                    }
+                }
+            }
+        },
+        "task_mappings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["task", "required_capabilities"],
+                "properties": {
+                    "task": { "type": "string" },
+                    "required_capabilities": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                    },
+                    "optional_capabilities": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                    }
+                }
+            }
+        }
+    }
+}

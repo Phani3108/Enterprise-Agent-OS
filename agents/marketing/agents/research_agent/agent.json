@@ -1,0 +1,11 @@
+{
+    "agent_id": "marketing.research",
+    "name": "Research Agent",
+    "type": "specialist",
+    "description": "Market research, trend detection, audience insights, competitive landscape",
+    "capabilities": ["market_research", "trend_detection", "audience_insights", "data_collection"],
+    "reads_state": [],
+    "writes_state": ["state.market_insights"],
+    "triggers": ["marketing.strategy", "marketing.competitor", "marketing.seo"],
+    "tools": ["Perplexity", "Semrush", "Google", "Crunchbase"]
+}

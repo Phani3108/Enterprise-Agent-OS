@@ -1,0 +1,92 @@
+# Worker: Leadership Cluster
+# Defines the AI worker processes for strategic leadership tasks
+
+name: leadership
+description: >
+  Leadership cluster handles strategic analysis, OKR tracking, roadmap
+  planning, and executive communications. Workers synthesize data across
+  the organization to support decision-making.
+
+model_default: gpt-4o
+max_concurrent_workers: 5
+policies:
+  - confidential-data-access-control
+  - require-approval-for-external-comms
+  - max-tokens-per-task: 16000
+
+workers:
+  - name: strategy-analyst
+    description: Analyzes competitive landscape and provides strategic insights
+    model: gpt-4o
+    tools:
+      - doc.read
+      - data.analyze
+      - data.summarize
+      - chart.render
+      - web.search
+    context_sources:
+      - type: vector
+        namespace: strategy-docs
+      - type: vector
+        namespace: market-research
+      - type: episode
+        filter: { worker: strategy-analyst, limit: 10 }
+    sandbox:
+      max_tokens: 16000
+      max_tool_calls: 20
+      timeout_ms: 180000
+
+  - name: okr-tracker
+    description: Monitors OKR progress and generates status updates
+    model: gpt-4o-mini
+    tools:
+      - spreadsheet.read
+      - spreadsheet.write
+      - chart.render
+      - jira.query
+      - slack.post
+    context_sources:
+      - type: vector
+        namespace: okr-definitions
+    sandbox:
+      max_tokens: 8000
+      max_tool_calls: 15
+      timeout_ms: 120000
+
+  - name: exec-summarizer
+    description: Generates executive summaries and board-ready reports
+    model: gpt-4o
+    tools:
+      - doc.read
+      - doc.write
+      - email.draft
+      - chart.render
+      - data.summarize
+    policies:
+      - require-approval-for-board-comms
+    context_sources:
+      - type: vector
+        namespace: exec-reports
+    sandbox:
+      max_tokens: 16000
+      max_tool_calls: 15
+      timeout_ms: 180000
+
+  - name: roadmap-planner
+    description: Creates and maintains product and engineering roadmaps
+    model: gpt-4o
+    tools:
+      - jira.query
+      - jira.create
+      - jira.update
+      - timeline.render
+      - doc.write
+    context_sources:
+      - type: vector
+        namespace: roadmap-history
+      - type: vector
+        namespace: okr-definitions
+    sandbox:
+      max_tokens: 12000
+      max_tool_calls: 25
+      timeout_ms: 180000

@@ -1,0 +1,101 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://agentos.dev/schemas/event.schema.json",
+    "title": "AgentOS Event Envelope",
+    "description": "Schema for the standard event envelope used across the AgentOS event bus",
+    "type": "object",
+    "required": [
+        "id",
+        "type",
+        "source",
+        "time",
+        "specVersion",
+        "dataContentType",
+        "data",
+        "traceId",
+        "tenantId",
+        "idempotencyKey"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique event ID (UUIDv7 recommended for time-ordering)"
+        },
+        "type": {
+            "type": "string",
+            "pattern": "^[a-z]+\\.[a-z_]+$",
+            "description": "Event type in dot notation (e.g., 'task.created', 'worker.completed')",
+            "examples": [
+                "task.created",
+                "task.completed",
+                "task.failed",
+                "worker.spawned",
+                "worker.ready",
+                "workflow.started",
+                "workflow.completed",
+                "policy.evaluated",
+                "approval.requested",
+                "approval.granted",
+                "system.health",
+                "system.alert"
+            ]
+        },
+        "source": {
+            "type": "string",
+            "description": "Service or component that produced the event",
+            "examples": [
+                "orchestrator",
+                "scheduler",
+                "worker:code-reviewer",
+                "policy-engine"
+            ]
+        },
+        "subject": {
+            "type": "string",
+            "description": "Optional entity the event is about (e.g., task ID, worker ID)"
+        },
+        "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of when the event occurred"
+        },
+        "specVersion": {
+            "type": "string",
+            "const": "1.0",
+            "description": "Envelope schema version"
+        },
+        "dataContentType": {
+            "type": "string",
+            "const": "application/json",
+            "description": "Content type of the data field"
+        },
+        "data": {
+            "type": "object",
+            "description": "Event-specific payload (typed per event type)"
+        },
+        "traceId": {
+            "type": "string",
+            "description": "Distributed trace ID for correlating events across services"
+        },
+        "tenantId": {
+            "type": "string",
+            "description": "Tenant identifier for multi-tenant isolation"
+        },
+        "executionId": {
+            "type": "string",
+            "description": "Workflow execution ID (if event is part of a workflow)"
+        },
+        "idempotencyKey": {
+            "type": "string",
+            "description": "Key for deduplication — identical keys are processed only once"
+        },
+        "metadata": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            },
+            "description": "Arbitrary string key-value metadata"
+        }
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "name": "@agentos/domain-agents",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Three Domain OS Agents — Marketing Execution, Engineering Intelligence, Learning & Upskilling",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@agentos/sdk": "workspace:*",
+        "@agentos/skills": "workspace:*",
+        "@agentos/cognition": "workspace:*",
+        "@agentos/output-schemas": "workspace:*",
+        "@agentos/memory-pipeline": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0",
+        "vitest": "^1.6.0"
+    }
+}

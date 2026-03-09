@@ -1,0 +1,10 @@
+{
+    "tool_id": "hubspot",
+    "name": "HubSpot",
+    "category": "marketing",
+    "auth_type": "oauth",
+    "capabilities": ["track_performance", "manage_contacts", "send_email", "attribution"],
+    "api_base": "https://api.hubapi.com",
+    "actions": ["track_performance", "manage_contacts", "send_email", "attribution"],
+    "rate_limits": { "requests_per_minute": 100 }
+}
