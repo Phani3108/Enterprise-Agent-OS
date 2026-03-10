@@ -5,11 +5,11 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                surface: { DEFAULT: '#0a0a0f', raised: '#12121a', overlay: '#1a1a25' },
-                accent: { DEFAULT: '#6366f1', hover: '#818cf8', dim: '#4f46e5' },
-                success: '#22c55e',
-                warning: '#f59e0b',
-                danger: '#ef4444',
+                surface: { DEFAULT: '#ffffff', raised: '#f9fafb', overlay: '#f3f4f6', base: '#ffffff' },
+                accent: { DEFAULT: '#111827', hover: '#374151', dim: '#1f2937' },
+                success: '#059669',
+                warning: '#d97706',
+                danger: '#dc2626',
                 neutral: { 50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8', 400: '#a1a1aa', 500: '#71717a', 600: '#52525b', 700: '#3f3f46', 800: '#27272a', 900: '#18181b' },
             },
             fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },

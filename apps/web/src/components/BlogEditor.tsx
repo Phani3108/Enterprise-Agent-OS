@@ -1,0 +1,638 @@
+'use client';
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  status: 'draft' | 'published';
+  destinations: string[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  author: string;
+  excerpt: string;
+  coverImage?: string;
+}
+
+interface PublishResult {
+  destination: string;
+  status: 'success' | 'error';
+  url?: string;
+  error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Rich Text Toolbar
+// ---------------------------------------------------------------------------
+
+function ToolbarButton({
+  onClick,
+  title,
+  active,
+  children,
+}: {
+  onClick: () => void;
+  title: string;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+      title={title}
+      className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${
+        active
+          ? 'bg-gray-900 text-white'
+          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sample posts
+// ---------------------------------------------------------------------------
+
+const SAMPLE_POSTS: BlogPost[] = [
+  {
+    id: 'post-1',
+    title: 'How AgentOS Reduced Our Sprint Planning Time by 60%',
+    content: '<h2>Introduction</h2><p>Our engineering team was spending 3+ hours every sprint on planning ceremonies. With AgentOS, we automated the entire backlog grooming process using the PRD Generator skill...</p><h2>The Problem</h2><p>Manual backlog grooming was error-prone and time-consuming. Story points were inconsistent, dependencies were missed, and context was lost between sprints.</p><h2>The Solution</h2><p>We integrated AgentOS with Jira and ran the Sprint Planning skill every Monday morning. The AI analyzes previous sprint velocity, outstanding issues, and upcoming deadlines to auto-generate prioritized sprint backlogs.</p><h2>Results</h2><p>Sprint planning time dropped from 3 hours to 45 minutes. Story quality improved by 40% as measured by the number of stories needing revision post-sprint.</p>',
+    status: 'published',
+    destinations: ['internal'],
+    tags: ['engineering', 'productivity', 'case-study'],
+    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    publishedAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    author: 'Phani Marupaka',
+    excerpt: 'How we used AgentOS to cut sprint planning time from 3 hours to 45 minutes.',
+  },
+  {
+    id: 'post-2',
+    title: 'Building Intelligent Marketing Campaigns with AI Agents',
+    content: '<h2>Overview</h2><p>The marketing team at our organization runs 15+ campaigns per quarter. Each campaign previously required 2 weeks of research, strategy, and content creation. AgentOS changed everything.</p><p>By connecting HubSpot, Canva, and LinkedIn Ads to a single orchestration layer, we can now launch a full campaign in under 4 hours.</p>',
+    status: 'draft',
+    destinations: [],
+    tags: ['marketing', 'ai', 'automation'],
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
+    author: 'Phani Marupaka',
+    excerpt: 'From 2 weeks to 4 hours — how AI agents are transforming campaign management.',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Post List Sidebar
+// ---------------------------------------------------------------------------
+
+function PostList({
+  posts,
+  activeId,
+  onSelect,
+  onCreate,
+}: {
+  posts: BlogPost[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="w-56 flex-shrink-0 border-r border-gray-100 flex flex-col">
+      <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Posts</span>
+        <button
+          onClick={onCreate}
+          className="text-xs px-2 py-1 rounded bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+        >
+          + New
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        {posts.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onSelect(p.id)}
+            className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
+              activeId === p.id ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
+            }`}
+          >
+            <div className={`text-xs font-medium truncate ${activeId === p.id ? 'text-white' : 'text-gray-800'}`}>
+              {p.title || 'Untitled'}
+            </div>
+            <div className={`flex items-center gap-1.5 mt-1`}>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                p.status === 'published'
+                  ? activeId === p.id ? 'bg-emerald-400/20 text-emerald-300' : 'bg-emerald-50 text-emerald-600'
+                  : activeId === p.id ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {p.status}
+              </span>
+              <span className={`text-[9px] ${activeId === p.id ? 'text-gray-400' : 'text-gray-400'}`}>
+                {new Date(p.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Publish Modal
+// ---------------------------------------------------------------------------
+
+function PublishModal({
+  post,
+  onClose,
+  onPublished,
+}: {
+  post: BlogPost;
+  onClose: () => void;
+  onPublished: (results: PublishResult[]) => void;
+}) {
+  const [selected, setSelected] = useState<string[]>(post.destinations.length ? post.destinations : ['internal']);
+  const [publishing, setPublishing] = useState(false);
+  const [results, setResults] = useState<PublishResult[] | null>(null);
+
+  const DESTINATIONS = [
+    { id: 'internal', label: 'Internal Blog', icon: '🏢', description: 'Publish to company intranet' },
+    { id: 'linkedin', label: 'LinkedIn', icon: '💼', description: 'Post as LinkedIn article' },
+    { id: 'blogin', label: 'Blogin', icon: '✍️', description: 'Publish to Blogin platform' },
+  ];
+
+  const toggle = (id: string) => {
+    setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+  };
+
+  const handlePublish = async () => {
+    if (!selected.length) return;
+    setPublishing(true);
+    // Simulate publish
+    await new Promise((r) => setTimeout(r, 1800));
+    const res: PublishResult[] = selected.map((dest) => ({
+      destination: dest,
+      status: 'success',
+      url: dest === 'internal' ? '/blog/' + post.id
+        : dest === 'linkedin' ? 'https://linkedin.com/pulse/' + post.id
+        : 'https://blogin.co/' + post.id,
+    }));
+    setPublishing(false);
+    setResults(res);
+    onPublished(res);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-xl w-[480px] p-6 mx-4">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-sm font-semibold text-gray-900">Publish Post</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
+        </div>
+
+        {results ? (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500 mb-4">Your post has been published to:</p>
+            {results.map((r) => (
+              <div key={r.destination} className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                <span className="text-emerald-500 text-lg">✓</span>
+                <div>
+                  <div className="text-xs font-medium text-gray-800 capitalize">{r.destination}</div>
+                  {r.url && (
+                    <a href={r.url} target="_blank" rel="noopener noreferrer"
+                       className="text-[11px] text-blue-500 hover:underline font-mono">{r.url}</a>
+                  )}
+                </div>
+              </div>
+            ))}
+            <button onClick={onClose} className="w-full mt-2 py-2 text-xs bg-gray-900 text-white rounded-xl hover:bg-gray-700">
+              Done
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-gray-500 mb-4">Choose where to publish <strong className="text-gray-800">"{post.title || 'Untitled'}"</strong></p>
+
+            <div className="space-y-2 mb-5">
+              {DESTINATIONS.map((dest) => (
+                <label key={dest.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                    selected.includes(dest.id)
+                      ? 'border-gray-900 bg-gray-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(dest.id)}
+                    onChange={() => toggle(dest.id)}
+                    className="w-4 h-4 accent-gray-900"
+                  />
+                  <span className="text-base">{dest.icon}</span>
+                  <div>
+                    <div className="text-xs font-medium text-gray-800">{dest.label}</div>
+                    <div className="text-[11px] text-gray-400">{dest.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={onClose} className="flex-1 py-2 text-xs border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={!selected.length || publishing}
+                className="flex-1 py-2 text-xs bg-gray-900 text-white rounded-xl hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {publishing ? (
+                  <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full" /> Publishing…</>
+                ) : (
+                  `Publish to ${selected.length} destination${selected.length !== 1 ? 's' : ''}`
+                )}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main BlogEditor Component
+// ---------------------------------------------------------------------------
+
+export function BlogEditor() {
+  const [posts, setPosts] = useState<BlogPost[]>(SAMPLE_POSTS);
+  const [activeId, setActiveId] = useState<string | null>(SAMPLE_POSTS[0].id);
+  const [showPublish, setShowPublish] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
+  const editorRef = useRef<HTMLDivElement>(null);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  const activePost = posts.find((p) => p.id === activeId) ?? null;
+
+  // Track active text formats
+  const updateFormats = useCallback(() => {
+    const formats = new Set<string>();
+    if (document.queryCommandState('bold')) formats.add('bold');
+    if (document.queryCommandState('italic')) formats.add('italic');
+    if (document.queryCommandState('underline')) formats.add('underline');
+    setActiveFormats(formats);
+  }, []);
+
+  const execFormat = useCallback((cmd: string, value?: string) => {
+    document.execCommand(cmd, false, value);
+    editorRef.current?.focus();
+    updateFormats();
+  }, [updateFormats]);
+
+  const insertTag = useCallback((tag: string) => {
+    document.execCommand('formatBlock', false, tag);
+    editorRef.current?.focus();
+  }, []);
+
+  // Auto-save on content change
+  const handleInput = useCallback(() => {
+    if (!activePost || !editorRef.current) return;
+    const content = editorRef.current.innerHTML;
+    clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      setPosts((prev) => prev.map((p) =>
+        p.id === activeId ? { ...p, content, updatedAt: new Date().toISOString() } : p
+      ));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }, 600);
+    updateFormats();
+  }, [activeId, activePost, updateFormats]);
+
+  // Sync editor content when switching posts
+  useEffect(() => {
+    if (editorRef.current && activePost) {
+      editorRef.current.innerHTML = activePost.content;
+    }
+  }, [activeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const updateTitle = (title: string) => {
+    setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, title, updatedAt: new Date().toISOString() } : p));
+  };
+
+  const updateExcerpt = (excerpt: string) => {
+    setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, excerpt, updatedAt: new Date().toISOString() } : p));
+  };
+
+  const createPost = () => {
+    const newPost: BlogPost = {
+      id: `post-${Date.now()}`,
+      title: '',
+      content: '<p>Start writing your post...</p>',
+      status: 'draft',
+      destinations: [],
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      author: 'Phani Marupaka',
+      excerpt: '',
+    };
+    setPosts((prev) => [newPost, ...prev]);
+    setActiveId(newPost.id);
+  };
+
+  const handlePublished = (results: PublishResult[]) => {
+    const destinations = results.filter((r) => r.status === 'success').map((r) => r.destination);
+    setPosts((prev) => prev.map((p) =>
+      p.id === activeId
+        ? { ...p, status: 'published', destinations, publishedAt: new Date().toISOString() }
+        : p
+    ));
+  };
+
+  const deletePost = () => {
+    if (!activePost) return;
+    if (!confirm('Delete this post?')) return;
+    const remaining = posts.filter((p) => p.id !== activeId);
+    setPosts(remaining);
+    setActiveId(remaining[0]?.id ?? null);
+  };
+
+  const wordCount = activePost
+    ? (editorRef.current?.innerText ?? activePost.content.replace(/<[^>]*>/g, '')).split(/\s+/).filter(Boolean).length
+    : 0;
+
+  const readTime = Math.max(1, Math.ceil(wordCount / 200));
+
+  if (!activePost) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-3">
+        <p className="text-sm text-gray-400">No post selected</p>
+        <button onClick={createPost} className="text-xs px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-700">
+          Create first post
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-white overflow-hidden" data-testid="blog-editor">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-gray-900">Blog Editor</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full transition-opacity ${
+            activePost.status === 'published'
+              ? 'bg-emerald-50 text-emerald-600'
+              : 'bg-amber-50 text-amber-600'
+          }`}>
+            {activePost.status}
+          </span>
+          {saved && (
+            <span className="text-[10px] text-gray-400 animate-fade-in">Saved</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-400">{wordCount} words · {readTime} min read</span>
+          <button
+            onClick={deletePost}
+            className="text-xs px-2.5 py-1.5 rounded-lg text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => setShowPublish(true)}
+            className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+          >
+            Publish →
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <PostList
+          posts={posts}
+          activeId={activeId}
+          onSelect={setActiveId}
+          onCreate={createPost}
+        />
+
+        {/* Editor Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Toolbar */}
+          <div className="flex items-center gap-0.5 px-4 py-2 border-b border-gray-100 flex-shrink-0 flex-wrap">
+            <div className="flex items-center gap-0.5 mr-2">
+              <ToolbarButton onClick={() => insertTag('h1')} title="Heading 1">H1</ToolbarButton>
+              <ToolbarButton onClick={() => insertTag('h2')} title="Heading 2">H2</ToolbarButton>
+              <ToolbarButton onClick={() => insertTag('h3')} title="Heading 3">H3</ToolbarButton>
+              <ToolbarButton onClick={() => insertTag('p')} title="Paragraph">P</ToolbarButton>
+            </div>
+            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <div className="flex items-center gap-0.5 mr-2">
+              <ToolbarButton onClick={() => execFormat('bold')} title="Bold" active={activeFormats.has('bold')}>
+                <strong>B</strong>
+              </ToolbarButton>
+              <ToolbarButton onClick={() => execFormat('italic')} title="Italic" active={activeFormats.has('italic')}>
+                <em>I</em>
+              </ToolbarButton>
+              <ToolbarButton onClick={() => execFormat('underline')} title="Underline" active={activeFormats.has('underline')}>
+                <span className="underline">U</span>
+              </ToolbarButton>
+              <ToolbarButton onClick={() => execFormat('strikeThrough')} title="Strikethrough">
+                <span className="line-through">S</span>
+              </ToolbarButton>
+            </div>
+            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <div className="flex items-center gap-0.5 mr-2">
+              <ToolbarButton onClick={() => execFormat('insertUnorderedList')} title="Bullet List">•≡</ToolbarButton>
+              <ToolbarButton onClick={() => execFormat('insertOrderedList')} title="Numbered List">1≡</ToolbarButton>
+              <ToolbarButton onClick={() => insertTag('blockquote')} title="Quote">❝</ToolbarButton>
+              <ToolbarButton onClick={() => insertTag('pre')} title="Code Block">{'{}'}</ToolbarButton>
+            </div>
+            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <div className="flex items-center gap-0.5">
+              <ToolbarButton onClick={() => execFormat('justifyLeft')} title="Align Left">⬅</ToolbarButton>
+              <ToolbarButton onClick={() => execFormat('justifyCenter')} title="Center">↔</ToolbarButton>
+              <ToolbarButton onClick={() => execFormat('justifyRight')} title="Align Right">➡</ToolbarButton>
+            </div>
+            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <ToolbarButton onClick={() => {
+              const url = prompt('Enter URL:');
+              if (url) execFormat('createLink', url);
+            }} title="Insert Link">🔗</ToolbarButton>
+            <ToolbarButton onClick={() => execFormat('removeFormat')} title="Clear Formatting">✕</ToolbarButton>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-8 py-6">
+              {/* Title */}
+              <input
+                type="text"
+                value={activePost.title}
+                onChange={(e) => updateTitle(e.target.value)}
+                placeholder="Post title…"
+                className="w-full text-2xl font-bold text-gray-900 placeholder-gray-300 border-none outline-none bg-transparent mb-2 leading-tight"
+                data-testid="blog-title-input"
+              />
+
+              {/* Excerpt */}
+              <input
+                type="text"
+                value={activePost.excerpt}
+                onChange={(e) => updateExcerpt(e.target.value)}
+                placeholder="Write a short excerpt (shown in previews)…"
+                className="w-full text-sm text-gray-400 placeholder-gray-300 border-none outline-none bg-transparent mb-4 leading-relaxed"
+              />
+
+              {/* Meta row */}
+              <div className="flex items-center gap-3 text-[11px] text-gray-400 mb-6 pb-4 border-b border-gray-100">
+                <span>by {activePost.author}</span>
+                <span>·</span>
+                <span>{new Date(activePost.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                {activePost.publishedAt && (
+                  <>
+                    <span>·</span>
+                    <span className="text-emerald-500">Published {new Date(activePost.publishedAt).toLocaleDateString()}</span>
+                  </>
+                )}
+                {activePost.destinations.length > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>{activePost.destinations.join(', ')}</span>
+                  </>
+                )}
+              </div>
+
+              {/* Editor */}
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                onInput={handleInput}
+                onKeyUp={updateFormats}
+                onMouseUp={updateFormats}
+                data-testid="blog-content-editor"
+                className="min-h-[400px] outline-none text-gray-800 leading-relaxed blog-content"
+                style={{ fontSize: '15px' }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right panel — Post Settings */}
+        <div className="w-52 flex-shrink-0 border-l border-gray-100 p-4 space-y-5 overflow-y-auto">
+          <div>
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Tags</div>
+            <input
+              type="text"
+              defaultValue={activePost.tags.join(', ')}
+              onBlur={(e) => {
+                const tags = e.target.value.split(',').map((t) => t.trim()).filter(Boolean);
+                setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, tags } : p));
+              }}
+              placeholder="tag1, tag2…"
+              className="w-full text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-gray-400"
+            />
+          </div>
+
+          <div>
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Author</div>
+            <input
+              type="text"
+              defaultValue={activePost.author}
+              onBlur={(e) => {
+                setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, author: e.target.value } : p));
+              }}
+              className="w-full text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-gray-400"
+            />
+          </div>
+
+          <div>
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Destinations</div>
+            {[
+              { id: 'internal', label: '🏢 Internal' },
+              { id: 'linkedin', label: '💼 LinkedIn' },
+              { id: 'blogin', label: '✍️ Blogin' },
+            ].map((dest) => (
+              <label key={dest.id} className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={activePost.destinations.includes(dest.id)}
+                  onChange={(e) => {
+                    const destinations = e.target.checked
+                      ? [...activePost.destinations, dest.id]
+                      : activePost.destinations.filter((d) => d !== dest.id);
+                    setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, destinations } : p));
+                  }}
+                  className="w-3.5 h-3.5 accent-gray-900"
+                />
+                <span className="text-xs text-gray-600">{dest.label}</span>
+              </label>
+            ))}
+          </div>
+
+          <div>
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Statistics</div>
+            <div className="space-y-1.5">
+              {[
+                { label: 'Words', value: String(wordCount) },
+                { label: 'Read time', value: `${readTime} min` },
+                { label: 'Created', value: new Date(activePost.createdAt).toLocaleDateString() },
+                { label: 'Updated', value: new Date(activePost.updatedAt).toLocaleDateString() },
+              ].map((stat) => (
+                <div key={stat.label} className="flex items-center justify-between">
+                  <span className="text-[10px] text-gray-400">{stat.label}</span>
+                  <span className="text-[10px] text-gray-700 font-mono">{stat.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowPublish(true)}
+            className="w-full py-2 text-xs bg-gray-900 text-white rounded-xl hover:bg-gray-700 transition-colors"
+          >
+            Publish →
+          </button>
+        </div>
+      </div>
+
+      {showPublish && activePost && (
+        <PublishModal
+          post={activePost}
+          onClose={() => setShowPublish(false)}
+          onPublished={(results) => { handlePublished(results); }}
+        />
+      )}
+
+      <style>{`
+        .blog-content h1 { font-size: 1.6em; font-weight: 700; margin: 1em 0 0.5em; color: #111827; }
+        .blog-content h2 { font-size: 1.3em; font-weight: 600; margin: 0.9em 0 0.4em; color: #111827; }
+        .blog-content h3 { font-size: 1.1em; font-weight: 600; margin: 0.8em 0 0.3em; color: #1f2937; }
+        .blog-content p { margin: 0.6em 0; color: #374151; line-height: 1.7; }
+        .blog-content ul, .blog-content ol { margin: 0.6em 0 0.6em 1.5em; color: #374151; }
+        .blog-content li { margin: 0.3em 0; line-height: 1.6; }
+        .blog-content blockquote { border-left: 3px solid #e5e7eb; padding-left: 1em; color: #6b7280; margin: 1em 0; font-style: italic; }
+        .blog-content pre, .blog-content code { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.2em 0.5em; font-family: 'JetBrains Mono', monospace; font-size: 0.875em; color: #111827; }
+        .blog-content pre { padding: 0.8em 1em; display: block; overflow-x: auto; margin: 0.8em 0; }
+        .blog-content a { color: #2563eb; text-decoration: underline; }
+        .blog-content strong { font-weight: 600; color: #111827; }
+        .blog-content em { font-style: italic; }
+      `}</style>
+    </div>
+  );
+}
+
+export default BlogEditor;

@@ -28,7 +28,13 @@ interface EAOSState {
 
     // Command
     commandOpen: boolean;
+    commandQuery: string;
     setCommandOpen: (open: boolean) => void;
+    setCommandQuery: (query: string) => void;
+
+    // Right panel
+    rightPanelOpen: boolean;
+    toggleRightPanel: () => void;
 }
 
 interface Session {
@@ -57,7 +63,7 @@ interface Notification {
 
 export const useEAOSStore = create<EAOSState>((set) => ({
     // Navigation
-    activeSection: 'home',
+    activeSection: 'personas',
     sidebarCollapsed: false,
     setActiveSection: (section) => set({ activeSection: section }),
     toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -110,7 +116,13 @@ export const useEAOSStore = create<EAOSState>((set) => ({
 
     // Command
     commandOpen: false,
-    setCommandOpen: (open) => set({ commandOpen: open }),
+    commandQuery: '',
+    setCommandOpen: (open) => set({ commandOpen: open, commandQuery: '' }),
+    setCommandQuery: (query) => set({ commandQuery: query }),
+
+    // Right panel
+    rightPanelOpen: true,
+    toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
 }));
 
 /** Store hydration anchor — required for cross-tab state reconciliation */

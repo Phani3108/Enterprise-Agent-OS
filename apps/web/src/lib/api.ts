@@ -341,3 +341,501 @@ export interface ToolsRegistryResponse {
     tools: ToolRegistryEntry[];
     total: number;
 }
+
+// ---------------------------------------------------------------------------
+// Skill Marketplace API
+// ---------------------------------------------------------------------------
+
+export interface WorkflowStep {
+    agentId: string;
+    agentName: string;
+    order: number;
+    inputs?: string[];
+    outputs: string[];
+}
+
+export interface MarketplaceSkill {
+    id: string;
+    slug: string;
+    name: string;
+    personaId: string;
+    personaName: string;
+    personaIcon: string;
+    personaColor: string;
+    description: string;
+    requiredTools: { id: string; name: string; icon: string }[];
+    agents: { id: string; name: string }[];
+    workflow: WorkflowStep[];
+    promptTemplates: string[];
+    outputs: string[];
+    permissions: string[];
+    visibility: 'private' | 'team' | 'company' | 'public';
+    version: string;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+    usageCount?: number;
+    successRate?: number;
+    avgRuntimeSec?: number;
+    timeSavedHours?: number;
+    monthlyCost?: number;
+    isEnabled?: boolean;
+}
+
+export interface SkillTemplate {
+    id: string;
+    name: string;
+    personaId: string;
+    description: string;
+    requiredTools: string[];
+    agents: string[];
+    workflowTemplate: Array<{ agentId: string; order: number; outputs: string[] }>;
+    promptTemplates: string[];
+    outputs: string[];
+}
+
+export interface SkillGovernanceRecord {
+    skillId: string;
+    skillName: string;
+    personaName: string;
+    toolsUsed: string[];
+    monthlyCost: number;
+    usageCount: number;
+    isEnabled: boolean;
+}
+
+export async function getMarketplaceSkills(personaId?: string, visibility?: string): Promise<{ skills: MarketplaceSkill[]; total: number }> {
+    const params = new URLSearchParams();
+    if (personaId) params.set('persona', personaId);
+    if (visibility) params.set('visibility', visibility);
+    const qs = params.toString();
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills${qs ? `?${qs}` : ''}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function searchMarketplaceSkills(query: string): Promise<{ skills: MarketplaceSkill[]; total: number }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getMarketplaceSkill(idOrSlug: string): Promise<{ skill: MarketplaceSkill }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${idOrSlug}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function createMarketplaceSkill(draft: Omit<MarketplaceSkill, 'id' | 'createdAt' | 'updatedAt' | 'usageCount' | 'successRate' | 'avgRuntimeSec' | 'timeSavedHours' | 'monthlyCost'>): Promise<{ skill: MarketplaceSkill }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function updateMarketplaceSkill(id: string, updates: Partial<MarketplaceSkill>): Promise<{ skill: MarketplaceSkill }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function runMarketplaceSkill(skillId: string, inputs?: Record<string, unknown>, simulate?: boolean): Promise<{
+    status: string;
+    mode?: string;
+    skillId: string;
+    executionId: string;
+    runtimeSec: number;
+    cost: number;
+    outputs: Array<{ name: string; status: string; mockContent?: string }>;
+    steps?: Array<{ agentName: string; output: string }>;
+}> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${skillId}/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs, simulate }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSkillTemplates(): Promise<{ templates: SkillTemplate[] }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/templates`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSkillTemplate(id: string): Promise<{ template: SkillTemplate }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/templates/${id}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSkillAnalytics(skillId?: string): Promise<{ analytics: Array<{
+    skillId: string;
+    usageCount: number;
+    successCount: number;
+    successRate: number;
+    avgRuntimeSec: number;
+    timeSavedHours: number;
+    monthlyCost: number;
+    lastUsed: string;
+}> }> {
+    const qs = skillId ? `?skillId=${skillId}` : '';
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/analytics${qs}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSkillGovernance(): Promise<{ skills: SkillGovernanceRecord[] }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/governance`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function setSkillEnabled(skillId: string, enabled: boolean): Promise<{ skillId: string; enabled: boolean }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${skillId}/enable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Intent Engine API
+// ---------------------------------------------------------------------------
+
+export async function routeIntent(query: string): Promise<{
+    found: boolean;
+    result?: {
+        query: string;
+        personaId: string;
+        personaName: string;
+        personaIcon: string;
+        personaColor: string;
+        skill: MarketplaceSkill;
+        confidence: number;
+        entities: Record<string, string>;
+        suggestedAlternatives: MarketplaceSkill[];
+    };
+}> {
+    const res = await fetch(`${GATEWAY_URL}/api/intent/route`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getIntentSuggestions(personaId?: string, limit = 8): Promise<{ suggestions: MarketplaceSkill[] }> {
+    const params = new URLSearchParams();
+    if (personaId) params.set('persona', personaId);
+    params.set('limit', String(limit));
+    const res = await fetch(`${GATEWAY_URL}/api/intent/suggestions?${params}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Memory Graph + Community Feedback API
+// ---------------------------------------------------------------------------
+
+export async function getSkillRecommendations(personaId?: string, limit = 6): Promise<{
+    recommendations: Array<{ skillId: string; skill: MarketplaceSkill; score: number; reason: string }>;
+}> {
+    const params = new URLSearchParams();
+    if (personaId) params.set('persona', personaId);
+    params.set('limit', String(limit));
+    const res = await fetch(`${GATEWAY_URL}/api/memory/recommendations?${params}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function voteOnSkill(skillId: string, vote: 'up' | 'down', userName?: string): Promise<{
+    feedback: unknown;
+    votes: { up: number; down: number };
+}> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${skillId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote, userName }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSkillVotes(skillId: string): Promise<{ votes: { up: number; down: number } }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${skillId}/votes`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSkillComments(skillId: string): Promise<{ comments: Array<{ id: string; content: string; userName: string; ts: string }> }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${skillId}/comments`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function addSkillComment(skillId: string, content: string, userName?: string): Promise<{ comment: unknown }> {
+    const res = await fetch(`${GATEWAY_URL}/api/marketplace/skills/${skillId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, userName }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Blog API
+// ---------------------------------------------------------------------------
+
+export interface BlogPostEntry {
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    contentHtml: string;
+    status: 'draft' | 'published' | 'archived';
+    authorId: string;
+    authorName: string;
+    tags: string[];
+    destinations: string[];
+    publishedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+    viewCount: number;
+    likeCount: number;
+    externalUrls?: Record<string, string>;
+}
+
+export async function getBlogPosts(filters?: { status?: string; tag?: string; authorId?: string }): Promise<{ posts: BlogPostEntry[]; total: number; stats: unknown }> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.tag) params.set('tag', filters.tag);
+    if (filters?.authorId) params.set('authorId', filters.authorId);
+    const qs = params.toString();
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts${qs ? `?${qs}` : ''}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function createBlogPost(data: { title: string; content?: string; contentHtml?: string; excerpt?: string; tags?: string[]; authorName?: string }): Promise<{ post: BlogPostEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function updateBlogPost(id: string, updates: Partial<BlogPostEntry>): Promise<{ post: BlogPostEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function deleteBlogPost(id: string): Promise<{ deleted: string }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function publishBlogPost(postId: string, destinations: string[]): Promise<{ post: BlogPostEntry; results: Array<{ destination: string; status: string; url?: string }> }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${postId}/publish`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destinations }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Forum API
+// ---------------------------------------------------------------------------
+
+export interface ForumThreadEntry {
+    id: string;
+    title: string;
+    body: string;
+    category: string;
+    tags: string[];
+    authorId: string;
+    authorName: string;
+    status: string;
+    isPinned: boolean;
+    upvotes: number;
+    downvotes: number;
+    commentCount: number;
+    viewCount: number;
+    createdAt: string;
+    updatedAt: string;
+    lastActivityAt: string;
+    acceptedCommentId?: string;
+}
+
+export interface ForumCommentEntry {
+    id: string;
+    threadId: string;
+    parentId?: string;
+    authorId: string;
+    authorName: string;
+    body: string;
+    upvotes: number;
+    isAccepted: boolean;
+    createdAt: string;
+}
+
+export async function getForumThreads(filters?: { category?: string; tag?: string; q?: string; sort?: string }): Promise<{ threads: ForumThreadEntry[]; total: number; stats: unknown }> {
+    const params = new URLSearchParams();
+    if (filters?.category) params.set('category', filters.category);
+    if (filters?.tag) params.set('tag', filters.tag);
+    if (filters?.q) params.set('q', filters.q);
+    if (filters?.sort) params.set('sort', filters.sort);
+    const qs = params.toString();
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads${qs ? `?${qs}` : ''}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function createForumThread(data: { title: string; body: string; category: string; tags?: string[]; authorName?: string }): Promise<{ thread: ForumThreadEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function voteForumThread(threadId: string, vote: 'up' | 'down' | 'none'): Promise<{ thread: ForumThreadEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}/vote`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getForumComments(threadId: string): Promise<{ comments: ForumCommentEntry[]; total: number }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}/comments`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function addForumComment(threadId: string, body: string, authorName?: string): Promise<{ comment: ForumCommentEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}/comments`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, authorName }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Execution Scheduler API
+// ---------------------------------------------------------------------------
+
+export interface ScheduledJobEntry {
+    id: string;
+    name: string;
+    skillId: string;
+    skillName: string;
+    personaId: string;
+    scheduleType: 'cron' | 'interval' | 'event' | 'one-time';
+    cronExpression?: string;
+    intervalMs?: number;
+    eventTrigger?: string;
+    oneTimeAt?: string;
+    status: 'active' | 'paused' | 'failed' | 'completed' | 'pending';
+    lastRun?: string;
+    nextRun?: string;
+    runCount: number;
+    successCount: number;
+    failureCount: number;
+    createdAt: string;
+    updatedAt: string;
+    timeout?: number;
+    retries?: number;
+    tags: string[];
+}
+
+export async function getScheduledJobs(filters?: { status?: string; persona?: string }): Promise<{ jobs: ScheduledJobEntry[]; total: number; stats: unknown }> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.persona) params.set('persona', filters.persona);
+    const qs = params.toString();
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs${qs ? `?${qs}` : ''}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function createScheduledJob(data: Partial<ScheduledJobEntry> & { name: string; skillId: string; scheduleType: string }): Promise<{ job: ScheduledJobEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function runJobNow(jobId: string): Promise<{ log: unknown; job: ScheduledJobEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}/run`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function toggleJob(jobId: string): Promise<{ job: ScheduledJobEntry }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}/toggle`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function deleteScheduledJob(jobId: string): Promise<{ deleted: string }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSchedulerStats(): Promise<unknown> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/stats`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function dispatchEvent(trigger: string, data?: Record<string, unknown>): Promise<{ triggered: string[]; count: number }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/events`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger, data: data ?? {}, source: 'frontend' }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Platform Metrics
+// ---------------------------------------------------------------------------
+
+export async function getPlatformMetrics(): Promise<unknown> {
+    const res = await fetch(`${GATEWAY_URL}/api/observability/metrics`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}

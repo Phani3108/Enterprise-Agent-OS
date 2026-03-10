@@ -1,0 +1,285 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEAOSStore } from '../store/eaos-store';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type CommandItemType = 'nav' | 'skill' | 'prompt' | 'tool' | 'persona' | 'action';
+
+interface CommandItem {
+  id: string;
+  type: CommandItemType;
+  label: string;
+  subtitle?: string;
+  icon: string;
+  action: () => void;
+  keywords?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Static command registry
+// ---------------------------------------------------------------------------
+
+const NAV_COMMANDS: Omit<CommandItem, 'action'>[] = [
+  { id: 'goto-home',         type: 'nav', label: 'Command Center',    icon: '⌂',  subtitle: 'Go to home dashboard' },
+  { id: 'goto-personas',     type: 'nav', label: 'Personas',           icon: '👥', subtitle: 'Browse team personas' },
+  { id: 'goto-marketplace',  type: 'nav', label: 'Skill Marketplace',  icon: '🛒', subtitle: 'Discover and install skills' },
+  { id: 'goto-builder',      type: 'nav', label: 'Skill Builder',      icon: '🔧', subtitle: 'Create a new skill' },
+  { id: 'goto-agents',       type: 'nav', label: 'Agents',             icon: '🤖', subtitle: 'View all active agents' },
+  { id: 'goto-workflows',    type: 'nav', label: 'Workflows',          icon: '⚡', subtitle: 'Design workflow automations' },
+  { id: 'goto-tools',        type: 'nav', label: 'Tools',              icon: '🔌', subtitle: 'Manage integrations' },
+  { id: 'goto-prompts',      type: 'nav', label: 'Prompt Library',     icon: '✨', subtitle: 'Browse curated prompts' },
+  { id: 'goto-knowledge',    type: 'nav', label: 'Knowledge',          icon: '📚', subtitle: 'Search internal knowledge' },
+  { id: 'goto-control',      type: 'nav', label: 'Control Plane',      icon: '📡', subtitle: 'Platform monitoring' },
+  { id: 'goto-memory',       type: 'nav', label: 'Memory Graph',       icon: '🧠', subtitle: 'Visualize system memory' },
+  { id: 'goto-acp',          type: 'nav', label: 'Agent Collaboration', icon: '🔗', subtitle: 'View agent-to-agent flows' },
+  { id: 'goto-governance',   type: 'nav', label: 'Governance',         icon: '🏛️', subtitle: 'Corp IT & compliance' },
+  { id: 'goto-observability',type: 'nav', label: 'Observability',      icon: '🔍', subtitle: 'Execution logs & traces' },
+  { id: 'goto-forum',        type: 'nav', label: 'Discussions',        icon: '💬', subtitle: 'Community threads' },
+  { id: 'goto-blog',         type: 'nav', label: 'Blog',               icon: '✍️', subtitle: 'Create or edit blog posts' },
+  { id: 'goto-scheduler',    type: 'nav', label: 'Scheduler',          icon: '⏰', subtitle: 'Cron jobs & event triggers' },
+  { id: 'goto-learning',     type: 'nav', label: 'Learning Hub',       icon: '🎓', subtitle: 'AI courses and roadmaps' },
+  { id: 'goto-settings',     type: 'nav', label: 'Settings',           icon: '⚙️', subtitle: 'Preferences and profile' },
+];
+
+const QUICK_ACTIONS: Omit<CommandItem, 'action'>[] = [
+  { id: 'create-skill',    type: 'action', label: 'Create Skill',     icon: '🔧', subtitle: 'Open Skill Builder' },
+  { id: 'create-workflow', type: 'action', label: 'Create Workflow',  icon: '⚡', subtitle: 'Open Workflow Canvas' },
+  { id: 'create-prompt',   type: 'action', label: 'New Prompt',       icon: '✨', subtitle: 'Add to Prompt Library' },
+  { id: 'create-blog',     type: 'action', label: 'New Blog Post',    icon: '✍️', subtitle: 'Open Blog Editor' },
+  { id: 'create-discussion', type: 'action', label: 'New Discussion', icon: '💬', subtitle: 'Start a thread' },
+  { id: 'view-executions', type: 'action', label: 'View Executions',  icon: '🔍', subtitle: 'Open Observability' },
+  { id: 'check-licenses',  type: 'action', label: 'Check Licenses',   icon: '🏛️', subtitle: 'Open Governance' },
+];
+
+const NAV_SECTION_MAP: Record<string, string> = {
+  'goto-home': 'home', 'goto-personas': 'personas', 'goto-marketplace': 'marketplace',
+  'goto-builder': 'builder', 'goto-agents': 'agents', 'goto-workflows': 'workflows',
+  'goto-tools': 'tools', 'goto-prompts': 'prompts', 'goto-knowledge': 'knowledge',
+  'goto-control': 'control', 'goto-memory': 'memory', 'goto-acp': 'acp',
+  'goto-governance': 'governance', 'goto-observability': 'observability',
+  'goto-forum': 'forum', 'goto-blog': 'blog', 'goto-scheduler': 'scheduler',
+  'goto-learning': 'learning', 'goto-settings': 'settings',
+};
+
+const ACTION_SECTION_MAP: Record<string, string> = {
+  'create-skill': 'builder', 'create-workflow': 'workflows', 'create-prompt': 'prompts',
+  'create-blog': 'blog', 'create-discussion': 'forum',
+  'view-executions': 'observability', 'check-licenses': 'governance',
+};
+
+const TYPE_BADGE: Record<CommandItemType, string> = {
+  nav:     'bg-gray-100 text-gray-500',
+  skill:   'bg-blue-50 text-blue-600',
+  prompt:  'bg-purple-50 text-purple-600',
+  tool:    'bg-orange-50 text-orange-600',
+  persona: 'bg-emerald-50 text-emerald-600',
+  action:  'bg-gray-900 text-white',
+};
+
+const TYPE_LABEL: Record<CommandItemType, string> = {
+  nav: 'Page', skill: 'Skill', prompt: 'Prompt', tool: 'Tool', persona: 'Persona', action: 'Action',
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function CommandPalette() {
+  const commandOpen = useEAOSStore(s => s.commandOpen);
+  const setCommandOpen = useEAOSStore(s => s.setCommandOpen);
+  const setActiveSection = useEAOSStore(s => s.setActiveSection);
+
+  const [query, setQuery] = useState('');
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [dynamicItems, setDynamicItems] = useState<CommandItem[]>([]);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Build full item list with actions
+  const buildItems = useCallback((q: string): CommandItem[] => {
+    const navItems: CommandItem[] = NAV_COMMANDS.map(item => ({
+      ...item,
+      action: () => { setActiveSection(NAV_SECTION_MAP[item.id] ?? 'home'); setCommandOpen(false); },
+    }));
+    const actionItems: CommandItem[] = QUICK_ACTIONS.map(item => ({
+      ...item,
+      action: () => { setActiveSection(ACTION_SECTION_MAP[item.id] ?? 'home'); setCommandOpen(false); },
+    }));
+
+    const allItems = [...actionItems, ...navItems, ...dynamicItems];
+
+    if (!q.trim()) return allItems.slice(0, 9);
+
+    const lower = q.toLowerCase();
+    return allItems.filter(item =>
+      item.label.toLowerCase().includes(lower) ||
+      (item.subtitle ?? '').toLowerCase().includes(lower) ||
+      (item.keywords ?? '').toLowerCase().includes(lower)
+    ).slice(0, 10);
+  }, [dynamicItems, setActiveSection, setCommandOpen]);
+
+  const filtered = buildItems(query);
+
+  // Fetch dynamic skills/prompts/tools from API
+  useEffect(() => {
+    if (!commandOpen) return;
+    const fetchData = async () => {
+      try {
+        const [skillsRes, promptsRes] = await Promise.all([
+          fetch('http://localhost:3000/api/marketplace/skills').catch(() => null),
+          fetch('http://localhost:3000/api/prompts').catch(() => null),
+        ]);
+        const items: CommandItem[] = [];
+        if (skillsRes?.ok) {
+          const data = await skillsRes.json() as { skills?: Array<{ id: string; name: string; personaName?: string }> };
+          (data.skills ?? []).slice(0, 12).forEach(s => {
+            items.push({
+              id: `skill-${s.id}`, type: 'skill',
+              label: s.name, subtitle: s.personaName ?? 'Skill',
+              icon: '🔧', keywords: s.name,
+              action: () => { setActiveSection('marketplace'); setCommandOpen(false); },
+            });
+          });
+        }
+        if (promptsRes?.ok) {
+          const data = await promptsRes.json() as { prompts?: Array<{ id: string; title: string; category?: string }> };
+          (data.prompts ?? []).slice(0, 8).forEach(p => {
+            items.push({
+              id: `prompt-${p.id}`, type: 'prompt',
+              label: p.title, subtitle: p.category ?? 'Prompt',
+              icon: '✨', keywords: p.title,
+              action: () => { setActiveSection('prompts'); setCommandOpen(false); },
+            });
+          });
+        }
+        setDynamicItems(items);
+      } catch {
+        // ignore
+      }
+    };
+    fetchData();
+  }, [commandOpen, setActiveSection, setCommandOpen]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (commandOpen) {
+      setQuery('');
+      setSelectedIdx(0);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [commandOpen]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!commandOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIdx(i => Math.min(i + 1, filtered.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIdx(i => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        filtered[selectedIdx]?.action?.();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [commandOpen, filtered, selectedIdx]);
+
+  // Reset selection on query change
+  useEffect(() => { setSelectedIdx(0); }, [query]);
+
+  if (!commandOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-[200] flex items-start justify-center pt-[15vh]"
+      onClick={() => setCommandOpen(false)}
+    >
+      <div
+        className="w-[580px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Search input */}
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100">
+          <span className="text-gray-400 text-base flex-shrink-0">🔍</span>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search skills, run workflows, open personas…"
+            className="flex-1 text-sm text-gray-900 placeholder-gray-400 bg-transparent outline-none"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded hover:bg-gray-100"
+            >
+              Clear
+            </button>
+          )}
+          <kbd className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 flex-shrink-0">
+            Esc
+          </kbd>
+        </div>
+
+        {/* Results */}
+        <div className="max-h-[360px] overflow-y-auto py-1.5">
+          {filtered.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <p className="text-sm text-gray-400">No results for "{query}"</p>
+              <p className="text-xs text-gray-300 mt-1">Try searching for a skill, persona, or page</p>
+            </div>
+          ) : (
+            filtered.map((item, idx) => (
+              <button
+                key={item.id}
+                onClick={item.action}
+                onMouseEnter={() => setSelectedIdx(idx)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                  idx === selectedIdx ? 'bg-gray-50' : 'hover:bg-gray-50'
+                }`}
+              >
+                <span className="text-base w-6 text-center flex-shrink-0">{item.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-900 font-medium truncate">{item.label}</p>
+                  {item.subtitle && (
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{item.subtitle}</p>
+                  )}
+                </div>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${TYPE_BADGE[item.type]}`}>
+                  {TYPE_LABEL[item.type]}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* Footer hints */}
+        <div className="border-t border-gray-100 px-4 py-2 flex items-center gap-4 bg-gray-50/60">
+          <span className="text-[10px] text-gray-400 flex items-center gap-1">
+            <kbd className="font-mono bg-white border border-gray-200 px-1 py-0.5 rounded text-[9px]">↑↓</kbd>
+            navigate
+          </span>
+          <span className="text-[10px] text-gray-400 flex items-center gap-1">
+            <kbd className="font-mono bg-white border border-gray-200 px-1 py-0.5 rounded text-[9px]">↵</kbd>
+            open
+          </span>
+          <span className="text-[10px] text-gray-400 flex items-center gap-1">
+            <kbd className="font-mono bg-white border border-gray-200 px-1 py-0.5 rounded text-[9px]">Esc</kbd>
+            close
+          </span>
+          <span className="text-[10px] text-gray-400 ml-auto">
+            {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
