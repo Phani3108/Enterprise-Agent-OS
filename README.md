@@ -8,40 +8,90 @@ Enterprise Agent OS (EAOS) is a full-stack platform that coordinates AI agents a
 
 ## Screenshots
 
-### Home Dashboard
-The mission control view with persona-based navigation, live stats, quick actions, and recent execution cards with confidence scores and grounding validation.
+### Command Center (Home)
+Mission control dashboard — live agent stats, recent executions, agent activity feed, platform health, and quick-action shortcuts. The OS home screen.
 
-![Home Dashboard](docs/screenshots/01-home-dashboard.png)
+![Command Center](docs/screenshots/01-home-command-center.png)
 
-### Agents Panel
-12 autonomous AI agents with multi-step execution pipelines, real-time status tracking, and configurable worker definitions.
+### Personas
+Browse AI personas (Marketing, Engineering, Support, Legal, Finance, etc.) and their associated skills, tools, and agents. Each persona scopes the platform to its domain.
 
-![Agents Panel](docs/screenshots/07-agents-panel.png)
+![Personas](docs/screenshots/02-personas.png)
 
-### Prompt Library
-Browse, search, and fork curated AI prompts. Filter by source (platform, community, user), category, or tags. Upvote, flag, pin, or fork prompts. Submit and vote on prompt recommendations.
+### Skill Marketplace
+Discover, search, and install skills across personas. Filter by category, status, and visibility. Browse community-contributed and platform skills with ratings and usage stats.
 
-![Prompt Library](docs/screenshots/02-prompt-library.png)
+![Skill Marketplace](docs/screenshots/03-skill-marketplace.png)
 
-### AI Learning Hub
-10 major AI platform links, a 5-day agent development roadmap, and 24 curated courses with engagement tracking (likes, pins, views, shares). Measures organizational AI adoption interest.
+### Skill Builder
+Create and version skills with a structured editor — define input/output schemas, required tools, content steps, and publish to the marketplace.
 
-![AI Courses Hub](docs/screenshots/03-ai-courses-hub.png)
+![Skill Builder](docs/screenshots/04-skill-builder.png)
 
-### Marketing Agent Network
-Self-Optimizing Marketing Agent Network (SOMAN) with 12 collaborative agents, skill registry, tool marketplace, and execution timeline with human-in-the-loop checkpoints.
+### Agents
+View all autonomous AI agents across personas. Monitor status, model, token usage, last action, and success rates. Launch or inspect any agent directly.
 
-![Marketing Agent Network](docs/screenshots/04-marketing-agent-network.png)
+![Agents](docs/screenshots/05-agents.png)
 
-### SOMAN Optimization Loop
-Continuous campaign optimization: Performance Signals → Analytics → Optimization Agent → Strategy Adjust → Creative Regen → New Campaign. Three optimization modes: Manual, Assisted, Autonomous.
+### Workflow Builder
+Design multi-step DAG workflows chaining agents, skills, and tools. Visual canvas with node connections and conditional branching.
 
-![SOMAN Optimize](docs/screenshots/05-marketing-soman-optimize.png)
+![Workflow Builder](docs/screenshots/06-workflows.png)
 
 ### Tools Registry
-Internal tool connectors with auth types, usage statistics, latency metrics, and success rates. Grid and table views with category filtering.
+Manage external tool integrations (HubSpot, Jira, GitHub, Slack, Salesforce, etc.) with auth types, capability mapping, latency, and usage statistics.
 
-![Tools Registry](docs/screenshots/06-tools-registry.png)
+![Tools Registry](docs/screenshots/07-tools-registry.png)
+
+### Prompt Library
+Browse, fork, pin, and upvote curated AI prompts. Filter by persona, category, or tags. Submit prompt recommendations and vote on community suggestions.
+
+![Prompt Library](docs/screenshots/08-prompt-library.png)
+
+### Knowledge Explorer
+Search across internal knowledge sources — Confluence, GitHub, Jira — with source attribution and semantic relevance scoring.
+
+![Knowledge Explorer](docs/screenshots/09-knowledge-explorer.png)
+
+### Control Plane
+Platform-wide monitoring with metric sparklines, agent runtime table, skill router decisions, live execution logs, system alerts, and service health indicators.
+
+![Control Plane](docs/screenshots/10-control-plane.png)
+
+### Memory Graph
+SVG force-directed graph of skill/agent/tool/workflow relationships. Pan, zoom, filter by node type, search, and click any node for connection details and usage stats.
+
+![Memory Graph](docs/screenshots/11-memory-graph.png)
+
+### Agent Collaboration (ACP)
+Agent-to-agent message flow visualization. SVG diagram with animated in-flight messages, edge labels by message type (delegation, handoff, approval), and JSON payload inspector.
+
+![Agent Collaboration](docs/screenshots/12-agent-collaboration.png)
+
+### Governance Dashboard
+Corp IT oversight — tool license tracking, cost attribution by persona, access & permission management, audit log, and compliance checklist with pass/fail/warning status.
+
+![Governance](docs/screenshots/13-governance.png)
+
+### Observability
+Live execution traces — every LLM call, tool invocation, and step. Filter by status, persona, or agent. Token usage, cost, latency, and confidence metrics per execution.
+
+![Observability](docs/screenshots/14-observability.png)
+
+### AI Learning Hub
+Curated AI courses, a 5-day agent development roadmap, and direct links to Anthropic, Google, OpenAI, and other platform providers. Track organizational AI adoption with engagement stats.
+
+![Learning Hub](docs/screenshots/15-learning-hub.png)
+
+### Execution Scheduler
+Schedule cron jobs and event-triggered automations. Define triggers, target skills/workflows, retry policies, and view execution history with status tracking.
+
+![Scheduler](docs/screenshots/16-scheduler.png)
+
+### Settings
+Configure profile, notification preferences, API keys, appearance, and platform defaults. Manage connected tools and session tokens.
+
+![Settings](docs/screenshots/17-settings.png)
 
 ---
 

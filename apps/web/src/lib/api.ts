@@ -839,3 +839,35 @@ export async function getPlatformMetrics(): Promise<unknown> {
     if (!res.ok) throw new Error(`API error ${res.status}`);
     return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// Governance
+// ---------------------------------------------------------------------------
+
+export async function getLicenses(): Promise<unknown> {
+    const res = await fetch(`${GATEWAY_URL}/api/licenses`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getGovernanceAudit(): Promise<unknown> {
+    const res = await fetch(`${GATEWAY_URL}/api/governance/audit`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getGovernanceCosts(): Promise<unknown> {
+    const res = await fetch(`${GATEWAY_URL}/api/governance/costs`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// ACP
+// ---------------------------------------------------------------------------
+
+export async function getACPExecutions(): Promise<unknown> {
+    const res = await fetch(`${GATEWAY_URL}/api/acp/executions`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
