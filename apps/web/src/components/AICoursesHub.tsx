@@ -1,3 +1,8 @@
+/**
+ * AICoursesHub — AI Learning Hub with curated courses, roadmaps, and resources
+ * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
+ * @copyright © 2026 Phani Marupaka. All rights reserved.
+ */
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -41,16 +46,16 @@ interface Course {
 // ---------------------------------------------------------------------------
 
 const PROVIDERS: CourseProvider[] = [
-    { name: 'Anthropic', url: 'https://anthropic.skilljar.com', color: '#d4a574', bgGradient: 'from-[#d4a574]/15 to-[#c4956a]/10', letter: 'A', tagline: 'Claude & Constitutional AI' },
-    { name: 'Google', url: 'https://grow.google/ai', color: '#4285f4', bgGradient: 'from-[#4285f4]/15 to-[#34a853]/10', letter: 'G', tagline: 'Gemini & Cloud AI' },
-    { name: 'Meta', url: 'https://ai.meta.com/resources', color: '#0668E1', bgGradient: 'from-[#0668E1]/15 to-[#0059D6]/10', letter: 'M', tagline: 'Llama & Open Source' },
-    { name: 'NVIDIA', url: 'https://developer.nvidia.com/training', color: '#76B900', bgGradient: 'from-[#76B900]/15 to-[#5a9600]/10', letter: 'N', tagline: 'GPU Computing & CUDA' },
-    { name: 'Microsoft', url: 'https://learn.microsoft.com/training', color: '#00a4ef', bgGradient: 'from-[#00a4ef]/15 to-[#7fba00]/10', letter: 'MS', tagline: 'Azure AI & Copilot' },
-    { name: 'OpenAI', url: 'https://academy.openai.com', color: '#10a37f', bgGradient: 'from-[#10a37f]/15 to-[#0d8c6c]/10', letter: 'O', tagline: 'GPT & Assistants API' },
-    { name: 'IBM', url: 'https://skillsbuild.org', color: '#0530AD', bgGradient: 'from-[#0530AD]/15 to-[#BE95FF]/10', letter: 'IBM', tagline: 'Watson & Enterprise AI' },
-    { name: 'AWS', url: 'https://skillbuilder.aws', color: '#FF9900', bgGradient: 'from-[#FF9900]/15 to-[#232F3E]/10', letter: 'AWS', tagline: 'Bedrock & SageMaker' },
-    { name: 'DeepLearning.AI', url: 'https://deeplearning.ai', color: '#FF6F61', bgGradient: 'from-[#FF6F61]/15 to-[#e25749]/10', letter: 'DL', tagline: 'Andrew Ng Courses' },
-    { name: 'Hugging Face', url: 'https://huggingface.co/learn', color: '#FFD21E', bgGradient: 'from-[#FFD21E]/15 to-[#ff9d00]/10', letter: 'HF', tagline: 'Transformers & Diffusers' },
+    { name: 'Anthropic', url: 'https://anthropic.skilljar.com', color: '#d4a574', bgGradient: 'from-orange-50 to-amber-50', letter: 'A', tagline: 'Claude & Constitutional AI' },
+    { name: 'Google', url: 'https://grow.google/ai', color: '#4285f4', bgGradient: 'from-blue-50 to-green-50', letter: 'G', tagline: 'Gemini & Cloud AI' },
+    { name: 'Meta', url: 'https://ai.meta.com/resources', color: '#0668E1', bgGradient: 'from-blue-50 to-indigo-50', letter: 'M', tagline: 'Llama & Open Source' },
+    { name: 'NVIDIA', url: 'https://developer.nvidia.com/training', color: '#76B900', bgGradient: 'from-lime-50 to-green-50', letter: 'N', tagline: 'GPU Computing & CUDA' },
+    { name: 'Microsoft', url: 'https://learn.microsoft.com/training', color: '#00a4ef', bgGradient: 'from-sky-50 to-cyan-50', letter: 'MS', tagline: 'Azure AI & Copilot' },
+    { name: 'OpenAI', url: 'https://academy.openai.com', color: '#10a37f', bgGradient: 'from-emerald-50 to-teal-50', letter: 'O', tagline: 'GPT & Assistants API' },
+    { name: 'IBM', url: 'https://skillsbuild.org', color: '#0530AD', bgGradient: 'from-blue-50 to-violet-50', letter: 'IBM', tagline: 'Watson & Enterprise AI' },
+    { name: 'AWS', url: 'https://skillbuilder.aws', color: '#FF9900', bgGradient: 'from-orange-50 to-gray-50', letter: 'AWS', tagline: 'Bedrock & SageMaker' },
+    { name: 'DeepLearning.AI', url: 'https://deeplearning.ai', color: '#FF6F61', bgGradient: 'from-red-50 to-pink-50', letter: 'DL', tagline: 'Andrew Ng Courses' },
+    { name: 'Hugging Face', url: 'https://huggingface.co/learn', color: '#FFD21E', bgGradient: 'from-yellow-50 to-amber-50', letter: 'HF', tagline: 'Transformers & Diffusers' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -97,18 +102,18 @@ const COURSES: Course[] = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-    'Multi-Agent': 'bg-purple-500/15 text-purple-400 border-purple-500/25',
-    'Cloud': 'bg-orange-500/15 text-orange-400 border-orange-500/25',
-    'Frameworks': 'bg-blue-500/15 text-blue-400 border-blue-500/25',
-    'Design Patterns': 'bg-indigo-500/15 text-indigo-400 border-indigo-500/25',
-    'Workflows': 'bg-teal-500/15 text-teal-400 border-teal-500/25',
-    'Memory': 'bg-pink-500/15 text-pink-400 border-pink-500/25',
-    'Coding': 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-    'Quality': 'bg-amber-500/15 text-amber-400 border-amber-500/25',
-    'Production': 'bg-red-500/15 text-red-400 border-red-500/25',
-    'MCP': 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25',
-    'Fundamentals': 'bg-slate-500/15 text-slate-400 border-slate-500/25',
-    'RAG': 'bg-violet-500/15 text-violet-400 border-violet-500/25',
+    'Multi-Agent':    'bg-purple-100 text-purple-700 border-purple-200',
+    'Cloud':          'bg-orange-100 text-orange-700 border-orange-200',
+    'Frameworks':     'bg-blue-100 text-blue-700 border-blue-200',
+    'Design Patterns':'bg-indigo-100 text-indigo-700 border-indigo-200',
+    'Workflows':      'bg-teal-100 text-teal-700 border-teal-200',
+    'Memory':         'bg-pink-100 text-pink-700 border-pink-200',
+    'Coding':         'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'Quality':        'bg-amber-100 text-amber-700 border-amber-200',
+    'Production':     'bg-red-100 text-red-700 border-red-200',
+    'MCP':            'bg-cyan-100 text-cyan-700 border-cyan-200',
+    'Fundamentals':   'bg-slate-100 text-slate-700 border-slate-200',
+    'RAG':            'bg-violet-100 text-violet-700 border-violet-200',
 };
 
 // ---------------------------------------------------------------------------
@@ -164,13 +169,13 @@ export function AICoursesHub() {
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-lg font-semibold text-white">AI Learning Hub</h2>
-                        <p className="text-sm text-neutral-400 mt-1">Curated courses, roadmaps, and resources for AI agent development.</p>
+                        <h2 className="text-xl font-bold text-gray-900">AI Learning Hub</h2>
+                        <p className="text-sm text-gray-600 font-medium mt-1">Curated courses, roadmaps, and resources for AI agent development.</p>
                     </div>
                     <div className="flex gap-2">
                         {(['providers', 'roadmap', 'courses'] as const).map(tab => (
                             <button key={tab} onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === tab ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}>
+                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === tab ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'}`}>
                                 {tab === 'providers' ? 'Platforms' : tab === 'roadmap' ? '5-Day Roadmap' : 'Courses (24)'}
                             </button>
                         ))}
@@ -180,15 +185,15 @@ export function AICoursesHub() {
                 {/* Global stats bar */}
                 <div className="grid grid-cols-5 gap-3">
                     {[
-                        { label: 'Total Courses', value: courses.length, color: 'text-white' },
-                        { label: 'Total Views', value: totalViews.toLocaleString(), color: 'text-accent' },
-                        { label: 'Total Likes', value: totalLikes.toLocaleString(), color: 'text-emerald-400' },
-                        { label: 'Total Pins', value: totalPins.toLocaleString(), color: 'text-amber-400' },
-                        { label: 'Engagement Rate', value: `${avgEngagement}%`, color: 'text-purple-400' },
+                        { label: 'Total Courses', value: courses.length, color: 'text-gray-900' },
+                        { label: 'Total Views', value: totalViews.toLocaleString(), color: 'text-blue-700' },
+                        { label: 'Total Likes', value: totalLikes.toLocaleString(), color: 'text-emerald-700' },
+                        { label: 'Total Pins', value: totalPins.toLocaleString(), color: 'text-amber-700' },
+                        { label: 'Engagement Rate', value: `${avgEngagement}%`, color: 'text-violet-700' },
                     ].map(stat => (
-                        <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-                            <div className="text-[10px] text-neutral-500 uppercase tracking-wider">{stat.label}</div>
-                            <div className={`text-lg font-semibold mt-0.5 ${stat.color}`}>{stat.value}</div>
+                        <div key={stat.label} className="rounded-xl border border-gray-200 bg-white shadow-sm p-3">
+                            <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{stat.label}</div>
+                            <div className={`text-lg font-bold mt-0.5 ${stat.color}`}>{stat.value}</div>
                         </div>
                     ))}
                 </div>
@@ -199,23 +204,23 @@ export function AICoursesHub() {
             {/* ================================================================ */}
             {activeTab === 'providers' && (
                 <div className="space-y-4">
-                    <p className="text-sm text-neutral-400">Top AI learning platforms — free and paid courses from the companies building AI.</p>
+                    <p className="text-sm text-gray-600 font-medium">Top AI learning platforms — free and paid courses from the companies building AI.</p>
                     <div className="grid grid-cols-5 gap-4">
                         {PROVIDERS.map(p => (
                             <a key={p.name} href={p.url} target="_blank" rel="noreferrer"
-                                className={`group relative rounded-xl border border-white/[0.06] bg-gradient-to-br ${p.bgGradient} p-5 hover:border-white/[0.15] hover:scale-[1.03] transition-all duration-200 cursor-pointer`}>
+                                className={`group relative rounded-xl border border-gray-200 bg-gradient-to-br ${p.bgGradient} p-5 hover:border-gray-300 hover:shadow-md hover:scale-[1.03] transition-all duration-200 cursor-pointer`}>
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold"
-                                        style={{ backgroundColor: `${p.color}25`, color: p.color }}>
+                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm"
+                                        style={{ backgroundColor: `${p.color}20`, color: p.color, border: `1px solid ${p.color}30` }}>
                                         {p.letter}
                                     </div>
                                     <div>
-                                        <div className="text-sm font-semibold text-white">{p.name}</div>
-                                        {p.name === 'NVIDIA' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#76B900]/20 text-[#76B900] font-semibold">GOATED</span>}
+                                        <div className="text-sm font-bold text-gray-900">{p.name}</div>
+                                        {p.name === 'NVIDIA' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-lime-100 text-lime-700 font-bold border border-lime-200">GOATED</span>}
                                     </div>
                                 </div>
-                                <p className="text-[11px] text-neutral-400">{p.tagline}</p>
-                                <div className="mt-3 text-[10px] text-neutral-500 group-hover:text-accent transition-colors truncate">
+                                <p className="text-[11px] text-gray-600 font-medium">{p.tagline}</p>
+                                <div className="mt-3 text-[10px] text-gray-500 group-hover:text-blue-700 transition-colors font-medium truncate">
                                     {p.url.replace('https://', '')} &#x2197;
                                 </div>
                             </a>
@@ -230,18 +235,18 @@ export function AICoursesHub() {
             {activeTab === 'roadmap' && (
                 <div className="space-y-4">
                     <div className="text-center mb-6">
-                        <h3 className="text-base font-semibold text-white mb-1">5-Day AI Agent Mastery Roadmap</h3>
-                        <p className="text-sm text-neutral-400">260 pages of concentrated knowledge — from zero to production agents.</p>
+                        <h3 className="text-base font-bold text-gray-900 mb-1">5-Day AI Agent Mastery Roadmap</h3>
+                        <p className="text-sm text-gray-600 font-medium">260 pages of concentrated knowledge — from zero to production agents.</p>
                     </div>
 
                     {/* Road visualization */}
                     <div className="relative">
                         {/* The road */}
-                        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-accent/40 via-accent/60 to-emerald-400/40 transform -translate-x-1/2 rounded-full" />
+                        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-400 via-blue-500 to-emerald-500 transform -translate-x-1/2 rounded-full" />
 
-                        {/* Journey start — car */}
+                        {/* Journey start */}
                         <div className="text-center pb-6 relative z-10">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/30 text-accent text-sm">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 border border-blue-200 text-blue-700 text-sm font-semibold">
                                 <span className="text-lg">&#x1F697;</span> Start Your Journey
                             </div>
                         </div>
@@ -254,7 +259,7 @@ export function AICoursesHub() {
                                     <div key={day.day} className="relative flex items-center" style={{ minHeight: '180px' }}>
                                         {/* Milestone dot */}
                                         <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
-                                            <div className="w-10 h-10 rounded-full bg-surface-raised border-2 border-accent flex items-center justify-center text-sm font-bold text-accent shadow-lg shadow-accent/20">
+                                            <div className="w-10 h-10 rounded-full bg-white border-2 border-blue-500 flex items-center justify-center text-sm font-bold text-blue-700 shadow-md">
                                                 {day.day}
                                             </div>
                                         </div>
@@ -262,17 +267,17 @@ export function AICoursesHub() {
                                         {/* Content card */}
                                         <div className={`w-[calc(50%-40px)] ${isLeft ? 'mr-auto pr-6' : 'ml-auto pl-6'}`}>
                                             <a href={day.url} target="_blank" rel="noreferrer"
-                                                className="block rounded-xl border border-white/[0.08] bg-white/[0.03] p-5 hover:border-accent/30 hover:bg-accent/[0.03] transition-all duration-200 group">
+                                                className="block rounded-xl border border-gray-200 bg-white shadow-sm p-5 hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-accent/15 text-accent font-semibold">DAY {day.day}</span>
-                                                    <span className="text-[10px] text-neutral-500">{day.pages} pages</span>
+                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold border border-blue-200">DAY {day.day}</span>
+                                                    <span className="text-[10px] text-gray-500 font-medium">{day.pages} pages</span>
                                                 </div>
-                                                <h4 className="text-sm font-semibold text-white mb-2 group-hover:text-accent transition-colors">
+                                                <h4 className="text-sm font-bold text-gray-900 mb-2 group-hover:text-blue-700 transition-colors">
                                                     {day.title}
                                                 </h4>
-                                                <p className="text-xs text-amber-400/80 italic mb-2">"{day.hook}"</p>
-                                                <p className="text-[11px] text-neutral-400 leading-relaxed">{day.description}</p>
-                                                <div className="mt-3 text-[10px] text-accent/60 group-hover:text-accent transition-colors">
+                                                <p className="text-xs text-amber-700 italic font-medium mb-2">"{day.hook}"</p>
+                                                <p className="text-[11px] text-gray-600 leading-relaxed font-medium">{day.description}</p>
+                                                <div className="mt-3 text-[10px] text-blue-600 font-semibold group-hover:text-blue-800 transition-colors">
                                                     Open resource &#x2197;
                                                 </div>
                                             </a>
@@ -282,9 +287,9 @@ export function AICoursesHub() {
                             })}
                         </div>
 
-                        {/* Journey end — flag */}
+                        {/* Journey end */}
                         <div className="text-center pt-6 relative z-10">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-sm font-semibold">
                                 <span className="text-lg">&#x1F3C1;</span> Production-Ready Agent Engineer
                             </div>
                         </div>
@@ -300,23 +305,23 @@ export function AICoursesHub() {
                     {/* Filters & Sort */}
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-neutral-500">Category:</span>
+                            <span className="text-xs text-gray-500 font-semibold">Category:</span>
                             <button onClick={() => setSelectedCategory(null)}
-                                className={`px-3 py-1 rounded-full text-xs transition-colors ${!selectedCategory ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}>
+                                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${!selectedCategory ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900'}`}>
                                 All ({courses.length})
                             </button>
                             {categories.map(cat => (
                                 <button key={cat} onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                                    className={`px-3 py-1 rounded-full text-xs transition-colors border ${selectedCategory === cat ? 'border-accent/40 text-accent bg-accent/10' : `${CATEGORY_COLORS[cat] || 'bg-white/[0.04] text-neutral-400'}`}`}>
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${selectedCategory === cat ? 'ring-2 ring-offset-1 ring-blue-400' : ''} ${CATEGORY_COLORS[cat] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                     {cat} ({courses.filter(c => c.category === cat).length})
                                 </button>
                             ))}
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-neutral-500">Sort:</span>
+                            <span className="text-xs text-gray-500 font-semibold">Sort:</span>
                             {(['likes', 'views', 'pins'] as const).map(s => (
                                 <button key={s} onClick={() => setSortBy(s)}
-                                    className={`px-3 py-1 rounded-full text-xs transition-colors ${sortBy === s ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}>
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${sortBy === s ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900'}`}>
                                     {s === 'likes' ? 'Most Liked' : s === 'views' ? 'Most Viewed' : 'Most Pinned'}
                                 </button>
                             ))}
@@ -325,82 +330,74 @@ export function AICoursesHub() {
 
                     {/* Course grid */}
                     <div className="grid grid-cols-2 gap-3">
-                        {filteredCourses.map((course, idx) => (
+                        {filteredCourses.map((course) => (
                             <div key={course.id}
-                                className={`rounded-xl border transition-all duration-200 hover:border-white/[0.15] ${course.isPinned ? 'border-amber-500/30 bg-amber-500/[0.03]' : 'border-white/[0.06] bg-white/[0.02]'}`}>
+                                className={`rounded-xl border transition-all duration-200 hover:shadow-md ${course.isPinned ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
                                 <div className="p-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                             {/* Badges row */}
                                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                <span className="text-xs font-mono text-neutral-500 w-5">#{course.id}</span>
-                                                {course.isPinned && <span className="text-amber-400 text-xs">&#x1F4CC;</span>}
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${CATEGORY_COLORS[course.category] || 'bg-white/[0.04] text-neutral-400'}`}>
+                                                <span className="text-xs font-mono text-gray-400 w-5">#{course.id}</span>
+                                                {course.isPinned && <span className="text-amber-600 text-xs">&#x1F4CC;</span>}
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${CATEGORY_COLORS[course.category] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                                     {course.category}
                                                 </span>
                                             </div>
 
                                             {/* Title */}
                                             <a href={course.url} target="_blank" rel="noreferrer"
-                                                className="text-sm font-medium text-white hover:text-accent transition-colors block mb-2">
+                                                className="text-sm font-bold text-gray-900 hover:text-blue-700 transition-colors block mb-2">
                                                 {course.title}
                                             </a>
 
                                             {/* Stats row */}
-                                            <div className="flex items-center gap-4 text-[11px] text-neutral-500">
+                                            <div className="flex items-center gap-4 text-[11px] text-gray-500 font-medium">
                                                 <span>{course.views.toLocaleString()} views</span>
                                                 <span>{course.likes} likes</span>
                                                 <span>{course.pins} pins</span>
                                             </div>
                                         </div>
 
-                                        {/* Engagement bar */}
+                                        {/* Vote buttons */}
                                         <div className="flex items-center gap-1">
-                                            {/* Like */}
                                             <button onClick={() => handleLike(course.id)}
-                                                className="flex flex-col items-center p-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors group"
+                                                className="flex flex-col items-center p-1.5 rounded-lg hover:bg-emerald-100 transition-colors group"
                                                 title="Like">
-                                                <span className="text-neutral-500 group-hover:text-emerald-400 text-sm">&#x25B2;</span>
-                                                <span className="text-[10px] text-neutral-500 group-hover:text-emerald-400 font-mono">{course.likes}</span>
+                                                <span className="text-gray-400 group-hover:text-emerald-600 text-sm">&#x25B2;</span>
+                                                <span className="text-[10px] text-gray-400 group-hover:text-emerald-600 font-mono">{course.likes}</span>
                                             </button>
-
-                                            {/* Dislike */}
                                             <button onClick={() => handleDislike(course.id)}
-                                                className="flex flex-col items-center p-1.5 rounded-lg hover:bg-red-500/10 transition-colors group"
+                                                className="flex flex-col items-center p-1.5 rounded-lg hover:bg-red-100 transition-colors group"
                                                 title="Dislike">
-                                                <span className="text-neutral-500 group-hover:text-red-400 text-sm">&#x25BC;</span>
-                                                <span className="text-[10px] text-neutral-500 group-hover:text-red-400 font-mono">{course.dislikes}</span>
+                                                <span className="text-gray-400 group-hover:text-red-600 text-sm">&#x25BC;</span>
+                                                <span className="text-[10px] text-gray-400 group-hover:text-red-600 font-mono">{course.dislikes}</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Action bar */}
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.04]">
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                                         <div className="flex items-center gap-1.5">
-                                            {/* Pin */}
                                             <button onClick={() => handlePin(course.id)}
-                                                className={`px-2 py-1 rounded-lg text-xs transition-colors ${course.isPinned ? 'bg-amber-500/20 text-amber-400' : 'bg-white/[0.04] text-neutral-500 hover:text-amber-400'}`}
+                                                className={`px-2 py-1 rounded-lg text-xs font-semibold transition-colors border ${course.isPinned ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-gray-500 border-gray-200 hover:text-amber-700 hover:bg-amber-50'}`}
                                                 title="Pin">
                                                 &#x1F4CC; {course.pins}
                                             </button>
-
-                                            {/* Share */}
                                             <button onClick={() => handleShare(course.title, course.url)}
-                                                className="px-2 py-1 rounded-lg bg-white/[0.04] text-neutral-500 text-xs hover:text-white transition-colors"
+                                                className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold hover:text-gray-900 hover:bg-gray-200 transition-colors border border-gray-200"
                                                 title="Share">
                                                 &#x1F4E4; Share
                                             </button>
-
-                                            {/* Copy link */}
                                             <button onClick={() => handleCopyLink(course.url, course.id)}
-                                                className="px-2 py-1 rounded-lg bg-white/[0.04] text-neutral-500 text-xs hover:text-white transition-colors"
+                                                className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold hover:text-gray-900 hover:bg-gray-200 transition-colors border border-gray-200"
                                                 title="Copy link">
                                                 {copiedId === course.id ? '&#x2705; Copied!' : '&#x1F517; Copy Link'}
                                             </button>
                                         </div>
 
                                         <a href={course.url} target="_blank" rel="noreferrer"
-                                            className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-colors">
+                                            className="px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
                                             Start Learning &#x2197;
                                         </a>
                                     </div>
@@ -410,9 +407,9 @@ export function AICoursesHub() {
                     </div>
 
                     {filteredCourses.length === 0 && (
-                        <div className="text-center py-12 text-neutral-500">
-                            <p className="text-sm">No courses in this category.</p>
-                            <button onClick={() => setSelectedCategory(null)} className="mt-2 text-xs text-accent">Show all</button>
+                        <div className="text-center py-12 text-gray-500">
+                            <p className="text-sm font-medium">No courses in this category.</p>
+                            <button onClick={() => setSelectedCategory(null)} className="mt-2 text-xs text-blue-600 font-semibold hover:text-blue-800">Show all</button>
                         </div>
                     )}
                 </div>
