@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push origin main)",
+      "Bash(node -e \"require\\(''puppeteer''\\)\")",
+      "Bash(node -e \"require\\(''playwright''\\)\")",
+      "Bash(npx puppeteer --version)",
+      "Bash(npx playwright --version)",
+      "Bash(python3 -c \"from playwright.sync_api import sync_playwright; print\\(''playwright python ok''\\)\")",
+      "Bash(python3 -c \"from playwright.sync_api import sync_playwright; p = sync_playwright\\(\\).start\\(\\); b = p.chromium.launch\\(\\); print\\(''chromium ok''\\); b.close\\(\\); p.stop\\(\\)\")",
+      "Bash(python3 scripts/take-screenshots.py)"
+    ]
+  }
+}

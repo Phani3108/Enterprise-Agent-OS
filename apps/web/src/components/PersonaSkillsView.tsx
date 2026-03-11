@@ -131,10 +131,10 @@ export default function PersonaSkillsView() {
     <div className="flex h-full" data-tour="persona-skills-view">
       {/* Left — Persona Selector */}
       <div className="w-56 border-r border-gray-200 bg-gray-50/50 overflow-y-auto flex-shrink-0" data-tour="persona-selector">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Personas</h2>
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-widest">Personas</h2>
           {stats && (
-            <p className="text-[10px] text-gray-400 mt-1">{stats.totalPersonas} personas · {stats.totalSkills} skills</p>
+            <p className="text-[11px] text-gray-600 font-medium mt-1">{stats.totalPersonas} personas · {stats.totalSkills} skills</p>
           )}
         </div>
         <div className="py-1">
@@ -144,15 +144,15 @@ export default function PersonaSkillsView() {
               onClick={() => setSelectedPersona(p.id)}
               className={`flex items-center gap-2.5 w-full px-4 py-2.5 text-left transition-all text-sm ${
                 selectedPersona === p.id
-                  ? 'bg-white text-gray-900 font-medium shadow-sm border-r-2'
-                  : 'text-gray-600 hover:bg-white/60 hover:text-gray-900'
+                  ? 'bg-white text-gray-900 font-semibold shadow-sm border-r-2'
+                  : 'text-gray-700 hover:bg-white/80 hover:text-gray-900'
               }`}
               style={selectedPersona === p.id ? { borderRightColor: p.color } : {}}
             >
               <span className="text-lg">{p.icon}</span>
               <div className="min-w-0">
-                <div className="truncate">{p.name}</div>
-                <div className="text-[10px] text-gray-400">{p.skillCount} skills</div>
+                <div className="truncate font-medium">{p.name}</div>
+                <div className="text-[11px] text-gray-600 font-medium mt-0.5">{p.skillCount} skills</div>
               </div>
             </button>
           ))}
@@ -170,8 +170,8 @@ export default function PersonaSkillsView() {
                   {persona.icon}
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-gray-900">{persona.name}</h1>
-                  <p className="text-sm text-gray-500">{persona.description}</p>
+                  <h1 className="text-lg font-bold text-gray-900">{persona.name}</h1>
+                  <p className="text-sm text-gray-700 font-medium">{persona.description}</p>
                 </div>
               </div>
 
@@ -181,15 +181,15 @@ export default function PersonaSkillsView() {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                       activeTab === tab.key
-                        ? 'bg-gray-900 text-white font-medium'
-                        : 'text-gray-500 hover:bg-gray-100'
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                     }`}
                   >
                     {tab.label}
                     {tab.count !== undefined && (
-                      <span className={`ml-1.5 text-xs ${activeTab === tab.key ? 'text-gray-300' : 'text-gray-400'}`}>{tab.count}</span>
+                      <span className={`ml-1.5 text-xs font-bold ${activeTab === tab.key ? 'text-gray-300' : 'text-gray-500'}`}>{tab.count}</span>
                     )}
                   </button>
                 ))}
@@ -220,10 +220,10 @@ export default function PersonaSkillsView() {
                         className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-gray-900">{cat.name}</span>
-                          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{cat.skills.length}</span>
+                          <span className="text-sm font-bold text-gray-900">{cat.name}</span>
+                          <span className="text-xs text-gray-700 font-bold bg-gray-200 px-2 py-0.5 rounded-full">{cat.skills.length}</span>
                         </div>
-                        <span className="text-gray-400 text-xs">{expandedCategory === cat.name ? '▾' : '▸'}</span>
+                        <span className="text-gray-600 text-xs font-bold">{expandedCategory === cat.name ? '▾' : '▸'}</span>
                       </button>
                       {expandedCategory === cat.name && (
                         <div className="border-t border-gray-100">
@@ -234,13 +234,13 @@ export default function PersonaSkillsView() {
                             >
                               <div className="flex-1 min-w-0 mr-4">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-gray-900">{skill.name}</span>
+                                  <span className="text-sm font-bold text-gray-900">{skill.name}</span>
                                   <span className={`text-[10px] px-1.5 py-0.5 rounded border ${COMPLEXITY_BADGE[skill.complexity].className}`}>
                                     {COMPLEXITY_BADGE[skill.complexity].label}
                                   </span>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-0.5">{skill.description}</p>
-                                <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400">
+                                <p className="text-xs text-gray-700 mt-0.5 font-medium">{skill.description}</p>
+                                <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-600 font-medium">
                                   <span>⏱ {skill.estimatedTime}</span>
                                   <span>→ {skill.outputs.join(', ')}</span>
                                 </div>
@@ -261,10 +261,10 @@ export default function PersonaSkillsView() {
                   {/* Prompt examples */}
                   {persona.promptExamples.length > 0 && (
                     <div className="mt-6">
-                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Example prompts</h3>
+                      <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest mb-3">Example prompts</h3>
                       <div className="flex flex-wrap gap-2">
                         {persona.promptExamples.map((p, i) => (
-                          <span key={i} className="px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors">
+                          <span key={i} className="px-3 py-1.5 rounded-full border border-gray-300 text-xs text-gray-700 font-medium bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm">
                             &ldquo;{p}&rdquo;
                           </span>
                         ))}
@@ -294,10 +294,10 @@ export default function PersonaSkillsView() {
                           </span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mb-3">{agent.description}</p>
+                      <p className="text-xs text-gray-700 font-medium mb-3">{agent.description}</p>
                       <div className="flex flex-wrap gap-1">
                         {agent.tools.map(t => (
-                          <span key={t} className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600">{t}</span>
+                          <span key={t} className="px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 font-semibold border border-blue-100">{t}</span>
                         ))}
                       </div>
                     </div>
@@ -313,13 +313,13 @@ export default function PersonaSkillsView() {
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{tool.icon}</span>
                         <div>
-                          <span className="text-sm font-medium text-gray-900">{tool.name}</span>
-                          <span className="text-xs text-gray-400 ml-2">{tool.category}</span>
-                          <p className="text-xs text-gray-500">{tool.description}</p>
+                          <span className="text-sm font-bold text-gray-900">{tool.name}</span>
+                          <span className="text-xs text-gray-600 font-semibold ml-2 bg-gray-100 px-1.5 py-0.5 rounded">{tool.category}</span>
+                          <p className="text-xs text-gray-700 font-medium mt-0.5">{tool.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{tool.authType}</span>
+                        <span className="text-[10px] text-gray-700 font-semibold bg-gray-100 px-2 py-0.5 rounded border border-gray-200">{tool.authType}</span>
                         {tool.connected ? (
                           <span className="text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg font-medium">Connected</span>
                         ) : (
@@ -345,7 +345,7 @@ export default function PersonaSkillsView() {
                       className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow block"
                     >
                       <h4 className="text-sm font-semibold text-gray-900 mb-1">{course.title}</h4>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-gray-700 font-medium">
                         <span>{course.provider}</span>
                         <span>·</span>
                         <span>{course.duration}</span>

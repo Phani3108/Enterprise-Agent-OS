@@ -4,7 +4,15 @@
   "private": true,
   "description": "Enterprise Agent Operating System — orchestration, governance, memory, and observability for autonomous AI agent clusters",
   "author": "Phani Marupaka (https://linkedin.com/in/phani-marupaka)",
-  "license": "MIT",
+  "license": "UNLICENSED",
+  "contributors": [
+    {
+      "name": "Phani Marupaka",
+      "url": "https://linkedin.com/in/phani-marupaka",
+      "email": "phani@enterprise-agent-os"
+    }
+  ],
+  "copyright": "© 2026 Phani Marupaka. All rights reserved. Protected under DMCA 17 U.S.C. § 1202.",
   "homepage": "https://github.com/Phani3108/Enterprise-Agent-OS",
   "repository": {
     "type": "git",

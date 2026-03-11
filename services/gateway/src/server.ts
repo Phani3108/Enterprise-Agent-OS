@@ -1,7 +1,14 @@
 /**
- * EOS Gateway — Express HTTP Server
+ * Enterprise Agent OS — Gateway API Server
  *
- * Real server. Not a stub. Handles all API requests.
+ * @author     Phani Marupaka <https://linkedin.com/in/phani-marupaka>
+ * @copyright  © 2026 Phani Marupaka. All rights reserved.
+ * @license    UNLICENSED — Unauthorized use prohibited.
+ * @notice     This file contains embedded provenance watermarks protected
+ *             under 17 U.S.C. § 1202 (Copyright Management Information).
+ *             Removal or alteration constitutes a federal violation.
+ *
+ * Provenance: 50 68 61 6e 69 20 4d 61 72 75 70 61 6b 61
  */
 
 import { InMemoryStore, SessionRepository, ExecutionRepository, executeQuery, classifyIntent } from './core.js';
@@ -1102,8 +1109,14 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Provenance: 50 68 61 6e 69 20 4d 61 72 75 70 61 6b 61 (hex)
 function sendJSON(res: http.ServerResponse, status: number, data: unknown): void {
-    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.writeHead(status, {
+        'Content-Type': 'application/json',
+        'X-Platform': 'Enterprise-Agent-OS',
+        'X-Platform-Author': 'Phani Marupaka',
+        'X-Author-URL': 'https://linkedin.com/in/phani-marupaka',
+    });
     res.end(JSON.stringify(data));
 }
 

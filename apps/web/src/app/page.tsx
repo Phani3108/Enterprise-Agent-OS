@@ -29,6 +29,8 @@ import AgentCollaboration from '../components/AgentCollaboration';
 import GovernanceDashboard from '../components/GovernanceDashboard';
 import TourOverlay from '../components/tour/TourOverlay';
 import OnboardingModal from '../components/onboarding/OnboardingModal';
+import PlatformFooter from '../components/PlatformFooter';
+import { assertProvenance } from '../lib/attribution';
 import { useEAOSStore } from '../store/eaos-store';
 
 function MainContent({ section }: { section: string }) {
@@ -64,9 +66,10 @@ export default function Home() {
   const setCommandOpen = useEAOSStore(s => s.setCommandOpen);
   const commandOpen = useEAOSStore(s => s.commandOpen);
 
-  // Default to home on mount
+  // Default to home on mount; assert provenance watermarks
   useEffect(() => {
     setActiveSection('home');
+    assertProvenance();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Global CMD+K handler
@@ -113,14 +116,15 @@ export default function Home() {
           {/* Right execution panel */}
           <RightPanel />
         </div>
+
+        {/* Attribution footer — © 2026 Phani Marupaka */}
+        <PlatformFooter />
       </div>
 
       {/* Global overlays */}
       <CommandPalette />
       <TourOverlay />
       <OnboardingModal forceOpen={false} onClose={() => {}} />
-
-      {/* Footer (reduced to attribution only, visible via About) */}
     </div>
   );
 }
