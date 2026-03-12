@@ -29,6 +29,7 @@ import OnboardingModal from '../components/onboarding/OnboardingModal';
 import PlatformFooter from '../components/PlatformFooter';
 import { assertProvenance } from '../lib/attribution';
 import { useEAOSStore } from '../store/eaos-store';
+import { ConnectionsHub } from '../components/connections/ConnectionsHub';
 
 function MainContent({ section }: { section: string }) {
   switch (section) {
@@ -39,6 +40,16 @@ function MainContent({ section }: { section: string }) {
     case 'ws-marketing':            return <MarketingHub />;
     case 'ws-engineering':          return <EngineeringHub />;
     case 'ws-product':              return <ProductHub />;
+
+    // Connections (all route to ConnectionsHub — the store tracks active category)
+    case 'conn-ai-models':          return <ConnectionsHub />;
+    case 'conn-storage':            return <ConnectionsHub />;
+    case 'conn-design':             return <ConnectionsHub />;
+    case 'conn-crm':                return <ConnectionsHub />;
+    case 'conn-devtools':           return <ConnectionsHub />;
+    case 'conn-cms':                return <ConnectionsHub />;
+    case 'conn-messaging':          return <ConnectionsHub />;
+    case 'conn-data':               return <ConnectionsHub />;
 
     // Library
     case 'library-skills':          return <LibrarySkillsView />;

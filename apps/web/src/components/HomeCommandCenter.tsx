@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
 import { getStats, getPlatformMetrics } from '../lib/api';
+import { useConnectionsStore, CONNECTOR_CATALOG } from '../store/connections-store';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,7 @@ export default function HomeCommandCenter() {
   const setActiveSection = useEAOSStore(s => s.setActiveSection);
   const setCommandOpen   = useEAOSStore(s => s.setCommandOpen);
   const notifications    = useEAOSStore(s => s.notifications);
+  const connectedCount   = useConnectionsStore(s => s.getConnectedCount());
   const [greeting, setGreeting] = useState('Good morning');
   const [platformStats, setPlatformStats] = useState({ agents: 8, skills: 147, success: '94%' });
 
@@ -312,17 +314,17 @@ export default function HomeCommandCenter() {
             </div>
             <div className="pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-gray-500 font-medium">Tool connections</span>
-                <span className="text-[11px] font-bold text-gray-700">7 / 12 connected</span>
+                <span className="text-[11px] text-gray-500 font-medium">Connections</span>
+                <span className="text-[11px] font-bold text-gray-700">{connectedCount} / {CONNECTOR_CATALOG.length} connected</span>
               </div>
               <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '58%' }} />
+                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${Math.round((connectedCount / CONNECTOR_CATALOG.length) * 100)}%` }} />
               </div>
               <button
-                onClick={() => setActiveSection('ops-integrations')}
+                onClick={() => setActiveSection('conn-ai-models')}
                 className="mt-2 text-[11px] text-blue-600 hover:text-blue-700 font-medium"
               >
-                Manage integrations →
+                Manage connections →
               </button>
             </div>
           </div>

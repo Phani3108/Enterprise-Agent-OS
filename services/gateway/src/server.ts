@@ -24,6 +24,15 @@ import { toolRegistry } from './tool-registry.js';
 import { scheduler } from './scheduler.js';
 import { blogStore } from './blog-store.js';
 import { forumStore } from './forum-store.js';
+import * as marketingApi from './marketing-api.js';
+import { getProject, getProjectTasks, getRecentProjects } from './marketing-program.js';
+import { getCampaignGraph } from './campaign-graph.js';
+import { getMarketingToolConnections, getToolConnectionStatus, connectTool, disconnectTool, testToolConnection, MARKETING_TOOL_CATALOG } from './marketing-tool-connections.js';
+import { getToolConnectFlow, shouldRedirectToOAuth } from './tool-connect-flows.js';
+import { getNotificationConfig, setNotificationConfig } from './marketing-notifications.js';
+import { ENGINEERING_SKILLS, getEngineeringSkill, getEngineeringSkillsByCluster } from './engineering-skills-data.js';
+import { PRODUCT_SKILLS, getProductSkill, getProductSkillsByCluster } from './product-skills-data.js';
+import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep } from './persona-api.js';
 import http from 'node:http';
 import { URL } from 'node:url';
 
@@ -34,6 +43,10 @@ const promptStore = new PromptStore();
 const capabilityGraph = new CapabilityGraph();
 const personaSystem = new PersonaSystem();
 const licenseStore = new LicenseStore();
+
+// Generic connection store for ConnectionsHub
+interface ConnectionRecord { connectorId: string; status: string; connectedAt?: string; lastTestedAt?: string; credentials?: Record<string, string>; error?: string; }
+const connectionStore = new Map<string, ConnectionRecord>();
 
 // Course engagement tracking
 const courseVotes = new Set<string>();
@@ -80,7 +93,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
     if (method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
@@ -138,7 +151,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // Classify intent (useful for frontend suggestions)
         if (path === '/api/classify' && method === 'POST') {
             const body = await readBody(req);
-            const intent = classifyIntent(body.query ?? '');
+            const intent = classifyIntent((body.query as string) ?? '');
             sendJSON(res, 200, intent);
             return;
         }
@@ -1093,6 +1106,413 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                     { persona: 'Finance',    skillsUsed: 64,  toolCalls: 218,  estimatedCost: 537.00,  budget: 800,  budgetPct: 67 },
                 ],
             });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Marketing Module API
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/marketing/workflows' && method === 'GET') {
+            const workflows = marketingApi.getMarketingWorkflows();
+            const clusters = marketingApi.getMarketingWorkflowClusters();
+            const byCluster = marketingApi.getMarketingWorkflowsByCluster();
+            sendJSON(res, 200, { workflows, clusters, byCluster });
+            return;
+        }
+
+        if (path.match(/^\/api\/marketing\/workflows\/[^/]+$/) && method === 'GET') {
+            const idOrSlug = path.split('/').pop()!;
+            const workflow = marketingApi.getMarketingWorkflow(idOrSlug);
+            if (!workflow) { sendJSON(res, 404, { error: 'Workflow not found' }); return; }
+            sendJSON(res, 200, { workflow });
+            return;
+        }
+
+        if (path === '/api/marketing/execute/precheck' && method === 'POST') {
+            const body = await readBody(req);
+            const { workflowId, simulate } = body as { workflowId: string; simulate?: boolean };
+            if (!workflowId) { sendJSON(res, 400, { error: 'Missing workflowId' }); return; }
+            const check = marketingApi.preCheckExecution(workflowId, simulate);
+            sendJSON(res, 200, check);
+            return;
+        }
+
+        if (path === '/api/marketing/execute' && method === 'POST') {
+            const body = await readBody(req);
+            const { workflowId, inputs, simulate } = body as { workflowId: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            if (!workflowId) { sendJSON(res, 400, { error: 'Missing workflowId' }); return; }
+            try {
+                const exec = marketingApi.createMarketingExecution(workflowId, inputs ?? {}, userId, simulate === true);
+                sendJSON(res, 201, { execution: exec });
+            } catch (err) {
+                sendJSON(res, 400, { error: (err as Error).message });
+            }
+            return;
+        }
+
+        if (path.match(/^\/api\/marketing\/executions\/[^/]+$/) && method === 'GET') {
+            const execId = path.split('/').pop()!;
+            const exec = marketingApi.getMarketingExecution(execId);
+            if (!exec) { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        if (path.match(/^\/api\/marketing\/executions\/[^/]+\/complete$/) && method === 'POST') {
+            const execId = path.split('/')[4];
+            const exec = marketingApi.getMarketingExecution(execId);
+            if (!exec) { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            memoryGraph.recordExecution({
+                userId: exec.userId ?? 'anonymous',
+                skillId: exec.workflowId,
+                skillName: exec.workflowName,
+                personaId: 'marketing',
+                success: exec.status === 'completed',
+                runtimeSec: exec.completedAt && exec.startedAt ? Math.round((new Date(exec.completedAt).getTime() - new Date(exec.startedAt).getTime()) / 1000) : 0,
+                cost: 0,
+                agentsUsed: [...new Set(exec.steps.map((s) => s.agent))],
+                toolsUsed: [...new Set(exec.steps.map((s) => s.tool).filter(Boolean))] as string[],
+                outputs: Object.keys(exec.outputs),
+            });
+            const updated = marketingApi.updateMarketingExecution(execId, { status: 'completed', completedAt: new Date().toISOString() });
+            sendJSON(res, 200, { execution: updated });
+            return;
+        }
+
+        if (path === '/api/marketing/executions' && method === 'GET') {
+            const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
+            const execs = marketingApi.getRecentMarketingExecutions(limit);
+            sendJSON(res, 200, { executions: execs, total: execs.length });
+            return;
+        }
+
+        if (path === '/api/marketing/upload' && method === 'POST') {
+            const body = await readBody(req);
+            const { fileName, contentBase64, mimeType } = body as { fileName?: string; contentBase64?: string; mimeType?: string };
+            if (!fileName || !contentBase64) { sendJSON(res, 400, { error: 'Missing fileName or contentBase64' }); return; }
+            const content = typeof contentBase64 === 'string' ? Buffer.from(contentBase64, 'base64').toString('utf-8') : '';
+            const fileId = `file-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+            marketingApi.storeUploadedFile(fileId, fileName, content, mimeType ?? 'application/octet-stream');
+            sendJSON(res, 201, { fileId, fileName, message: 'File uploaded for agent context' });
+            return;
+        }
+
+        if (path === '/api/marketing/roles' && method === 'GET') {
+            sendJSON(res, 200, {
+                roles: [
+                    { id: 'admin', name: 'Admin', permissions: ['*'] },
+                    { id: 'corp_it', name: 'Corp IT', permissions: ['marketing:manage_integrations', 'marketing:manage_users', 'marketing:view_analytics'] },
+                    { id: 'marketing_lead', name: 'Marketing Lead', permissions: ['marketing:execute', 'marketing:approve', 'marketing:approve_budget', 'marketing:approve_campaign', 'marketing:approve_content', 'marketing:manage_skills', 'marketing:manage_workflows', 'marketing:view_analytics', 'marketing:manage_assets'] },
+                    { id: 'marketing_manager', name: 'Marketing Manager', permissions: ['marketing:execute', 'marketing:approve', 'marketing:approve_content', 'marketing:manage_skills', 'marketing:view_analytics', 'marketing:manage_assets'] },
+                    { id: 'marketing_user', name: 'Marketing User', permissions: ['marketing:execute', 'marketing:view_analytics'] },
+                    { id: 'viewer', name: 'Viewer', permissions: ['marketing:view_only'] },
+                ],
+            });
+            return;
+        }
+
+        if (path === '/api/marketing/projects' && method === 'GET') {
+            const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
+            const projects = getRecentProjects(limit);
+            sendJSON(res, 200, { projects, total: projects.length });
+            return;
+        }
+
+        if (path.match(/^\/api\/marketing\/projects\/[^/]+$/) && !path.includes('/tasks') && method === 'GET') {
+            const projectId = path.split('/').pop()!;
+            const project = getProject(projectId);
+            if (!project) { sendJSON(res, 404, { error: 'Project not found' }); return; }
+            sendJSON(res, 200, { project });
+            return;
+        }
+
+        if (path.match(/^\/api\/marketing\/projects\/[^/]+\/tasks$/) && method === 'GET') {
+            const projectId = path.split('/')[4]!;
+            const tasks = getProjectTasks(projectId);
+            sendJSON(res, 200, { tasks, total: tasks.length });
+            return;
+        }
+
+        if (path.match(/^\/api\/marketing\/campaign-graph\/[^/]+$/) && method === 'GET') {
+            const graphId = path.split('/').pop()!;
+            const graph = getCampaignGraph(graphId);
+            if (!graph) { sendJSON(res, 404, { error: 'Campaign graph not found' }); return; }
+            sendJSON(res, 200, { graph });
+            return;
+        }
+
+        if (path === '/api/marketing/tools/connections' && method === 'GET') {
+            const connections = getMarketingToolConnections();
+            sendJSON(res, 200, { connections });
+            return;
+        }
+
+        if (path.match(/^\/api\/marketing\/tools\/connections\/[^/]+$/) && method === 'GET') {
+            const toolId = path.split('/').pop()!;
+            const status = getToolConnectionStatus(toolId);
+            sendJSON(res, 200, { connection: status });
+            return;
+        }
+
+        if (path.match(/^\/api\/tools\/[^/]+\/connect$/) && method === 'GET') {
+            const toolId = path.split('/')[3]!;
+            const flow = getToolConnectFlow(toolId);
+            if (shouldRedirectToOAuth(toolId) && flow.oauthUrl) {
+                res.writeHead(302, { Location: flow.oauthUrl });
+                res.end();
+            } else {
+                sendJSON(res, 200, {
+                    toolId,
+                    authType: flow.authType,
+                    oauthUrl: flow.oauthUrl,
+                    apiKeyPlaceholder: flow.apiKeyPlaceholder,
+                    message: flow.authType === 'api_key' ? 'Configure API key in Settings' : 'Set OAuth client ID in env to enable',
+                });
+            }
+            return;
+        }
+
+        if (path === '/api/marketing/notifications/config' && method === 'GET') {
+            const config = getNotificationConfig();
+            sendJSON(res, 200, { config });
+            return;
+        }
+
+        if (path === '/api/marketing/notifications/config' && method === 'POST') {
+            const body = await readBody(req);
+            setNotificationConfig(body as Parameters<typeof setNotificationConfig>[0]);
+            sendJSON(res, 200, { config: getNotificationConfig() });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Tool Connection Management — connect, disconnect, test, catalog
+
+        // GET /api/tools/catalog — full marketing tool catalog
+        if (path === '/api/tools/catalog' && method === 'GET') {
+            sendJSON(res, 200, { tools: MARKETING_TOOL_CATALOG });
+            return;
+        }
+
+        // POST /api/tools/:toolId/connect — save credentials and mark connected
+        if (path.match(/^\/api\/tools\/[^/]+\/connect$/) && method === 'POST') {
+            const toolId = path.split('/')[3]!;
+            const body = await readBody(req);
+            const { apiKey, accessToken, accountName } = body as { apiKey?: string; accessToken?: string; accountName?: string };
+            const result = connectTool(toolId, { apiKey, accessToken, accountName });
+            if (result.success) {
+                const status = getToolConnectionStatus(toolId);
+                sendJSON(res, 200, { success: true, message: result.message, connection: status });
+            } else {
+                sendJSON(res, 400, { success: false, error: result.message });
+            }
+            return;
+        }
+
+        // POST /api/tools/:toolId/disconnect — clear connection
+        if (path.match(/^\/api\/tools\/[^/]+\/disconnect$/) && method === 'POST') {
+            const toolId = path.split('/')[3]!;
+            const result = disconnectTool(toolId);
+            sendJSON(res, 200, { success: result.success, message: result.message });
+            return;
+        }
+
+        // POST /api/tools/:toolId/test — validate current connection
+        if (path.match(/^\/api\/tools\/[^/]+\/test$/) && method === 'POST') {
+            const toolId = path.split('/')[3]!;
+            const result = testToolConnection(toolId);
+            sendJSON(res, result.success ? 200 : 400, result);
+            return;
+        }
+
+        // GET /api/tools/:toolId/status — single tool status
+        if (path.match(/^\/api\/tools\/[^/]+\/status$/) && method === 'GET') {
+            const toolId = path.split('/')[3]!;
+            const status = getToolConnectionStatus(toolId);
+            sendJSON(res, 200, { connection: status });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Connections API — generic connector state for ConnectionsHub
+        // Uses an in-memory map keyed by connectorId
+
+        // GET /api/connections — list all connection states
+        if (path === '/api/connections' && method === 'GET') {
+            sendJSON(res, 200, { connections: Object.fromEntries(connectionStore) });
+            return;
+        }
+
+        // POST /api/connections/:connectorId/connect
+        if (path.match(/^\/api\/connections\/[^/]+\/connect$/) && method === 'POST') {
+            const connectorId = path.split('/')[3]!;
+            const body = await readBody(req);
+            const { credentials } = body as { credentials: Record<string, string> };
+            // Validate: just check at least one non-empty value is present
+            const hasValue = credentials && Object.values(credentials).some(v => v && v.trim().length > 0);
+            if (!hasValue) {
+                sendJSON(res, 400, { status: 'error', error: 'No credentials provided.' });
+                return;
+            }
+            connectionStore.set(connectorId, {
+                connectorId,
+                status: 'connected',
+                connectedAt: new Date().toISOString(),
+                credentials,
+            });
+            sendJSON(res, 200, { status: 'connected', connectorId });
+            return;
+        }
+
+        // POST /api/connections/:connectorId/disconnect
+        if (path.match(/^\/api\/connections\/[^/]+\/disconnect$/) && method === 'POST') {
+            const connectorId = path.split('/')[3]!;
+            const existing = connectionStore.get(connectorId);
+            if (existing) {
+                connectionStore.set(connectorId, { connectorId, status: 'not-connected' });
+            }
+            sendJSON(res, 200, { status: 'not-connected', connectorId });
+            return;
+        }
+
+        // POST /api/connections/:connectorId/test
+        if (path.match(/^\/api\/connections\/[^/]+\/test$/) && method === 'POST') {
+            const connectorId = path.split('/')[3]!;
+            const state = connectionStore.get(connectorId);
+            if (!state || state.status === 'not-connected') {
+                sendJSON(res, 400, { ok: false, error: 'Not connected. Add credentials first.' });
+                return;
+            }
+            // Simulate a lightweight test (real validation would call the provider's health endpoint)
+            const simulatedOk = Math.random() > 0.05; // 95% pass rate in sim
+            if (simulatedOk) {
+                connectionStore.set(connectorId, { ...state, status: 'connected', lastTestedAt: new Date().toISOString() });
+                sendJSON(res, 200, { ok: true, message: 'Connection validated successfully.' });
+            } else {
+                connectionStore.set(connectorId, { ...state, status: 'error', error: 'Credentials rejected by provider.' });
+                sendJSON(res, 400, { ok: false, error: 'Test failed — credentials may be expired.' });
+            }
+            return;
+        }
+
+        // GET /api/connections/:connectorId/status
+        if (path.match(/^\/api\/connections\/[^/]+\/status$/) && method === 'GET') {
+            const connectorId = path.split('/')[3]!;
+            const state = connectionStore.get(connectorId) ?? { connectorId, status: 'not-connected' };
+            sendJSON(res, 200, { connection: state });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Engineering Persona API
+
+        // GET /api/engineering/skills — full skill catalog
+        if (path === '/api/engineering/skills' && method === 'GET') {
+            sendJSON(res, 200, { skills: ENGINEERING_SKILLS, clusters: getEngineeringSkillsByCluster() });
+            return;
+        }
+
+        // GET /api/engineering/skills/:idOrSlug — single skill
+        if (path.match(/^\/api\/engineering\/skills\/[^/]+$/) && method === 'GET') {
+            const idOrSlug = path.split('/')[4]!;
+            const skill = getEngineeringSkill(idOrSlug);
+            if (!skill) { sendJSON(res, 404, { error: 'Skill not found' }); return; }
+            sendJSON(res, 200, { skill });
+            return;
+        }
+
+        // POST /api/engineering/execute — run a skill
+        if (path === '/api/engineering/execute' && method === 'POST') {
+            const body = await readBody(req);
+            const { skillId, inputs, simulate } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
+            const skill = getEngineeringSkill(skillId);
+            if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
+            const exec = createPersonaExecution('engineering', skill, inputs ?? {}, undefined, simulate);
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        // GET /api/engineering/executions — list recent executions
+        if (path === '/api/engineering/executions' && method === 'GET') {
+            const execs = listPersonaExecutions('engineering');
+            sendJSON(res, 200, { executions: execs });
+            return;
+        }
+
+        // GET /api/engineering/executions/:id — single execution
+        if (path.match(/^\/api\/engineering\/executions\/[^/]+$/) && method === 'GET') {
+            const execId = path.split('/')[4]!;
+            const exec = getPersonaExecution(execId);
+            if (!exec || exec.persona !== 'engineering') { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        // POST /api/engineering/executions/:id/approve/:stepId — approve a step
+        if (path.match(/^\/api\/engineering\/executions\/[^/]+\/approve\/[^/]+$/) && method === 'POST') {
+            const parts = path.split('/');
+            const execId = parts[4]!;
+            const stepId = parts[6]!;
+            const result = approvePersonaStep(execId, stepId);
+            sendJSON(res, result.success ? 200 : 400, result);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Product Persona API
+
+        // GET /api/product/skills — full skill catalog
+        if (path === '/api/product/skills' && method === 'GET') {
+            sendJSON(res, 200, { skills: PRODUCT_SKILLS, clusters: getProductSkillsByCluster() });
+            return;
+        }
+
+        // GET /api/product/skills/:idOrSlug — single skill
+        if (path.match(/^\/api\/product\/skills\/[^/]+$/) && method === 'GET') {
+            const idOrSlug = path.split('/')[4]!;
+            const skill = getProductSkill(idOrSlug);
+            if (!skill) { sendJSON(res, 404, { error: 'Skill not found' }); return; }
+            sendJSON(res, 200, { skill });
+            return;
+        }
+
+        // POST /api/product/execute — run a skill
+        if (path === '/api/product/execute' && method === 'POST') {
+            const body = await readBody(req);
+            const { skillId, inputs, simulate } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
+            const skill = getProductSkill(skillId);
+            if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
+            const exec = createPersonaExecution('product', skill, inputs ?? {}, undefined, simulate);
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        // GET /api/product/executions — list recent executions
+        if (path === '/api/product/executions' && method === 'GET') {
+            const execs = listPersonaExecutions('product');
+            sendJSON(res, 200, { executions: execs });
+            return;
+        }
+
+        // GET /api/product/executions/:id — single execution
+        if (path.match(/^\/api\/product\/executions\/[^/]+$/) && method === 'GET') {
+            const execId = path.split('/')[4]!;
+            const exec = getPersonaExecution(execId);
+            if (!exec || exec.persona !== 'product') { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        // POST /api/product/executions/:id/approve/:stepId — approve a step
+        if (path.match(/^\/api\/product\/executions\/[^/]+\/approve\/[^/]+$/) && method === 'POST') {
+            const parts = path.split('/');
+            const execId = parts[4]!;
+            const stepId = parts[6]!;
+            const result = approvePersonaStep(execId, stepId);
+            sendJSON(res, result.success ? 200 : 400, result);
             return;
         }
 

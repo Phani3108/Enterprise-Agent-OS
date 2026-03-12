@@ -26,6 +26,19 @@ const NAV: NavGroup[] = [
     ],
   },
   {
+    id: 'connections', label: 'Connections', collapsible: true,
+    items: [
+      { id: 'conn-ai-models', label: 'AI Models',    icon: '🤖' },
+      { id: 'conn-storage',   label: 'Storage & Docs',icon: '📁' },
+      { id: 'conn-design',    label: 'Design',        icon: '🎨' },
+      { id: 'conn-crm',       label: 'CRM & Ads',     icon: '📣' },
+      { id: 'conn-devtools',  label: 'Dev Tools',     icon: '⚙️' },
+      { id: 'conn-cms',       label: 'CMS & Publishing',icon: '📝' },
+      { id: 'conn-messaging', label: 'Messaging',     icon: '💬' },
+      { id: 'conn-data',      label: 'Data & Infra',  icon: '📊' },
+    ],
+  },
+  {
     id: 'library', label: 'Library', collapsible: true,
     items: [
       { id: 'library-skills',    label: 'Skills',    icon: '✦'  },
@@ -38,7 +51,7 @@ const NAV: NavGroup[] = [
   {
     id: 'operations', label: 'Operations', collapsible: true,
     items: [
-      { id: 'ops-integrations', label: 'Integrations', icon: '🔌' },
+      { id: 'ops-integrations', label: 'Tool Registry', icon: '🔌' },
       { id: 'ops-executions',   label: 'Executions',   icon: '📋' },
       { id: 'ops-projects',     label: 'Projects',     icon: '🗂️' },
     ],
