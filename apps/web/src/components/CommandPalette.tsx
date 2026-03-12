@@ -56,19 +56,19 @@ const QUICK_ACTIONS: Omit<CommandItem, 'action'>[] = [
 ];
 
 const NAV_SECTION_MAP: Record<string, string> = {
-  'goto-home': 'home', 'goto-personas': 'personas', 'goto-marketplace': 'marketplace',
+  'goto-home': 'home', 'goto-personas': 'library-skills', 'goto-marketplace': 'library-skills',
   'goto-builder': 'builder', 'goto-agents': 'agents', 'goto-workflows': 'workflows',
-  'goto-tools': 'tools', 'goto-prompts': 'prompts', 'goto-knowledge': 'knowledge',
-  'goto-control': 'control', 'goto-memory': 'memory', 'goto-acp': 'acp',
-  'goto-governance': 'governance', 'goto-observability': 'observability',
-  'goto-forum': 'forum', 'goto-blog': 'blog', 'goto-scheduler': 'scheduler',
-  'goto-learning': 'learning', 'goto-settings': 'settings',
+  'goto-tools': 'ops-integrations', 'goto-prompts': 'library-prompts', 'goto-knowledge': 'library-templates',
+  'goto-control': 'admin-usage', 'goto-memory': 'admin-usage', 'goto-acp': 'ops-projects',
+  'goto-governance': 'admin-governance', 'goto-observability': 'ops-executions',
+  'goto-forum': 'community-discussions', 'goto-blog': 'community-blogs', 'goto-scheduler': 'ops-executions',
+  'goto-learning': 'learning-courses', 'goto-settings': 'admin-settings',
 };
 
 const ACTION_SECTION_MAP: Record<string, string> = {
   'create-skill': 'builder', 'create-workflow': 'workflows', 'create-prompt': 'prompts',
-  'create-blog': 'blog', 'create-discussion': 'forum',
-  'view-executions': 'observability', 'check-licenses': 'governance',
+  'create-blog': 'community-blogs', 'create-discussion': 'community-discussions',
+  'view-executions': 'ops-executions', 'check-licenses': 'admin-governance',
 };
 
 const TYPE_BADGE: Record<CommandItemType, string> = {
@@ -141,7 +141,7 @@ export default function CommandPalette() {
               id: `skill-${s.id}`, type: 'skill',
               label: s.name, subtitle: s.personaName ?? 'Skill',
               icon: '🔧', keywords: s.name,
-              action: () => { setActiveSection('marketplace'); setCommandOpen(false); },
+              action: () => { setActiveSection('library-skills'); setCommandOpen(false); },
             });
           });
         }

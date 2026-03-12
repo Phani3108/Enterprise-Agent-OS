@@ -6,29 +6,24 @@ import { TopBar } from '../components/TopBar';
 import { RightPanel } from '../components/RightPanel';
 import CommandPalette from '../components/CommandPalette';
 import HomeCommandCenter from '../components/HomeCommandCenter';
-import PersonaSkillsView from '../components/PersonaSkillsView';
-import SkillMarketplace from '../components/SkillMarketplace';
 import IntentRouter from '../components/IntentRouter';
-import SkillBuilder from '../components/SkillBuilder';
-import { KnowledgeExplorer } from '../components/KnowledgeExplorer';
+import { LibrarySkillsView } from '../components/LibrarySkillsView';
 import { WorkflowBuilder } from '../components/WorkflowBuilder';
 import { AICoursesHub } from '../components/AICoursesHub';
-import { ObservabilityPanel } from '../components/ObservabilityPanel';
 import { PromptLibrary } from '../components/PromptLibrary';
+import { KnowledgeExplorer } from '../components/KnowledgeExplorer';
 import { ToolsRegistry } from '../components/ToolsRegistry';
+import AgentsPanel from '../components/AgentsPanel';
 import { MarketingHub } from '../components/MarketingHub';
 import { EngineeringHub } from '../components/EngineeringHub';
 import { ProductHub } from '../components/ProductHub';
-import AboutPage from '../components/AboutPage';
-import AgentsPanel from '../components/AgentsPanel';
-import SettingsPanel from '../components/SettingsPanel';
-import { BlogEditor } from '../components/BlogEditor';
-import { DiscussionForum } from '../components/DiscussionForum';
-import { ExecutionScheduler } from '../components/ExecutionScheduler';
-import ControlPlane from '../components/ControlPlane';
-import MemoryGraphExplorer from '../components/MemoryGraphExplorer';
+import { OpsExecutionsView } from '../components/OpsExecutionsView';
 import AgentCollaboration from '../components/AgentCollaboration';
+import { AdminUsageView } from '../components/AdminUsageView';
 import GovernanceDashboard from '../components/GovernanceDashboard';
+import SettingsPanel from '../components/SettingsPanel';
+import { DiscussionForum } from '../components/DiscussionForum';
+import { BlogEditor } from '../components/BlogEditor';
 import TourOverlay from '../components/tour/TourOverlay';
 import OnboardingModal from '../components/onboarding/OnboardingModal';
 import PlatformFooter from '../components/PlatformFooter';
@@ -37,95 +32,84 @@ import { useEAOSStore } from '../store/eaos-store';
 
 function MainContent({ section }: { section: string }) {
   switch (section) {
-    case 'home':         return <HomeCommandCenter />;
-    case 'personas':     return <PersonaSkillsView />;
-    case 'marketplace':  return <SkillMarketplace />;
-    case 'builder':      return <SkillBuilder />;
-    case 'agents':       return <AgentsPanel />;
-    case 'workflows':    return <WorkflowBuilder />;
-    case 'tools':        return <ToolsRegistry />;
-    case 'prompts':      return <PromptLibrary />;
-    case 'knowledge':    return <KnowledgeExplorer />;
-    case 'learning':     return <AICoursesHub />;
-    case 'marketing':    return <MarketingHub />;
-    case 'engineering':  return <EngineeringHub />;
-    case 'product':      return <ProductHub />;
-    case 'blog':         return <BlogEditor />;
-    case 'forum':        return <DiscussionForum />;
-    case 'scheduler':    return <ExecutionScheduler />;
-    case 'observability':return <ObservabilityPanel />;
-    case 'control':      return <ControlPlane />;
-    case 'memory':       return <MemoryGraphExplorer />;
-    case 'acp':          return <AgentCollaboration />;
-    case 'governance':   return <GovernanceDashboard />;
-    case 'settings':     return <SettingsPanel />;
-    case 'about':        return <AboutPage />;
-    default:             return <HomeCommandCenter />;
+    // Home
+    case 'home':                    return <HomeCommandCenter />;
+
+    // Workspaces
+    case 'ws-marketing':            return <MarketingHub />;
+    case 'ws-engineering':          return <EngineeringHub />;
+    case 'ws-product':              return <ProductHub />;
+
+    // Library
+    case 'library-skills':          return <LibrarySkillsView />;
+    case 'library-workflows':       return <WorkflowBuilder />;
+    case 'library-prompts':         return <PromptLibrary />;
+    case 'library-templates':       return <KnowledgeExplorer />;
+    case 'library-agents':          return <AgentsPanel />;
+
+    // Operations
+    case 'ops-integrations':        return <ToolsRegistry />;
+    case 'ops-executions':          return <OpsExecutionsView />;
+    case 'ops-projects':            return <AgentCollaboration />;
+
+    // Learning
+    case 'learning-courses':        return <AICoursesHub />;
+    case 'learning-playbooks':      return <PromptLibrary />;
+
+    // Community
+    case 'community-discussions':   return <DiscussionForum />;
+    case 'community-blogs':         return <BlogEditor />;
+
+    // Admin
+    case 'admin-governance':        return <GovernanceDashboard />;
+    case 'admin-usage':             return <AdminUsageView />;
+    case 'admin-settings':          return <SettingsPanel />;
+
+    default:                        return <HomeCommandCenter />;
   }
 }
 
 export default function Home() {
-  const activeSection = useEAOSStore(s => s.activeSection);
+  const activeSection    = useEAOSStore(s => s.activeSection);
   const setActiveSection = useEAOSStore(s => s.setActiveSection);
-  const setCommandOpen = useEAOSStore(s => s.setCommandOpen);
-  const commandOpen = useEAOSStore(s => s.commandOpen);
+  const setCommandOpen   = useEAOSStore(s => s.setCommandOpen);
+  const commandOpen      = useEAOSStore(s => s.commandOpen);
 
-  // Default to home on mount; assert provenance watermarks
   useEffect(() => {
     setActiveSection('home');
     assertProvenance();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Global CMD+K handler
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setCommandOpen(!commandOpen);
-      }
-      if (e.key === 'Escape' && commandOpen) {
-        setCommandOpen(false);
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setCommandOpen(!commandOpen); }
+      if (e.key === 'Escape' && commandOpen) setCommandOpen(false);
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [commandOpen, setCommandOpen]);
 
-  // Show IntentRouter bar for certain sections
-  const showIntentBar = activeSection === 'personas' || activeSection === 'marketplace';
+  // Intent Router shown on skills/marketplace section
+  const showIntentBar = activeSection === 'library-skills';
 
   return (
     <div className="flex h-screen bg-white text-gray-900 overflow-hidden">
-      {/* Left Sidebar */}
       <Sidebar />
-
-      {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar */}
         <TopBar />
-
-        {/* Intent router strip (only on personas/marketplace) */}
         {showIntentBar && (
           <div className="px-6 py-2.5 border-b border-gray-100 bg-gray-50/50 flex-shrink-0">
             <IntentRouter />
           </div>
         )}
-
-        {/* Main workspace */}
         <div className="flex-1 flex overflow-hidden">
           <main className="flex-1 overflow-auto">
             <MainContent section={activeSection} />
           </main>
-
-          {/* Right execution panel */}
           <RightPanel />
         </div>
-
-        {/* Attribution footer — © 2026 Phani Marupaka */}
         <PlatformFooter />
       </div>
-
-      {/* Global overlays */}
       <CommandPalette />
       <TourOverlay />
       <OnboardingModal forceOpen={false} onClose={() => {}} />

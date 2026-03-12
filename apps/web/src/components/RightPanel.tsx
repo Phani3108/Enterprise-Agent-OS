@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
 
+/** Pages where Live Execution panel is relevant (execution flows, observability) */
+const LIVE_EXECUTION_SECTIONS = ['ws-marketing', 'library-skills', 'ops-executions'];
+
 interface TimelineStep {
   id: string;
   name: string;
@@ -71,6 +74,11 @@ const LOG_COLOR: Record<string, string> = {
 
 export function RightPanel() {
   const rightPanelOpen = useEAOSStore(s => s.rightPanelOpen);
+  const activeExecutionId = useEAOSStore(s => s.activeExecutionId);
+  const activeSection = useEAOSStore(s => s.activeSection);
+  const isRelevantPage = LIVE_EXECUTION_SECTIONS.includes(activeSection);
+  const visible = activeExecutionId !== null || (rightPanelOpen && isRelevantPage);
+
   const [tab, setTab] = useState<'timeline' | 'logs' | 'actions'>('timeline');
   const [steps, setSteps] = useState<TimelineStep[]>(SEED_STEPS);
   const [logs, setLogs] = useState<LogEntry[]>(SEED_LOGS);
@@ -78,7 +86,7 @@ export function RightPanel() {
 
   // Simulate live log additions
   useEffect(() => {
-    if (!rightPanelOpen) return;
+    if (!visible) return;
     const MESSAGES = [
       { level: 'info' as const, message: 'Agent heartbeat — status nominal' },
       { level: 'info' as const, message: 'Memory graph updated with execution context' },
@@ -96,14 +104,14 @@ export function RightPanel() {
       }]);
     }, 4000);
     return () => clearInterval(t);
-  }, [rightPanelOpen]);
+  }, [visible]);
 
   // Auto-scroll logs
   useEffect(() => {
     if (tab === 'logs') logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs, tab]);
 
-  if (!rightPanelOpen) return null;
+  if (!visible) return null;
 
   return (
     <aside className="w-[288px] flex-shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
