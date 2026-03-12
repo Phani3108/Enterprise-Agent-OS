@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Campaign Graph",
+  "description": "Marketing campaign graph — Campaign, Assets, Channels, Tasks, Tools, Owners, Agents, Outputs",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "campaignId": { "type": "string" },
+    "campaignName": { "type": "string" },
+    "workflowId": { "type": "string" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "enum": ["campaign", "asset", "channel", "task", "tool", "owner", "agent", "output"] },
+          "label": { "type": "string" },
+          "data": { "type": "object" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

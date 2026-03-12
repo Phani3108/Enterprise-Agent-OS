@@ -17,6 +17,8 @@ import { ObservabilityPanel } from '../components/ObservabilityPanel';
 import { PromptLibrary } from '../components/PromptLibrary';
 import { ToolsRegistry } from '../components/ToolsRegistry';
 import { MarketingHub } from '../components/MarketingHub';
+import { EngineeringHub } from '../components/EngineeringHub';
+import { ProductHub } from '../components/ProductHub';
 import AboutPage from '../components/AboutPage';
 import AgentsPanel from '../components/AgentsPanel';
 import SettingsPanel from '../components/SettingsPanel';
@@ -46,6 +48,8 @@ function MainContent({ section }: { section: string }) {
     case 'knowledge':    return <KnowledgeExplorer />;
     case 'learning':     return <AICoursesHub />;
     case 'marketing':    return <MarketingHub />;
+    case 'engineering':  return <EngineeringHub />;
+    case 'product':      return <ProductHub />;
     case 'blog':         return <BlogEditor />;
     case 'forum':        return <DiscussionForum />;
     case 'scheduler':    return <ExecutionScheduler />;

@@ -51,12 +51,19 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: 'PERSONAS',
+    items: [
+      { id: 'marketing',   label: 'Marketing',   icon: '📣' },
+      { id: 'engineering', label: 'Engineering',  icon: '⚙️' },
+      { id: 'product',     label: 'Product',      icon: '🗺️' },
+    ],
+  },
+  {
     label: 'COMMUNITY',
     items: [
       { id: 'forum',    label: 'Discussions', icon: '💬' },
       { id: 'blog',     label: 'Blog',        icon: '✍️' },
       { id: 'learning', label: 'Learning',    icon: '🎓' },
-      { id: 'marketing',label: 'Marketing',   icon: '📣' },
     ],
   },
   {

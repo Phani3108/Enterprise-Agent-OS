@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Marketing RBAC Roles",
+  "description": "Role-based access control for Marketing module. OAuth not yet implemented; schema prepared for future auth.",
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "enum": ["admin", "corp_it", "marketing_lead", "marketing_manager", "marketing_user", "viewer"] },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "marketing:execute",
+                "marketing:approve",
+                "marketing:approve_budget",
+                "marketing:approve_campaign",
+                "marketing:approve_content",
+                "marketing:manage_skills",
+                "marketing:manage_workflows",
+                "marketing:manage_integrations",
+                "marketing:view_analytics",
+                "marketing:manage_assets",
+                "marketing:manage_users",
+                "marketing:view_only"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "marketing_roles": {
+      "admin": {
+        "permissions": ["*"]
+      },
+      "corp_it": {
+        "permissions": ["marketing:manage_integrations", "marketing:manage_users", "marketing:view_analytics"]
+      },
+      "marketing_lead": {
+        "permissions": ["marketing:execute", "marketing:approve", "marketing:approve_budget", "marketing:approve_campaign", "marketing:approve_content", "marketing:manage_skills", "marketing:manage_workflows", "marketing:view_analytics", "marketing:manage_assets"]
+      },
+      "marketing_manager": {
+        "permissions": ["marketing:execute", "marketing:approve", "marketing:approve_content", "marketing:manage_skills", "marketing:view_analytics", "marketing:manage_assets"]
+      },
+      "marketing_user": {
+        "permissions": ["marketing:execute", "marketing:view_analytics"]
+      },
+      "viewer": {
+        "permissions": ["marketing:view_only"]
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Marketing Project",
+  "description": "Marketing project — orchestration container for campaigns and tasks",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "workflowId": { "type": "string" },
+    "campaignGraphId": { "type": "string" },
+    "pipelineStage": {
+      "type": "string",
+      "enum": ["idea", "content", "design", "campaign_setup", "launch", "analytics"]
+    },
+    "tasks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "owner": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "completed", "archived"]
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -15,6 +15,8 @@ const NAV_LABELS: Record<string, string> = {
   knowledge: 'Knowledge Explorer',
   learning: 'AI Learning Hub',
   marketing: 'Marketing Hub',
+  engineering: 'Engineering Hub',
+  product: 'Product Hub',
   blog: 'Blog Editor',
   forum: 'Discussions',
   scheduler: 'Execution Scheduler',
@@ -26,6 +28,9 @@ const NAV_LABELS: Record<string, string> = {
   settings: 'Settings',
   about: 'About',
 };
+
+/** Sections where Live Execution panel is relevant */
+const LIVE_EXECUTION_SECTIONS = ['marketplace', 'marketing', 'observability', 'personas', 'scheduler'];
 
 const CREATE_ITEMS = [
   { label: 'Create Skill',     icon: '🔧', section: 'builder' },
@@ -149,14 +154,16 @@ export function TopBar() {
           )}
         </div>
 
-        {/* Right panel toggle */}
-        <button
-          onClick={toggleRightPanel}
-          title="Toggle execution panel"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
-        >
-          <span className="text-sm">⊟</span>
-        </button>
+        {/* Right panel toggle — only on pages where Live Execution is relevant */}
+        {LIVE_EXECUTION_SECTIONS.includes(activeSection) && (
+          <button
+            onClick={toggleRightPanel}
+            title="Toggle Live Execution panel"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+          >
+            <span className="text-sm">⊟</span>
+          </button>
+        )}
 
         {/* User avatar */}
         <button

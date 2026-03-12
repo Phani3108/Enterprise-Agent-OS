@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Marketing Task",
+  "description": "Structured task from skill execution — owner, SLA, dependencies, status, delay tracking",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "projectId": { "type": "string" },
+    "campaignId": { "type": "string" },
+    "campaignGraphId": { "type": "string" },
+    "workflowStepId": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "owner": { "type": "string" },
+    "ownerId": { "type": "string" },
+    "agent": { "type": "string" },
+    "tool": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "blocked", "in_progress", "approval_required", "completed", "failed", "cancelled"]
+    },
+    "sla": {
+      "type": "object",
+      "properties": {
+        "dueAt": { "type": "string", "format": "date-time" },
+        "hours": { "type": "number" }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "delayTracking": {
+      "type": "object",
+      "properties": {
+        "isDelayed": { "type": "boolean" },
+        "delayHours": { "type": "number" },
+        "delayReason": { "type": "string" },
+        "notifiedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "outputKey": { "type": "string" },
+    "outputRef": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" }
+  }
+}

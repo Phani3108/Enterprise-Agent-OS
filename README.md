@@ -93,6 +93,36 @@ Configure profile, notification preferences, API keys, appearance, and platform 
 
 ![Settings](docs/screenshots/17-settings.png)
 
+### Engineering Hub — Command Center
+AI-powered engineering assistant. Select from 10 skills across Code Review, Code Generation, Incident Response, and Documentation clusters. Each skill shows its step pipeline, required tools, and estimated runtime.
+
+![Engineering Hub](docs/screenshots/18-engineering-hub.png)
+
+### Engineering Skill Form
+Smart adaptive forms — multiselect focus areas, severity thresholds, toggle fields with `dependsOn` conditional visibility, file attachments, and a Live / Sandbox run mode selector. Tool strip shows Claude (always connected) vs GitHub/Jira (connect in Integrations).
+
+![Engineering Skill Form](docs/screenshots/19-engineering-skill-form.png)
+
+### Engineering Integrations
+Connect GitHub, Jira, Sentry, Datadog, and PagerDuty to unlock optional skill capabilities. Claude is always available without credentials.
+
+![Engineering Integrations](docs/screenshots/20-engineering-integrations.png)
+
+### Product Hub — Command Center
+AI product management assistant with 10 skills: PRD Generator, Jira Epic Generator, User Story Writer, Roadmap Builder, Competitor Analysis Brief, and more.
+
+![Product Hub](docs/screenshots/21-product-hub.png)
+
+### Product Skill Form
+Tags input for success metrics, constraints, and stakeholders. Toggles to push epics directly to Jira or create Confluence drafts. Advanced fields collapse until needed.
+
+![Product Skill Form](docs/screenshots/22-product-skill-form.png)
+
+### Marketing Hub
+End-to-end AI marketing execution — 30 workflows across Campaign, Content, Creative, Event, Research, Analytics, and Sales clusters. Connected to LinkedIn Ads, HubSpot, Canva, GA4, Perplexity, and more.
+
+![Marketing Hub](docs/screenshots/23-marketing-hub.png)
+
 ---
 
 ## Architecture
@@ -164,8 +194,20 @@ User Intent → Skill Detection → Agent Deployment → Tool Selection
 - **Token usage and cost tracking** — Per-query cost analysis
 - **Confidence and grounding scores** — Quality metrics on every response
 
+### Engineering Hub
+- **10 Engineering Skills** — PR Review, PR Summary, Unit Test Generator, Code Documentation, CI Failure Diagnosis, Incident RCA Draft, Dependency Audit, Architecture Review, API Contract Validator, Performance Profiler
+- **Smart Skill Forms** — adaptive field types: multiselect, tags, toggles, file upload, conditional `dependsOn` fields
+- **Live / Sandbox run modes** — test without real API calls
+- **Tool strip** — shows Claude (always connected), GitHub, Jira, Sentry, Datadog, PagerDuty connection states
+
+### Product Hub
+- **10 Product Skills** — PRD Generator, BRD Generator, Jira Epic Generator, User Story Writer, Acceptance Criteria Generator, Roadmap Builder, Competitor Analysis Brief, Release Notes, Stakeholder Update, Customer Feedback Synthesizer
+- **Jira + Confluence integration** — push epics and drafts directly from skill forms
+- **Tags fields** for success metrics, constraints, and stakeholders
+- **Violet accent** distinguishes product workflows from engineering (slate) and marketing (emerald)
+
 ### Guided Tour
-- **29-step interactive tour** covering all sections
+- **21-step interactive tour** covering all sections including Engineering and Product Hubs
 - **Onboarding modal** for first-time users
 - **Keyboard navigation** (Arrow keys, Escape, Enter)
 - **Help menu** with tour restart
@@ -292,18 +334,17 @@ The app includes a 29-step interactive guided tour that covers:
 
 | Step | Section | What You Learn |
 |------|---------|---------------|
-| 1-2 | Sidebar | Navigation, Mission Control overview |
-| 3-6 | Core | Agents, Workflows, Knowledge, Skills |
-| 7 | Projects | Organization and tracking |
-| 8-9 | Domains | Engineering, Marketing |
-| 10 | Learning | AI courses and roadmaps |
-| 11-13 | System | Activity, Observability, About |
-| 14-16 | Workspace | Command Bar, Stats, Quick Actions |
-| 17-18 | Executions | Cards, pipeline traces |
-| 19-20 | Activity | Stream, execution pipeline |
-| 21 | Gateway | Connection status |
-| 22-25 | New Sections | Prompts, Tools, Courses, Marketing |
-| 26-29 | Advanced | Settings, Help, Evidence, Completion |
+| 1-2 | Welcome + Nav | Sidebar navigation, Mission Control overview |
+| 3 | Intent Router | Natural language skill routing |
+| 4-6 | Core Skills | Persona selector, Skills dashboard, Execution panel |
+| 7 | Governance | License tracking and Corp IT dashboard |
+| 8-10 | Navigation | Agents, Workflows, Skill Marketplace |
+| 11-13 | Tools + Content | Tools registry, Prompt Library, Knowledge |
+| 14 | Learning | AI courses and 5-day roadmap |
+| 15-16 | Engineering Hub | Command Center, smart skill forms |
+| 17-18 | Product Hub | PRD/Jira/Roadmap skills, tags and toggle fields |
+| 19 | Tool Strip | Connected vs unconnected tool indicators |
+| 20-21 | Completion | Full platform ready, tour restart |
 
 **Keyboard shortcuts**: Arrow keys to navigate, Escape to skip, Enter to advance.
 
@@ -323,6 +364,14 @@ The app includes a 29-step interactive guided tour that covers:
 | GET | `/api/courses/stats` | Course engagement stats |
 | GET | `/api/capability-graph` | Tool capability graph |
 | POST | `/api/capability-graph/plan` | Generate execution plan |
+| GET | `/api/engineering/skills` | Engineering skill catalog |
+| POST | `/api/engineering/execute` | Execute an engineering skill |
+| GET | `/api/engineering/executions/:id` | Poll execution status |
+| GET | `/api/product/skills` | Product skill catalog |
+| POST | `/api/product/execute` | Execute a product skill |
+| GET | `/api/product/executions/:id` | Poll execution status |
+| POST | `/api/tools/:id/connect` | Save tool credentials |
+| POST | `/api/tools/:id/test` | Test tool connection |
 | GET | `/api/health` | Gateway health check |
 
 ---
