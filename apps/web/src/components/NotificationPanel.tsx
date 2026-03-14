@@ -16,10 +16,10 @@ const TYPE_STYLES = {
 
 export function NotificationPanel() {
     return (
-        <div className="glass rounded-xl p-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Notifications</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/20 text-accent font-medium">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Notifications</h3>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-accent font-medium">
                     {NOTIFICATIONS.filter((n) => n.type !== 'info' || true).length}
                 </span>
             </div>
@@ -28,16 +28,16 @@ export function NotificationPanel() {
                 {NOTIFICATIONS.map((notif, idx) => (
                     <div
                         key={idx}
-                        className={`p-3 rounded-lg bg-surface border-l-2 ${TYPE_STYLES[notif.type]} hover:bg-surface-overlay transition-colors cursor-pointer`}
+                        className={`p-3 rounded-lg bg-white border-l-2 ${TYPE_STYLES[notif.type]} hover:bg-slate-50 transition-colors cursor-pointer`}
                     >
                         <div className="flex items-start gap-2">
                             <span className="text-sm mt-0.5">{notif.icon}</span>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-white">{notif.title}</span>
-                                    <span className="text-[10px] text-neutral-600">{notif.time}</span>
+                                    <span className="text-[13px] font-medium text-slate-900">{notif.title}</span>
+                                    <span className="text-[11px] text-slate-400">{notif.time}</span>
                                 </div>
-                                <p className="text-[11px] text-neutral-400 mt-0.5">{notif.message}</p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">{notif.message}</p>
                             </div>
                         </div>
                     </div>

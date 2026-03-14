@@ -6,8 +6,9 @@
  */
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { WorkflowDef, InputField, InputFieldType } from '../../lib/marketing-workflows';
+import { getPrompts, type PromptEntry } from '@/lib/api';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
 
@@ -19,7 +20,7 @@ export interface PreCheckResult {
 
 interface WorkflowExecutionFormProps {
   workflow: WorkflowDef;
-  onExecute: (inputs: Record<string, unknown>, fileIds?: string[], simulate?: boolean) => void;
+  onExecute: (inputs: Record<string, unknown>, fileIds?: string[], simulate?: boolean, customPrompt?: string, modelId?: string) => void;
   onCancel?: () => void;
   preCheck?: PreCheckResult | null;
   onPreCheck?: () => void;
@@ -230,9 +231,20 @@ function renderField(
   }
 }
 
+const MKT_LLM_MODELS = [
+  { id: 'claude-sonnet-4-6-20251001', label: 'Claude Sonnet 4.6', provider: 'Anthropic', icon: '🟣' },
+  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', provider: 'Anthropic', icon: '🟣' },
+  { id: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', provider: 'Anthropic', icon: '🟣' },
+  { id: 'claude-opus-4-20250514', label: 'Claude Opus 4', provider: 'Anthropic', icon: '🟣' },
+];
+
 export function WorkflowExecutionForm({ workflow, onExecute, onCancel, preCheck, onPreCheck }: WorkflowExecutionFormProps) {
   const [inputs, setInputs] = useState<Record<string, unknown>>({});
   const [simulateMode, setSimulateMode] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState(MKT_LLM_MODELS[0]!.id);
+  const [selectedPromptId, setSelectedPromptId] = useState('');
+  const [prompts, setPrompts] = useState<PromptEntry[]>([]);
+  const [promptsLoading, setPromptsLoading] = useState(true);
 
   const basicFields = workflow.inputs.filter((f) => f.section === 'basic');
   const advancedFields = workflow.inputs.filter((f) => f.section === 'advanced');
@@ -244,6 +256,25 @@ export function WorkflowExecutionForm({ workflow, onExecute, onCancel, preCheck,
 
   const canRun = preCheck?.canExecute ?? simulateMode;
   const blocked = preCheck && !preCheck.canExecute && !simulateMode;
+
+  // Fetch prompts on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getPrompts({ category: 'marketing' });
+        if (!cancelled) setPrompts(data.prompts ?? []);
+      } catch {
+        try {
+          const data = await getPrompts();
+          if (!cancelled) setPrompts(data.prompts ?? []);
+        } catch { /* API unreachable */ }
+      } finally {
+        if (!cancelled) setPromptsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,7 +294,10 @@ export function WorkflowExecutionForm({ workflow, onExecute, onCancel, preCheck,
     const allFileIds = workflow.inputs
       .filter((f) => f.type === 'file')
       .flatMap((f) => (inputs[f.id] as string[]) ?? []);
-    onExecute(inputs, allFileIds.length > 0 ? allFileIds : undefined, simulateMode);
+    const promptContent = selectedPromptId
+      ? prompts.find((p) => p.id === selectedPromptId)?.content
+      : undefined;
+    onExecute(inputs, allFileIds.length > 0 ? allFileIds : undefined, simulateMode, promptContent, selectedModelId);
   };
 
   return (
@@ -317,6 +351,51 @@ export function WorkflowExecutionForm({ workflow, onExecute, onCancel, preCheck,
           </p>
         </div>
       )}
+
+      {/* Prompt template selector */}
+      <div>
+        <p className="text-xs font-semibold text-slate-700 mb-1.5">Prompt Template <span className="text-slate-400 font-normal">(optional)</span></p>
+        {promptsLoading ? (
+          <div className="px-3 py-2 text-sm text-slate-400 border border-slate-200 rounded-lg">Loading prompts…</div>
+        ) : (
+          <>
+            <select
+              value={selectedPromptId}
+              onChange={(e) => setSelectedPromptId(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
+            >
+              <option value="">No prompt — use default</option>
+              {prompts.map((p) => (
+                <option key={p.id} value={p.id}>📝 {p.title}</option>
+              ))}
+            </select>
+            {selectedPromptId && (
+              <div className="mt-2 p-2.5 border border-violet-200 bg-violet-50/50 rounded-lg">
+                <p className="text-[11px] font-medium text-violet-600 mb-1">Prompt Preview</p>
+                <p className="text-xs text-slate-600 whitespace-pre-wrap line-clamp-4">
+                  {prompts.find((p) => p.id === selectedPromptId)?.content ?? ''}
+                </p>
+              </div>
+            )}
+          </>
+        )}
+        <p className="text-[11px] text-slate-400 mt-1">Pick a prompt from the library to inject into the AI execution</p>
+      </div>
+
+      {/* AI Model selector */}
+      <div>
+        <p className="text-xs font-semibold text-slate-700 mb-1.5">AI Model</p>
+        <select
+          value={selectedModelId}
+          onChange={(e) => setSelectedModelId(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
+        >
+          {MKT_LLM_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>{m.icon} {m.label} ({m.provider})</option>
+          ))}
+        </select>
+        <p className="text-[11px] text-slate-400 mt-1">Select which AI model powers this workflow execution</p>
+      </div>
 
       <div className="flex items-center gap-2">
         <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">

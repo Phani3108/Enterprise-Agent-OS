@@ -80,7 +80,8 @@ export interface LicenseRecord {
 // Persona Definitions
 // ---------------------------------------------------------------------------
 
-const PERSONAS: Persona[] = [
+/** Exported for frontend fallback when API is unavailable */
+export const PERSONAS: Persona[] = [
   // ── 1. PRODUCT ──
   {
     id: 'product', name: 'Product', icon: '📦', color: '#8b5cf6',

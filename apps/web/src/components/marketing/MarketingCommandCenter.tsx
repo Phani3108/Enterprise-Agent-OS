@@ -18,10 +18,22 @@ import { WorkflowExecutionForm } from './WorkflowExecutionForm';
 import { ExecutionTimeline } from './ExecutionTimeline';
 import { useMarketingStore } from '../../store/marketing-store';
 import { useEAOSStore } from '../../store/eaos-store';
+import { useConnectionsStore } from '../../store/connections-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
 
 const POLL_INTERVAL_MS = 2000; // poll every 2 seconds while running
+
+const MKT_TOOL_DEFS = [
+  { connectorId: 'anthropic' },
+  { connectorId: 'hubspot' },
+  { connectorId: 'salesforce' },
+  { connectorId: 'linkedin-ads' },
+  { connectorId: 'canva' },
+  { connectorId: 'google-drive' },
+  { connectorId: 'perplexity' },
+  { connectorId: 'wordpress' },
+];
 
 export function MarketingCommandCenter() {
   const selectedWorkflowId = useMarketingStore((s) => s.selectedWorkflowId);
@@ -130,8 +142,9 @@ export function MarketingCommandCenter() {
   }, [activeExecution?.id, activeExecution?.status]);
 
   const setActiveExecutionId = useEAOSStore((s) => s.setActiveExecutionId);
+  const mainSetActiveSection = useEAOSStore((s) => s.setActiveSection);
 
-  const handleExecute = async (inputs: Record<string, unknown>, fileIds?: string[], simulate?: boolean) => {
+  const handleExecute = async (inputs: Record<string, unknown>, fileIds?: string[], simulate?: boolean, customPrompt?: string, modelId?: string) => {
     if (!selectedWorkflow) return;
     setExecuting(true);
     try {
@@ -142,6 +155,8 @@ export function MarketingCommandCenter() {
           workflowId: selectedWorkflow.id,
           inputs: { ...inputs, _fileIds: fileIds },
           simulate: simulate === true,
+          customPrompt,
+          modelId,
         }),
       });
       if (!res.ok) {
@@ -181,11 +196,35 @@ export function MarketingCommandCenter() {
     }
   };
 
+  const isToolConnected = useConnectionsStore(s => s.isToolConnected);
+  const connectedCount = MKT_TOOL_DEFS.filter(t => isToolConnected(t.connectorId)).length;
+
   return (
     <div className="p-6 space-y-6 max-w-6xl">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">Command Center</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Launch marketing workflows. Select → fill inputs → run.</p>
+      {/* Orange hero header */}
+      <div className="rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 p-6 text-white shadow-sm">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-bold">Marketing Command Center</h2>
+            <p className="text-orange-100 text-sm mt-1">Launch marketing workflows. Select → fill inputs → run.</p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold">{connectedCount}/{MKT_TOOL_DEFS.length}</p>
+            <p className="text-orange-200 text-xs">Tools connected</p>
+          </div>
+        </div>
+        {connectedCount === 0 && (
+          <div className="mt-4 flex items-center gap-3 bg-white/10 rounded-lg px-4 py-2.5 backdrop-blur-sm">
+            <svg className="w-5 h-5 text-amber-200 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+            <p className="text-sm text-orange-100">No tools connected yet. Workflows will run in simulation mode.</p>
+            <button
+              onClick={() => mainSetActiveSection('conn-devtools')}
+              className="ml-auto px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-semibold text-white transition-colors"
+            >
+              Connect tools
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Active execution panel */}
@@ -201,7 +240,7 @@ export function MarketingCommandCenter() {
                 <span className="h-2 w-2 rounded-full bg-red-400" />
               )}
               <span className="text-sm font-bold text-slate-900">{activeExecution.workflowName}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+              <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
                 activeExecution.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
                 activeExecution.status === 'running' ? 'bg-blue-100 text-blue-700' :
                 activeExecution.status === 'queued' ? 'bg-amber-100 text-amber-700' :
@@ -294,10 +333,10 @@ export function MarketingCommandCenter() {
                       </p>
                     )}
                     <button
-                      onClick={() => setActiveSection('integrations')}
+                      onClick={() => mainSetActiveSection('conn-devtools')}
                       className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold mt-1.5 underline"
                     >
-                      Connect tools in Integrations →
+                      Connect tools in Connections →
                     </button>
                   </div>
                 )}
@@ -326,14 +365,14 @@ export function MarketingCommandCenter() {
               <ol className="space-y-2">
                 {selectedWorkflow.steps?.map((step, i) => (
                   <li key={step.id} className="flex items-start gap-2">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center mt-0.5">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold flex items-center justify-center mt-0.5">
                       {i + 1}
                     </span>
                     <div>
                       <p className="text-xs font-semibold text-slate-800">{step.name}</p>
-                      <p className="text-[10px] text-slate-400">{step.agent} Agent{step.tool ? ` · ${step.tool}` : ''}</p>
+                      <p className="text-[11px] text-slate-400">{step.agent} Agent{step.tool ? ` · ${step.tool}` : ''}</p>
                       {step.requiresApproval && (
-                        <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Approval required</span>
+                        <span className="text-[11px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">Approval required</span>
                       )}
                     </div>
                   </li>

@@ -56,9 +56,9 @@ export function PersonalizationDashboard() {
     return (
         <div className="space-y-6">
             {/* Greeting */}
-            <div className="glass rounded-xl p-6 bg-gradient-to-r from-accent/5 to-purple-500/5">
-                <h2 className="text-lg font-semibold text-white mb-1">Welcome back 👋</h2>
-                <p className="text-xs text-neutral-400">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 bg-gradient-to-r from-accent/5 to-purple-500/5">
+                <h2 className="text-[18px] font-semibold text-slate-900 mb-1">Welcome back 👋</h2>
+                <p className="text-xs text-slate-500">
                     You've asked <span className="text-accent font-medium">47 queries</span> today.
                     EAOS saved approximately <span className="text-success font-medium">3.5 hours</span> of manual work.
                 </p>
@@ -71,10 +71,10 @@ export function PersonalizationDashboard() {
                         { label: 'Top Domain', value: 'Eng', sub: '58% of queries' },
                         { label: 'Avg Confidence', value: '87%', sub: 'across outputs' },
                     ].map((stat) => (
-                        <div key={stat.label} className="px-3 py-2 rounded-lg bg-surface/50 border border-white/[0.04]">
-                            <div className="text-[10px] text-neutral-500">{stat.label}</div>
-                            <div className="text-sm font-semibold text-white">{stat.value}</div>
-                            <div className="text-[10px] text-neutral-600">{stat.sub}</div>
+                        <div key={stat.label} className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
+                            <div className="text-[11px] text-slate-400">{stat.label}</div>
+                            <div className="text-[14px] font-semibold text-slate-900">{stat.value}</div>
+                            <div className="text-[11px] text-slate-400">{stat.sub}</div>
                         </div>
                     ))}
                 </div>
@@ -82,23 +82,23 @@ export function PersonalizationDashboard() {
 
             <div className="grid grid-cols-2 gap-6">
                 {/* Recent Queries */}
-                <div className="glass rounded-xl p-5">
-                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+                <div className="bg-white border border-slate-200 rounded-xl p-5">
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
                         Recent Queries
                     </h3>
                     <div className="space-y-2">
                         {RECENT_QUERIES.map((q, idx) => (
                             <button
                                 key={idx}
-                                className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-surface hover:bg-surface-overlay transition-colors text-left"
+                                className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-white hover:bg-slate-50 transition-colors text-left"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-xs text-white truncate">{q.query}</div>
+                                    <div className="text-[13px] text-slate-700 truncate">{q.query}</div>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <span className={`text-[9px] px-1.5 py-0.5 rounded ${DOMAIN_COLORS[q.domain]}`}>
+                                        <span className={`text-[11px] px-1.5 py-0.5 rounded ${DOMAIN_COLORS[q.domain]}`}>
                                             {q.domain}
                                         </span>
-                                        <span className="text-[10px] text-neutral-600">{q.time}</span>
+                                        <span className="text-[11px] text-slate-400">{q.time}</span>
                                     </div>
                                 </div>
                                 <span className={`text-xs font-mono ${q.confidence >= 0.85 ? 'text-success' : 'text-warning'}`}>
@@ -110,22 +110,22 @@ export function PersonalizationDashboard() {
                 </div>
 
                 {/* Saved Items */}
-                <div className="glass rounded-xl p-5">
-                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+                <div className="bg-white border border-slate-200 rounded-xl p-5">
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
                         Saved Items
                     </h3>
                     <div className="space-y-2">
                         {SAVED_ITEMS.map((item, idx) => (
                             <button
                                 key={idx}
-                                className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-surface hover:bg-surface-overlay transition-colors text-left"
+                                className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-white hover:bg-slate-50 transition-colors text-left"
                             >
                                 <span className="text-sm">{TYPE_ICONS[item.type]}</span>
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-xs text-white truncate">{item.title}</div>
-                                    <div className="text-[10px] text-neutral-600">{item.savedAt}</div>
+                                    <div className="text-[13px] text-slate-700 truncate">{item.title}</div>
+                                    <div className="text-[11px] text-slate-400">{item.savedAt}</div>
                                 </div>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-neutral-500">
+                                <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">
                                     {item.type}
                                 </span>
                             </button>
@@ -133,14 +133,14 @@ export function PersonalizationDashboard() {
                     </div>
 
                     {/* Favorite Skills */}
-                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mt-4 mb-2">
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-4 mb-2">
                         Favorite Skills
                     </h3>
                     <div className="flex flex-wrap gap-2">
                         {['Incident Analysis', 'Campaign Strategy', 'RAG Tutorial', 'PR Review'].map((skill) => (
                             <span
                                 key={skill}
-                                className="px-3 py-1.5 rounded-full text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 cursor-pointer hover:bg-accent/20 transition-colors"
+                                className="px-3 py-1.5 rounded-full text-[11px] font-medium bg-accent/10 text-accent border border-accent/20 cursor-pointer hover:bg-accent/20 transition-colors"
                             >
                                 🧩 {skill}
                             </span>

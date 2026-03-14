@@ -1,6 +1,6 @@
 /**
- * HomeCommandCenter — AgentOS start surface.
- * Continue Working · Workspace Shortcuts · Pending Attention · Suggested Next · System Status
+ * HomeCommandCenter — AgentOS landing surface.
+ * Integration-first: shows connection health → workspace access → recent activity → system status.
  * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
@@ -10,6 +10,8 @@ import { useState, useEffect } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
 import { getStats, getPlatformMetrics } from '../lib/api';
 import { useConnectionsStore, CONNECTOR_CATALOG } from '../store/connections-store';
+import { useMarketingStore } from '../store/marketing-store';
+import { useEngineeringStore, useProductStore } from '../store/persona-store';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,47 +22,35 @@ interface RecentExec {
 
 // ── Seed data ───────────────────────────────────────────────────────────────
 
-const RECENT_EXECUTIONS: RecentExec[] = [
-  { id: 'e1', skill: 'Campaign Strategy',      persona: 'Marketing',   workspace: 'ws-marketing',   status: 'completed', duration: '18.2s', time: '2m ago'  },
-  { id: 'e2', skill: 'PR Architecture Review', persona: 'Engineering', workspace: 'ws-engineering', status: 'completed', duration: '8.4s',  time: '5m ago'  },
-  { id: 'e3', skill: 'PRD Generator',          persona: 'Product',     workspace: 'ws-product',     status: 'running',   duration: '—',     time: '8m ago'  },
-  { id: 'e4', skill: 'Incident RCA Draft',     persona: 'Engineering', workspace: 'ws-engineering', status: 'running',   duration: '—',     time: '12m ago' },
-  { id: 'e5', skill: 'Resume Screening',       persona: 'HR',          workspace: 'ws-engineering', status: 'completed', duration: '11.7s', time: '18m ago' },
-];
-
-const PENDING_ATTENTION = [
-  { id: 'p1', type: 'approval',  title: 'Review Campaign Copy', desc: 'Marketing · Campaign Strategy step 3 awaits your approval', workspace: 'ws-marketing',   icon: '📋', urgency: 'high' },
-  { id: 'p2', type: 'failed',    title: 'Budget Forecast Failed', desc: 'Finance · Q3 forecast stopped at step 2',               workspace: 'ws-engineering', icon: '⚠️', urgency: 'med'  },
-  { id: 'p3', type: 'approval',  title: 'Approve Jira Epics',   desc: 'Product · PRD Generator created 8 epics, push pending',   workspace: 'ws-product',     icon: '🟦', urgency: 'low'  },
-];
-
-const SUGGESTED_NEXT = [
-  { id: 's1', label: 'PR Review Assistant', desc: 'You have 3 open PRs awaiting review', section: 'ws-engineering', icon: '🔍', tag: 'Engineering' },
-  { id: 's2', label: 'Q3 Roadmap Builder',  desc: 'Product planning cycle is open',       section: 'ws-product',     icon: '🗺️', tag: 'Product'     },
-  { id: 's3', label: 'LinkedIn Campaign',   desc: 'Trending template in Marketing',       section: 'ws-marketing',   icon: '📣', tag: 'Marketing'   },
-];
+// Real executions come from stores — no hardcoded fakes
 
 const WORKSPACES = [
   {
-    id: 'ws-marketing', label: 'Marketing', icon: '📣',
+    id: 'ws-marketing', label: 'Marketing', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+    ),
     desc: 'Campaigns, content, creative, analytics',
-    accent: 'border-orange-200 hover:border-orange-400',
-    badge: 'bg-orange-50 text-orange-700',
-    stats: [{ label: 'Active workflows', value: '3' }, { label: 'Pending approval', value: '1' }],
+    color: 'text-orange-600',
+    bg: 'bg-orange-50',
+    border: 'border-orange-100 hover:border-orange-300',
   },
   {
-    id: 'ws-engineering', label: 'Engineering', icon: '⚙️',
+    id: 'ws-engineering', label: 'Engineering', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" /></svg>
+    ),
     desc: 'PR review, incident RCA, test gen, CI diagnosis',
-    accent: 'border-slate-200 hover:border-slate-500',
-    badge: 'bg-slate-100 text-slate-700',
-    stats: [{ label: 'Running now', value: '2' }, { label: 'Skills available', value: '10' }],
+    color: 'text-slate-600',
+    bg: 'bg-slate-50',
+    border: 'border-slate-200 hover:border-slate-400',
   },
   {
-    id: 'ws-product', label: 'Product', icon: '🗺️',
+    id: 'ws-product', label: 'Product', icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+    ),
     desc: 'PRDs, epics, user stories, roadmaps',
-    accent: 'border-violet-200 hover:border-violet-400',
-    badge: 'bg-violet-50 text-violet-700',
-    stats: [{ label: 'Docs generated', value: '8' }, { label: 'Jira epics', value: '12' }],
+    color: 'text-violet-600',
+    bg: 'bg-violet-50',
+    border: 'border-violet-100 hover:border-violet-300',
   },
 ];
 
@@ -75,22 +65,28 @@ const SYSTEM_SERVICES = [
 
 const STATUS_DOT: Record<string, string> = {
   completed: 'bg-emerald-500',
-  running:   'bg-blue-500 animate-pulse',
+  running:   'bg-blue-500 animate-pulse-glow',
   failed:    'bg-red-500',
 };
 
-const STATUS_TEXT: Record<string, string> = {
-  completed: 'text-emerald-700',
-  running:   'text-blue-700',
+const STATUS_LABEL: Record<string, string> = {
+  completed: 'Completed',
+  running:   'Running',
+  failed:    'Failed',
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  completed: 'text-emerald-600',
+  running:   'text-blue-600',
   failed:    'text-red-600',
 };
 
-const PERSONA_COLOR: Record<string, string> = {
-  Marketing:   'bg-orange-100 text-orange-700',
+const PERSONA_BADGE: Record<string, string> = {
+  Marketing:   'bg-orange-50 text-orange-700',
   Engineering: 'bg-slate-100 text-slate-700',
-  Product:     'bg-violet-100 text-violet-700',
-  HR:          'bg-teal-100 text-teal-700',
-  Finance:     'bg-emerald-100 text-emerald-700',
+  Product:     'bg-violet-50 text-violet-700',
+  HR:          'bg-teal-50 text-teal-700',
+  Finance:     'bg-emerald-50 text-emerald-700',
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -100,6 +96,30 @@ export default function HomeCommandCenter() {
   const setCommandOpen   = useEAOSStore(s => s.setCommandOpen);
   const notifications    = useEAOSStore(s => s.notifications);
   const connectedCount   = useConnectionsStore(s => s.getConnectedCount());
+  const totalConnectors  = CONNECTOR_CATALOG.length;
+  const coveragePct      = Math.round((connectedCount / totalConnectors) * 100);
+
+  // Pull real execution data from stores
+  const mktExecutions = useMarketingStore(s => s.executions);
+  const mktApprovals  = useMarketingStore(s => s.approvalQueue);
+  const engExecutions = useEngineeringStore(s => s.executions);
+  const prodExecutions = useProductStore(s => s.executions);
+
+  const allExecutions: RecentExec[] = [
+    ...mktExecutions.map(e => ({ id: e.id, skill: e.workflowName, persona: 'Marketing', workspace: 'ws-marketing', status: (e.status === 'completed' ? 'completed' : e.status === 'failed' ? 'failed' : 'running') as RecentExec['status'], duration: e.completedAt ? `${((new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / 1000).toFixed(1)}s` : '—', time: e.startedAt })),
+    ...engExecutions.map(e => ({ id: e.id, skill: e.skillName, persona: 'Engineering', workspace: 'ws-engineering', status: (e.status === 'completed' ? 'completed' : e.status === 'failed' ? 'failed' : 'running') as RecentExec['status'], duration: e.completedAt ? `${((new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / 1000).toFixed(1)}s` : '—', time: e.startedAt })),
+    ...prodExecutions.map(e => ({ id: e.id, skill: e.skillName, persona: 'Product', workspace: 'ws-product', status: (e.status === 'completed' ? 'completed' : e.status === 'failed' ? 'failed' : 'running') as RecentExec['status'], duration: e.completedAt ? `${((new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / 1000).toFixed(1)}s` : '—', time: e.startedAt })),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
+
+  const pendingApprovals = mktApprovals.filter(a => a.status === 'pending');
+
+  // Workspace stats from real data
+  const workspaceStats: Record<string, { label: string; value: string }[]> = {
+    'ws-marketing':   [{ label: 'Executions', value: String(mktExecutions.length) }, { label: 'Pending approval', value: String(pendingApprovals.length) }],
+    'ws-engineering': [{ label: 'Executions', value: String(engExecutions.length) }, { label: 'Skills available', value: '10' }],
+    'ws-product':     [{ label: 'Executions', value: String(prodExecutions.length) }, { label: 'Skills available', value: '8' }],
+  };
+
   const [greeting, setGreeting] = useState('Good morning');
   const [platformStats, setPlatformStats] = useState({ agents: 8, skills: 147, success: '94%' });
 
@@ -119,44 +139,169 @@ export default function HomeCommandCenter() {
     }).catch(() => {});
   }, []);
 
-  const pendingCount = notifications.filter(n => !n.read).length;
+
+  const totalExecCount = allExecutions.length;
+  const isNewUser = connectedCount === 0 && totalExecCount === 0;
 
   return (
-    <div className="h-full overflow-y-auto bg-gray-50/50">
-      <div className="max-w-[1100px] mx-auto px-6 py-7 space-y-6">
+    <div className="page-container">
+      <div className="page-content space-y-6">
 
+        {/* ── Getting Started (shown when 0 connections + 0 executions) ── */}
+        {isNewUser ? (
+          <>
+            <div className="rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 p-8 text-white shadow-lg">
+              <div className="flex items-start justify-between">
+                <div className="max-w-xl">
+                  <h1 className="text-2xl font-bold tracking-tight">{greeting}, welcome to AgentOS</h1>
+                  <p className="text-blue-100 mt-2 text-[15px] leading-relaxed">
+                    Your AI orchestration platform. Connect your tools, pick a persona, choose skills, and execute — all from one place.
+                  </p>
+                  <div className="flex items-center gap-3 mt-6">
+                    <button
+                      onClick={() => setActiveSection('conn-ai-models')}
+                      className="px-5 py-2.5 bg-white text-blue-700 font-semibold text-sm rounded-lg shadow hover:bg-blue-50 transition-colors"
+                    >
+                      1. Connect your tools
+                    </button>
+                    <button
+                      onClick={() => setActiveSection('ws-marketing')}
+                      className="px-5 py-2.5 bg-white/15 hover:bg-white/25 text-white font-semibold text-sm rounded-lg transition-colors"
+                    >
+                      2. Explore a workspace
+                    </button>
+                  </div>
+                </div>
+                <div className="hidden lg:flex flex-col items-end gap-2 text-right">
+                  <div className="text-5xl font-bold tabular-nums opacity-90">3</div>
+                  <div className="text-blue-200 text-xs uppercase tracking-wider font-semibold">Steps to get started</div>
+                </div>
+              </div>
+
+              {/* Steps */}
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                {[
+                  { step: '1', title: 'Connect Tools', desc: 'Link AI models, CRM, dev tools, and more', icon: '🔌', action: 'conn-ai-models' },
+                  { step: '2', title: 'Choose a Workspace', desc: 'Marketing, Engineering, or Product', icon: '🏢', action: 'ws-marketing' },
+                  { step: '3', title: 'Run Your First Skill', desc: 'Pick a skill, configure, and execute', icon: '⚡', action: 'ws-marketing' },
+                ].map(s => (
+                  <button
+                    key={s.step}
+                    onClick={() => setActiveSection(s.action)}
+                    className="flex items-start gap-3 p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-left group"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-lg flex-shrink-0">{s.icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{s.title}</p>
+                      <p className="text-[12px] text-blue-200 mt-0.5">{s.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Workspace shortcuts — still show even for new users */}
+            <div>
+              <h2 className="section-title">Workspaces</h2>
+              <div className="grid grid-cols-3 gap-4">
+                {WORKSPACES.map(ws => (
+                  <button
+                    key={ws.id}
+                    onClick={() => setActiveSection(ws.id)}
+                    className={`card p-5 text-left transition-all border ${ws.border}`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${ws.bg} ${ws.color}`}>{ws.icon}</span>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${ws.bg} ${ws.color}`}>{ws.label}</span>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 mb-1">{ws.label}</p>
+                    <p className="text-[13px] text-slate-500 leading-relaxed">{ws.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+        <>
         {/* ── Header ── */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{greeting}, Phani</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h1 className="page-title">{greeting}</h1>
+            <p className="page-subtitle">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              <span className="mx-2 text-gray-300">·</span>
+              <span className="mx-2 text-slate-300">·</span>
               <span className="text-emerald-600 font-medium">All systems operational</span>
             </p>
           </div>
           <button
             onClick={() => setCommandOpen(true)}
-            className="flex items-center gap-3 px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors shadow-sm"
+            className="btn btn-primary px-5 py-2.5 text-sm rounded-lg shadow-sm"
           >
-            <span className="text-gray-400 text-base">⌕</span>
-            <span>What do you want to do?</span>
-            <kbd className="text-[11px] font-mono bg-white/10 px-1.5 py-0.5 rounded text-gray-300">⌘K</kbd>
+            <svg className="w-4 h-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            What do you want to do?
+            <kbd className="text-[11px] font-mono bg-white/15 px-1.5 py-0.5 rounded ml-1">⌘K</kbd>
           </button>
         </div>
 
-        {/* ── Platform pulse (3 micro-stats) ── */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* ── Integration Health (connection-first) ── */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center gap-3">
+              <h2 className="card-title">Integration Health</h2>
+              <span className="badge badge-info">{connectedCount}/{totalConnectors} connected</span>
+            </div>
+            <button onClick={() => setActiveSection('conn-ai-models')} className="btn btn-ghost btn-sm text-blue-600 hover:text-blue-700">
+              Manage connections →
+            </button>
+          </div>
+          <div className="card-body">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-1">
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${coveragePct}%` }} />
+                </div>
+              </div>
+              <span className="text-sm font-semibold text-slate-700 tabular-nums">{coveragePct}%</span>
+            </div>
+
+            {connectedCount === 0 ? (
+              <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                <div>
+                  <p className="text-sm font-medium text-amber-800">No tools connected yet</p>
+                  <p className="text-[13px] text-amber-600 mt-0.5">Connect your tools to unlock live execution. Skills run in sandbox mode until tools are connected.</p>
+                </div>
+                <button onClick={() => setActiveSection('conn-ai-models')} className="btn btn-sm bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300 ml-auto flex-shrink-0">
+                  Connect tools
+                </button>
+              </div>
+            ) : (
+              <p className="text-[13px] text-slate-500">
+                {connectedCount} integration{connectedCount !== 1 ? 's' : ''} active.
+                {connectedCount < totalConnectors && <> Connect more to expand capabilities.</>}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Platform pulse (3 metrics) ── */}
+        <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Active Agents',   value: platformStats.agents, icon: '🤖', color: 'text-blue-700',    bg: 'bg-blue-50'    },
-            { label: 'Skills Today',    value: platformStats.skills, icon: '⚙️', color: 'text-emerald-700', bg: 'bg-emerald-50' },
-            { label: 'Success Rate',    value: platformStats.success,icon: '✓',  color: 'text-violet-700',  bg: 'bg-violet-50'  },
+            { label: 'Active Agents',   value: platformStats.agents, icon: (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            ), color: 'text-blue-600',    bg: 'bg-blue-50'    },
+            { label: 'Skills Today',    value: platformStats.skills, icon: (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+            ), color: 'text-emerald-600', bg: 'bg-emerald-50' },
+            { label: 'Success Rate',    value: platformStats.success, icon: (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            ), color: 'text-violet-600',  bg: 'bg-violet-50'  },
           ].map(stat => (
-            <div key={stat.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center gap-4 shadow-sm">
-              <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${stat.bg}`}>{stat.icon}</span>
+            <div key={stat.label} className="metric-tile flex items-center gap-4">
+              <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.bg} ${stat.color}`}>{stat.icon}</span>
               <div>
-                <p className={`text-2xl font-bold tracking-tight ${stat.color}`}>{stat.value}</p>
-                <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
+                <p className={`metric-value ${stat.color}`}>{stat.value}</p>
+                <p className="metric-label">{stat.label}</p>
               </div>
             </div>
           ))}
@@ -164,28 +309,25 @@ export default function HomeCommandCenter() {
 
         {/* ── Workspace shortcuts ── */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-gray-900">Workspaces</h2>
-            <span className="text-[11px] text-gray-400">Your operating surfaces</span>
-          </div>
+          <h2 className="section-title">Workspaces</h2>
           <div className="grid grid-cols-3 gap-4">
             {WORKSPACES.map(ws => (
               <button
                 key={ws.id}
                 onClick={() => setActiveSection(ws.id)}
-                className={`bg-white rounded-xl border-2 p-5 text-left transition-all shadow-sm hover:shadow-md ${ws.accent}`}
+                className={`card p-5 text-left transition-all border ${ws.border}`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <span className="text-2xl">{ws.icon}</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ws.badge}`}>{ws.label}</span>
+                  <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${ws.bg} ${ws.color}`}>{ws.icon}</span>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${ws.bg} ${ws.color}`}>{ws.label}</span>
                 </div>
-                <p className="text-sm font-bold text-gray-900 mb-1">{ws.label} Workspace</p>
-                <p className="text-[11px] text-gray-500 leading-relaxed mb-3">{ws.desc}</p>
-                <div className="flex gap-4">
-                  {ws.stats.map(s => (
+                <p className="text-sm font-semibold text-slate-900 mb-1">{ws.label}</p>
+                <p className="text-[13px] text-slate-500 leading-relaxed mb-3">{ws.desc}</p>
+                <div className="flex gap-5">
+                  {(workspaceStats[ws.id] ?? []).map(s => (
                     <div key={s.label}>
-                      <p className="text-base font-bold text-gray-900">{s.value}</p>
-                      <p className="text-[10px] text-gray-400">{s.label}</p>
+                      <p className="text-lg font-bold text-slate-900">{s.value}</p>
+                      <p className="text-[11px] text-slate-400">{s.label}</p>
                     </div>
                   ))}
                 </div>
@@ -194,141 +336,103 @@ export default function HomeCommandCenter() {
           </div>
         </div>
 
-        {/* ── Continue working + Pending attention (side by side) ── */}
+        {/* ── Continue working + Pending attention ── */}
         <div className="grid grid-cols-5 gap-4">
 
           {/* Continue Working */}
-          <div className="col-span-3 bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-              <h2 className="text-sm font-bold text-gray-900">Continue Working</h2>
-              <button
-                onClick={() => setActiveSection('ops-executions')}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-              >View all →</button>
+          <div className="col-span-3 card overflow-hidden">
+            <div className="card-header">
+              <h2 className="card-title">Recent Activity</h2>
+              <button onClick={() => setActiveSection('ops-executions')} className="btn btn-ghost btn-sm text-blue-600 hover:text-blue-700">
+                View all →
+              </button>
             </div>
-            <div className="divide-y divide-gray-100">
-              {RECENT_EXECUTIONS.map(ex => (
-                <button
-                  key={ex.id}
-                  onClick={() => setActiveSection(ex.workspace as string)}
-                  className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left"
-                >
-                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${STATUS_DOT[ex.status]}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{ex.skill}</p>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${PERSONA_COLOR[ex.persona] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {ex.persona}
-                    </span>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className={`text-xs font-semibold ${STATUS_TEXT[ex.status]}`}>{ex.status}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{ex.time}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+            {allExecutions.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <p className="text-sm text-slate-500">No executions yet.</p>
+                <p className="text-[13px] text-slate-400 mt-1">Run a skill from any workspace to see activity here.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {allExecutions.map(ex => (
+                  <button
+                    key={ex.id}
+                    onClick={() => setActiveSection(ex.workspace as string)}
+                    className="w-full flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[ex.status]}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">{ex.skill}</p>
+                      <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${PERSONA_BADGE[ex.persona] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {ex.persona}
+                      </span>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`text-[13px] font-medium ${STATUS_COLOR[ex.status]}`}>{STATUS_LABEL[ex.status]}</p>
+                      <p className="text-[12px] text-slate-400 mt-0.5">{ex.duration !== '—' ? ex.duration : 'In progress'}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Pending Attention */}
-          <div className="col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-              <h2 className="text-sm font-bold text-gray-900">Needs Attention</h2>
-              {pendingCount > 0 && (
-                <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-                  {pendingCount} unread
-                </span>
+          <div className="col-span-2 card overflow-hidden">
+            <div className="card-header">
+              <h2 className="card-title">Needs Attention</h2>
+              {pendingApprovals.length > 0 && (
+                <span className="badge badge-danger">{pendingApprovals.length} pending</span>
               )}
             </div>
-            <div className="divide-y divide-gray-100">
-              {PENDING_ATTENTION.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveSection(item.workspace as string)}
-                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
-                >
-                  <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-gray-900 truncate">{item.title}</p>
-                    <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{item.desc}</p>
-                  </div>
-                  <span className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 ${
-                    item.urgency === 'high' ? 'bg-red-500' : item.urgency === 'med' ? 'bg-amber-400' : 'bg-gray-300'
-                  }`} />
-                </button>
-              ))}
-            </div>
+            {pendingApprovals.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <p className="text-sm text-slate-500">Nothing needs attention.</p>
+                <p className="text-[13px] text-slate-400 mt-1">Approvals and alerts will show here.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {pendingApprovals.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection('ws-marketing')}
+                    className="w-full flex items-start gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 bg-amber-400" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900 truncate">{item.stepName}</p>
+                      <p className="text-[13px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{item.workflowName} · Awaiting approval</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── Suggested next + System status ── */}
-        <div className="grid grid-cols-2 gap-4">
-
-          {/* Suggested Next */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-gray-900">Suggested Next</h2>
-              <button onClick={() => setActiveSection('library-skills')} className="text-xs font-semibold text-blue-600 hover:text-blue-700">
-                Browse skills →
-              </button>
-            </div>
-            <div className="space-y-2">
-              {SUGGESTED_NEXT.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveSection(s.section)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                >
-                  <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">
-                    {s.icon}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-900 truncate">{s.label}</p>
-                    <p className="text-[11px] text-gray-500 mt-0.5">{s.desc}</p>
-                  </div>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 flex-shrink-0">
-                    {s.tag}
-                  </span>
-                </button>
-              ))}
-            </div>
+        {/* ── System status ── */}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">System Status</h2>
+            <button onClick={() => setActiveSection('admin-usage')} className="btn btn-ghost btn-sm text-blue-600 hover:text-blue-700">
+              Control Plane →
+            </button>
           </div>
-
-          {/* System Status */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-gray-900">System Status</h2>
-              <button onClick={() => setActiveSection('admin-usage')} className="text-xs font-semibold text-blue-600 hover:text-blue-700">
-                Control Plane →
-              </button>
-            </div>
-            <div className="space-y-2.5 mb-4">
+          <div className="card-body">
+            <div className="grid grid-cols-4 gap-4">
               {SYSTEM_SERVICES.map(svc => (
-                <div key={svc.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-sm font-medium text-gray-800">{svc.name}</span>
-                  </div>
-                  <span className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-0.5 rounded">{svc.latency}</span>
+                <div key={svc.name} className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm text-slate-700">{svc.name}</span>
+                  <span className="text-[13px] text-slate-400 font-mono ml-auto">{svc.latency}</span>
                 </div>
               ))}
             </div>
-            <div className="pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-gray-500 font-medium">Connections</span>
-                <span className="text-[11px] font-bold text-gray-700">{connectedCount} / {CONNECTOR_CATALOG.length} connected</span>
-              </div>
-              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${Math.round((connectedCount / CONNECTOR_CATALOG.length) * 100)}%` }} />
-              </div>
-              <button
-                onClick={() => setActiveSection('conn-ai-models')}
-                className="mt-2 text-[11px] text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Manage connections →
-              </button>
-            </div>
           </div>
         </div>
+
+        </>
+        )}
 
       </div>
     </div>

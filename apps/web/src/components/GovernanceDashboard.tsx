@@ -131,7 +131,7 @@ const STATUS_BADGE: Record<string, string> = {
   active: 'bg-emerald-100 text-emerald-700',
   expiring_soon: 'bg-amber-100 text-amber-700',
   expired: 'bg-red-100 text-red-700',
-  inactive: 'bg-gray-100 text-gray-500',
+  inactive: 'bg-slate-100 text-slate-500',
   success: 'bg-emerald-100 text-emerald-700',
   failure: 'bg-red-100 text-red-700',
   warning: 'bg-amber-100 text-amber-700',
@@ -141,7 +141,7 @@ const COMPLIANCE_BADGE: Record<string, string> = {
   pass: 'bg-emerald-100 text-emerald-700',
   fail: 'bg-red-100 text-red-700',
   warning: 'bg-amber-100 text-amber-700',
-  na: 'bg-gray-100 text-gray-500',
+  na: 'bg-slate-100 text-slate-500',
 };
 
 const COMPLIANCE_ICON: Record<string, string> = {
@@ -189,12 +189,12 @@ export default function GovernanceDashboard() {
   const warnCount = SEED_COMPLIANCE.filter(c => c.status === 'warning').length;
 
   return (
-    <div className="h-full flex flex-col bg-gray-50/30 overflow-hidden">
+    <div className="h-full flex flex-col bg-slate-50/30 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 flex-shrink-0">
         <div>
-          <h1 className="text-base font-bold text-gray-900">Governance Dashboard</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Corp IT oversight — licenses, costs, access, and compliance</p>
+          <h1 className="text-base font-bold text-slate-900">Governance Dashboard</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Corp IT oversight — licenses, costs, access, and compliance</p>
         </div>
         <div className="flex items-center gap-3 text-xs">
           {failCount > 0 && (
@@ -211,7 +211,7 @@ export default function GovernanceDashboard() {
       </div>
 
       {/* Summary tiles */}
-      <div className="flex-shrink-0 px-6 py-3 bg-white border-b border-gray-100">
+      <div className="flex-shrink-0 px-6 py-3 bg-white border-b border-slate-100">
         <div className="grid grid-cols-4 gap-4">
           <SummaryTile label="Tool Licenses" value={`${licenses.length}`} sub={`${licenses.filter(l => l.status === 'expired').length} expired`} icon="🔌" />
           <SummaryTile label="Monthly Tool Cost" value={`$${(totalMonthly).toLocaleString()}`} sub="across all tools" icon="💳" />
@@ -222,17 +222,17 @@ export default function GovernanceDashboard() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="p-6">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {/* Tabs */}
-            <div className="flex border-b border-gray-100 overflow-x-auto">
+            <div className="flex border-b border-slate-100 overflow-x-auto">
               {TABS.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                     tab === t.id
-                      ? 'text-gray-900 border-b-2 border-gray-900 -mb-px'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'text-slate-900 border-b-2 border-slate-900 -mb-px'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   {t.label}
@@ -245,31 +245,31 @@ export default function GovernanceDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Tool</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">License Type</th>
-                      <th className="text-center px-4 py-2.5 text-gray-500 font-medium">Used / Total</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Cost / Mo</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Expires</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Status</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Tool</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">License Type</th>
+                      <th className="text-center px-4 py-2.5 text-slate-500 font-medium">Used / Total</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Cost / Mo</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Expires</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-50">
                     {licenses.map(lic => (
-                      <tr key={lic.toolId} className="hover:bg-gray-50/50">
+                      <tr key={lic.toolId} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span className="text-base">{lic.icon}</span>
-                            <span className="font-medium text-gray-900">{lic.toolName}</span>
+                            <span className="font-medium text-slate-900">{lic.toolName}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-500">{lic.licenseType}</td>
+                        <td className="px-4 py-3 text-slate-500">{lic.licenseType}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 justify-center">
-                            <span className="font-medium text-gray-900">{lic.usedLicenses}</span>
-                            <span className="text-gray-300">/</span>
-                            <span className="text-gray-500">{lic.totalLicenses}</span>
-                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <span className="font-medium text-slate-900">{lic.usedLicenses}</span>
+                            <span className="text-slate-300">/</span>
+                            <span className="text-slate-500">{lic.totalLicenses}</span>
+                            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
                                   lic.usedLicenses / lic.totalLicenses >= 0.9 ? 'bg-red-400' :
@@ -280,12 +280,12 @@ export default function GovernanceDashboard() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-medium text-gray-900">
+                        <td className="px-4 py-3 text-right font-medium text-slate-900">
                           ${lic.costPerMonth.toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-gray-500">{fmtDate(lic.expirationDate)}</td>
+                        <td className="px-4 py-3 text-slate-500">{fmtDate(lic.expirationDate)}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_BADGE[lic.status]}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_BADGE[lic.status]}`}>
                             {lic.status.replace('_', ' ')}
                           </span>
                         </td>
@@ -301,31 +301,31 @@ export default function GovernanceDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Persona</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Skills Run</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Tool Calls</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">AI Spend</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Budget</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Budget Used</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Persona</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Skills Run</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Tool Calls</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">AI Spend</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Budget</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Budget Used</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-50">
                     {SEED_COSTS.map(row => (
-                      <tr key={row.personaId} className="hover:bg-gray-50/50">
+                      <tr key={row.personaId} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span className="text-base">{row.personaIcon}</span>
-                            <span className="font-medium text-gray-900">{row.personaName}</span>
+                            <span className="font-medium text-slate-900">{row.personaName}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-500">{row.skillsUsed.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right text-gray-500">{row.toolCalls.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-medium text-gray-900">${row.estimatedCostUsd.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right text-gray-400">${row.budgetUsd}</td>
+                        <td className="px-4 py-3 text-right text-slate-500">{row.skillsUsed.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-slate-500">{row.toolCalls.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-900">${row.estimatedCostUsd.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right text-slate-400">${row.budgetUsd}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
                                   row.budgetPct >= 90 ? 'bg-red-400' :
@@ -334,25 +334,25 @@ export default function GovernanceDashboard() {
                                 style={{ width: `${Math.min(row.budgetPct, 100)}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-gray-500 w-8 text-right">{row.budgetPct.toFixed(0)}%</span>
+                            <span className="text-[11px] text-slate-500 w-8 text-right">{row.budgetPct.toFixed(0)}%</span>
                           </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 border-gray-200 bg-gray-50/60">
-                      <td className="px-4 py-3 font-semibold text-gray-900">Total</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                    <tr className="border-t-2 border-slate-200 bg-slate-50/60">
+                      <td className="px-4 py-3 font-semibold text-slate-900">Total</td>
+                      <td className="px-4 py-3 text-right font-semibold text-slate-900">
                         {SEED_COSTS.reduce((s, r) => s + r.skillsUsed, 0).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                      <td className="px-4 py-3 text-right font-semibold text-slate-900">
                         {SEED_COSTS.reduce((s, r) => s + r.toolCalls, 0).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                      <td className="px-4 py-3 text-right font-semibold text-slate-900">
                         ${SEED_COSTS.reduce((s, r) => s + r.estimatedCostUsd, 0).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-400">
+                      <td className="px-4 py-3 text-right font-semibold text-slate-400">
                         ${SEED_COSTS.reduce((s, r) => s + r.budgetUsd, 0)}
                       </td>
                       <td className="px-4 py-3" />
@@ -367,39 +367,39 @@ export default function GovernanceDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">User</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Role</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Connected Tools</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Last Active</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Status</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">User</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Role</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Connected Tools</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Last Active</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-50">
                     {SEED_ACCESS.map(user => (
-                      <tr key={user.userId} className="hover:bg-gray-50/50">
+                      <tr key={user.userId} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-600 flex-shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-[11px] font-bold text-slate-600 flex-shrink-0">
                               {user.userName.split(' ').map(n => n[0]).join('').slice(0,2)}
                             </div>
-                            <span className="font-medium text-gray-900">{user.userName}</span>
+                            <span className="font-medium text-slate-900">{user.userName}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
                             user.role === 'Admin' ? 'bg-purple-100 text-purple-700' :
                             user.role === 'Corp IT' ? 'bg-blue-100 text-blue-700' :
                             user.role === 'Moderator' ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-600'
+                            'bg-slate-100 text-slate-600'
                           }`}>
                             {user.role}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-500 font-medium">{user.connectedTools}</td>
-                        <td className="px-4 py-3 text-gray-500">{user.lastActive}</td>
+                        <td className="px-4 py-3 text-right text-slate-500 font-medium">{user.connectedTools}</td>
+                        <td className="px-4 py-3 text-slate-500">{user.lastActive}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_BADGE[user.status]}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_BADGE[user.status]}`}>
                             {user.status}
                           </span>
                         </td>
@@ -415,25 +415,25 @@ export default function GovernanceDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Timestamp</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">User</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Action</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Target</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Result</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Timestamp</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">User</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Action</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Target</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Result</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-50">
                     {SEED_AUDIT.map(entry => (
-                      <tr key={entry.id} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-3 text-gray-400 font-mono text-[10px] whitespace-nowrap">
+                      <tr key={entry.id} className="hover:bg-slate-50/50">
+                        <td className="px-4 py-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
                           {fmtTime(entry.timestamp)}
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-900">{entry.userName}</td>
-                        <td className="px-4 py-3 text-gray-700">{entry.action}</td>
-                        <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{entry.target}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900">{entry.userName}</td>
+                        <td className="px-4 py-3 text-slate-700">{entry.action}</td>
+                        <td className="px-4 py-3 text-slate-500 max-w-[200px] truncate">{entry.target}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_BADGE[entry.result]}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_BADGE[entry.result]}`}>
                             {entry.result}
                           </span>
                         </td>
@@ -452,11 +452,11 @@ export default function GovernanceDashboard() {
                   if (!items.length) return null;
                   return (
                     <div key={cat}>
-                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 mt-3 first:mt-0">{cat}</p>
+                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 mt-3 first:mt-0">{cat}</p>
                       <div className="space-y-1.5">
                         {items.map(item => (
                           <div key={item.id} className={`flex items-start gap-3 p-2.5 rounded-lg border ${
-                            item.status === 'pass' ? 'border-gray-100 bg-gray-50/30' :
+                            item.status === 'pass' ? 'border-slate-100 bg-slate-50/30' :
                             item.status === 'warning' ? 'border-amber-100 bg-amber-50/30' :
                             'border-red-100 bg-red-50/30'
                           }`}>
@@ -467,10 +467,10 @@ export default function GovernanceDashboard() {
                               {COMPLIANCE_ICON[item.status]}
                             </span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-gray-900">{item.policy}</p>
-                              <p className="text-[11px] text-gray-500 mt-0.5">{item.detail}</p>
+                              <p className="text-xs font-medium text-slate-900">{item.policy}</p>
+                              <p className="text-[11px] text-slate-500 mt-0.5">{item.detail}</p>
                             </div>
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded flex-shrink-0 ${COMPLIANCE_BADGE[item.status]}`}>
+                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded flex-shrink-0 ${COMPLIANCE_BADGE[item.status]}`}>
                               {item.status}
                             </span>
                           </div>
@@ -490,12 +490,12 @@ export default function GovernanceDashboard() {
 
 function SummaryTile({ label, value, sub, icon }: { label: string; value: string; sub: string; icon: string }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
       <span className="text-xl flex-shrink-0">{icon}</span>
       <div className="min-w-0">
-        <p className="text-base font-bold text-gray-900">{value}</p>
-        <p className="text-[11px] font-medium text-gray-600">{label}</p>
-        <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
+        <p className="text-base font-bold text-slate-900">{value}</p>
+        <p className="text-[11px] font-medium text-slate-600">{label}</p>
+        <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>
       </div>
     </div>
   );

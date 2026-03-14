@@ -11,8 +11,21 @@ export interface DbConfig {
     maxConnections?: number;
 }
 
+/**
+ * Store interface — implemented by both InMemoryStore and PersistentStore
+ */
+export interface Store {
+    getTable(name: string): Map<string, Record<string, unknown>>;
+    insert(table: string, id: string, data: Record<string, unknown>): void;
+    get(table: string, id: string): Record<string, unknown> | undefined;
+    update(table: string, id: string, data: Partial<Record<string, unknown>>): void;
+    delete(table: string, id: string): void;
+    query(table: string, filter: (row: Record<string, unknown>) => boolean): Record<string, unknown>[];
+    all(table: string): Record<string, unknown>[];
+}
+
 // Minimal in-memory store for when Postgres isn't available (dev mode)
-export class InMemoryStore {
+export class InMemoryStore implements Store {
     private tables: Map<string, Map<string, Record<string, unknown>>> = new Map();
 
     getTable(name: string): Map<string, Record<string, unknown>> {
@@ -48,7 +61,7 @@ export class InMemoryStore {
 
 // Sessions repository
 export class SessionRepository {
-    constructor(private store: InMemoryStore) { }
+    constructor(private store: Store) { }
 
     create(session: SessionRecord): void {
         this.store.insert('sessions', session.id, session as unknown as Record<string, unknown>);
@@ -75,7 +88,7 @@ export class SessionRepository {
 
 // Execution history repository
 export class ExecutionRepository {
-    constructor(private store: InMemoryStore) { }
+    constructor(private store: Store) { }
 
     create(execution: ExecutionRecord): void {
         this.store.insert('execution_history', execution.id, execution as unknown as Record<string, unknown>);

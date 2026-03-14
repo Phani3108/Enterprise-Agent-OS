@@ -12,6 +12,7 @@
  */
 
 import { InMemoryStore, SessionRepository, ExecutionRepository, executeQuery, classifyIntent } from './core.js';
+import { PersistentStore } from './db.js';
 import { authenticateRequest } from './auth.js';
 import { PromptStore } from './prompt-library-data.js';
 import { CapabilityGraph } from './capability-graph.js';
@@ -33,10 +34,14 @@ import { getNotificationConfig, setNotificationConfig } from './marketing-notifi
 import { ENGINEERING_SKILLS, getEngineeringSkill, getEngineeringSkillsByCluster } from './engineering-skills-data.js';
 import { PRODUCT_SKILLS, getProductSkill, getProductSkillsByCluster } from './product-skills-data.js';
 import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep } from './persona-api.js';
+import { eventBus } from './event-bus.js';
+import { submitGoal, getGoalExecution, listGoalExecutions, cancelGoal } from './gateway-orchestrator.js';
 import http from 'node:http';
 import { URL } from 'node:url';
 
-const store = new InMemoryStore();
+// Use persistent store if PERSIST=true or in production; otherwise in-memory
+const usePersistence = process.env.PERSIST === 'true' || process.env.NODE_ENV === 'production';
+const store = usePersistence ? new PersistentStore() : new InMemoryStore();
 const sessions = new SessionRepository(store);
 const executions = new ExecutionRepository(store);
 const promptStore = new PromptStore();
@@ -111,19 +116,23 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     const userId = auth.user?.id ?? 'anonymous';
 
     try {
-        // Health
+        // Health — with real system status
         if (path === '/api/health' && method === 'GET') {
             sendJSON(res, 200, {
                 status: 'healthy',
                 version: '0.1.0',
-                services: { gateway: 'up', skills: 'up', workers: 'up' },
+                services: { gateway: 'up', skills: 'up', workers: 'up', orchestrator: 'up' },
                 uptime: process.uptime(),
                 timestamp: new Date().toISOString(),
+                llmConfigured: !!process.env.ANTHROPIC_API_KEY,
+                githubConfigured: !!process.env.GITHUB_TOKEN,
+                persistenceEnabled: usePersistence,
+                storeStats: 'stats' in store ? (store as PersistentStore).stats() : { tables: 0, totalRows: 0 },
             });
             return;
         }
 
-        // Query
+        // Query — now with real LLM via core.ts
         if (path === '/api/query' && method === 'POST') {
             const body = await readBody(req);
             const { query } = body;
@@ -132,7 +141,16 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 return;
             }
 
+            await eventBus.emit('query.received', { query, userId });
             const result = await executeQuery(query, userId, sessions, executions);
+            await eventBus.emit('query.completed', {
+                sessionId: result.sessionId,
+                intent: result.intent.type,
+                model: result.model,
+                tokensUsed: result.tokensUsed,
+                costUsd: result.costUsd,
+                durationMs: result.durationMs,
+            });
             sendJSON(res, 200, result);
             return;
         }
@@ -1121,6 +1139,13 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
 
+        // GET /api/marketing/skills — marketing workflows in unified skill format
+        if (path === '/api/marketing/skills' && method === 'GET') {
+            const skills = marketingApi.getMarketingSkills();
+            sendJSON(res, 200, { skills });
+            return;
+        }
+
         if (path.match(/^\/api\/marketing\/workflows\/[^/]+$/) && method === 'GET') {
             const idOrSlug = path.split('/').pop()!;
             const workflow = marketingApi.getMarketingWorkflow(idOrSlug);
@@ -1140,10 +1165,10 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/marketing/execute' && method === 'POST') {
             const body = await readBody(req);
-            const { workflowId, inputs, simulate } = body as { workflowId: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            const { workflowId, inputs, simulate, customPrompt, modelId } = body as { workflowId: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; modelId?: string };
             if (!workflowId) { sendJSON(res, 400, { error: 'Missing workflowId' }); return; }
             try {
-                const exec = marketingApi.createMarketingExecution(workflowId, inputs ?? {}, userId, simulate === true);
+                const exec = marketingApi.createMarketingExecution(workflowId, inputs ?? {}, userId, simulate === true, customPrompt, modelId);
                 sendJSON(res, 201, { execution: exec });
             } catch (err) {
                 sendJSON(res, 400, { error: (err as Error).message });
@@ -1425,11 +1450,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // POST /api/engineering/execute — run a skill
         if (path === '/api/engineering/execute' && method === 'POST') {
             const body = await readBody(req);
-            const { skillId, inputs, simulate } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            const { skillId, inputs, simulate, customPrompt, modelId } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; modelId?: string };
             if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
             const skill = getEngineeringSkill(skillId);
             if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
-            const exec = createPersonaExecution('engineering', skill, inputs ?? {}, undefined, simulate);
+            const exec = createPersonaExecution('engineering', skill, inputs ?? {}, undefined, simulate, customPrompt, modelId);
             sendJSON(res, 200, { execution: exec });
             return;
         }
@@ -1481,11 +1506,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // POST /api/product/execute — run a skill
         if (path === '/api/product/execute' && method === 'POST') {
             const body = await readBody(req);
-            const { skillId, inputs, simulate } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            const { skillId, inputs, simulate, customPrompt, modelId } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; modelId?: string };
             if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
             const skill = getProductSkill(skillId);
             if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
-            const exec = createPersonaExecution('product', skill, inputs ?? {}, undefined, simulate);
+            const exec = createPersonaExecution('product', skill, inputs ?? {}, undefined, simulate, customPrompt, modelId);
             sendJSON(res, 200, { execution: exec });
             return;
         }
@@ -1517,6 +1542,64 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         // -----------------------------------------------------------------------
+        // Orchestrator API — Goal decomposition & execution
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/orchestrator/goal' && method === 'POST') {
+            const body = await readBody(req);
+            const { description, context, priority } = body as { description?: string; context?: Record<string, unknown>; priority?: string };
+            if (!description || typeof description !== 'string') {
+                sendJSON(res, 400, { error: 'Missing description field' });
+                return;
+            }
+            const exec = await submitGoal(
+                description,
+                context as Record<string, unknown>,
+                (priority as 'low' | 'normal' | 'high' | 'critical') ?? 'normal',
+                userId
+            );
+            sendJSON(res, 200, exec);
+            return;
+        }
+
+        if (path.startsWith('/api/orchestrator/goal/') && method === 'GET') {
+            const goalId = path.replace('/api/orchestrator/goal/', '');
+            const exec = getGoalExecution(goalId);
+            if (!exec) { sendJSON(res, 404, { error: 'Goal execution not found' }); return; }
+            sendJSON(res, 200, exec);
+            return;
+        }
+
+        if (path.startsWith('/api/orchestrator/goal/') && path.endsWith('/cancel') && method === 'POST') {
+            const goalId = path.replace('/api/orchestrator/goal/', '').replace('/cancel', '');
+            const cancelled = await cancelGoal(goalId);
+            sendJSON(res, 200, { cancelled });
+            return;
+        }
+
+        if (path === '/api/orchestrator/goals' && method === 'GET') {
+            sendJSON(res, 200, listGoalExecutions());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Event Bus API — Event log & metrics
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/events' && method === 'GET') {
+            const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+            const pattern = url.searchParams.get('pattern') ?? undefined;
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            sendJSON(res, 200, eventBus.getLog(pattern, limit));
+            return;
+        }
+
+        if (path === '/api/events/metrics' && method === 'GET') {
+            sendJSON(res, 200, eventBus.getMetrics());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
         // 404
         sendJSON(res, 404, { error: 'Not found', path });
     } catch (error) {
@@ -1531,6 +1614,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
 // Provenance: 50 68 61 6e 69 20 4d 61 72 75 70 61 6b 61 (hex)
 function sendJSON(res: http.ServerResponse, status: number, data: unknown): void {
+    if (res.headersSent) return;
     res.writeHead(status, {
         'Content-Type': 'application/json',
         'X-Platform': 'Enterprise-Agent-OS',
@@ -1586,7 +1670,25 @@ server.listen(PORT, () => {
     console.log(`    POST /api/courses/:id/like         — Like a course`);
     console.log(`    POST /api/courses/:id/dislike      — Dislike a course`);
     console.log(`    POST /api/courses/:id/pin          — Pin a course`);
-    console.log(`    POST /api/courses/:id/view         — Track course view\n`);
+    console.log(`    POST /api/courses/:id/view         — Track course view`);
+    console.log(`    POST /api/orchestrator/goal        — Submit goal for AI decomposition`);
+    console.log(`    GET  /api/orchestrator/goal/:id    — Get goal execution status`);
+    console.log(`    GET  /api/orchestrator/goals       — List all goal executions`);
+    console.log(`    GET  /api/events                   — Event bus log`);
+    console.log(`    GET  /api/events/metrics            — Event bus metrics`);
+    console.log(`\n  LLM: ${process.env.ANTHROPIC_API_KEY ? '✅ ANTHROPIC_API_KEY configured — real AI calls enabled' : '⚠️  ANTHROPIC_API_KEY not set — using fallback responses'}`);
+    console.log(`  GitHub: ${process.env.GITHUB_TOKEN ? '✅ GITHUB_TOKEN configured' : '⚠️  GITHUB_TOKEN not set'}`);
+    console.log(`  Persistence: ${usePersistence ? '✅ File-backed persistent store' : '📝 In-memory store (set PERSIST=true for persistence)'}\n`);
+});
+
+// Graceful shutdown — flush persistent store
+process.on('SIGTERM', () => {
+    if ('flush' in store) (store as PersistentStore).flush();
+    server.close();
+});
+process.on('SIGINT', () => {
+    if ('flush' in store) (store as PersistentStore).flush();
+    server.close();
 });
 
 export { server };

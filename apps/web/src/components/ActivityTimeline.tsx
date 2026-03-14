@@ -39,23 +39,23 @@ export default function ActivityTimeline() {
     return (
         <div className="p-4">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-neutral-300">Activity Stream</h3>
+                <h3 className="text-sm font-medium text-slate-600">Activity Stream</h3>
                 <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                    <span className="text-xs text-neutral-500">Live</span>
+                    <span className="text-xs text-slate-400">Live</span>
                 </div>
             </div>
 
             {/* Live sessions from Gateway */}
             {sessions.length > 0 && (
                 <div className="mb-4 space-y-2">
-                    <div className="text-xs text-accent-primary font-medium mb-2">Live Sessions</div>
+                    <div className="text-xs text-blue-600 font-medium mb-2">Live Sessions</div>
                     {sessions.slice(0, 5).map((session: any) => (
-                        <div key={session.id} className="flex items-start gap-2 p-2 rounded-lg bg-white/5 border border-white/5">
+                        <div key={session.id} className="flex items-start gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
                             <span className={`w-2 h-2 mt-1.5 rounded-full ${session.status === 'complete' ? 'bg-emerald-400' : 'bg-yellow-400 animate-pulse'}`} />
                             <div className="flex-1 min-w-0">
-                                <div className="text-xs text-neutral-200 truncate">{session.goal}</div>
-                                <div className="text-xs text-neutral-500 flex gap-2 mt-0.5">
+                                <div className="text-xs text-slate-700 truncate">{session.goal}</div>
+                                <div className="text-xs text-slate-400 flex gap-2 mt-0.5">
                                     <span>{session.domain}</span>
                                     <span>{Math.round((session.confidence ?? 0) * 100)}%</span>
                                 </div>
@@ -66,17 +66,17 @@ export default function ActivityTimeline() {
             )}
 
             {/* Demo event timeline */}
-            <div className="text-xs text-neutral-500 mb-2" data-tour="execution-pipeline">Execution Pipeline</div>
+            <div className="text-xs text-slate-400 mb-2" data-tour="execution-pipeline">Execution Pipeline</div>
             <div className="space-y-1">
                 {demoEvents.map((event, i) => (
                     <div key={i} className="flex items-start gap-2 py-1.5 relative">
                         {i < demoEvents.length - 1 && (
-                            <div className="absolute left-[11px] top-6 w-px h-full bg-white/10" />
+                            <div className="absolute left-[11px] top-6 w-px h-full bg-slate-100" />
                         )}
                         <span className="text-sm z-10">{typeIcons[event.type] ?? '📌'}</span>
                         <div className="flex-1 min-w-0">
-                            <div className="text-xs text-neutral-300">{event.message}</div>
-                            <div className="text-xs text-neutral-600 mt-0.5">{event.time}</div>
+                            <div className="text-xs text-slate-600">{event.message}</div>
+                            <div className="text-xs text-slate-400 mt-0.5">{event.time}</div>
                         </div>
                     </div>
                 ))}

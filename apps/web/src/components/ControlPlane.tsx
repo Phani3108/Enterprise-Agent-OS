@@ -146,7 +146,7 @@ const METRIC_TILES: MetricTile[] = [
 
 const STATUS_COLOR: Record<string, string> = {
   active: 'bg-emerald-100 text-emerald-700',
-  idle: 'bg-gray-100 text-gray-500',
+  idle: 'bg-slate-100 text-slate-500',
   running: 'bg-blue-100 text-blue-700',
   beta: 'bg-amber-100 text-amber-700',
   healthy: 'bg-emerald-100 text-emerald-700',
@@ -155,7 +155,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const LOG_COLOR: Record<string, string> = {
-  debug: 'text-gray-400', info: 'text-blue-600', warn: 'text-amber-600', error: 'text-red-600',
+  debug: 'text-slate-400', info: 'text-blue-600', warn: 'text-amber-600', error: 'text-red-600',
 };
 
 const ALERT_COLOR: Record<string, string> = {
@@ -218,12 +218,12 @@ export default function ControlPlane() {
   ];
 
   return (
-    <div className="h-full flex flex-col bg-gray-50/30 overflow-hidden">
+    <div className="h-full flex flex-col bg-slate-50/30 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 flex-shrink-0">
         <div>
-          <h1 className="text-base font-bold text-gray-900">Control Plane</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Platform-wide monitoring and agent runtime status</p>
+          <h1 className="text-base font-bold text-slate-900">Control Plane</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Platform-wide monitoring and agent runtime status</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium">
@@ -238,13 +238,13 @@ export default function ControlPlane() {
           {/* Metric tiles */}
           <div className="grid grid-cols-4 gap-4">
             {METRIC_TILES.map(tile => (
-              <div key={tile.label} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div key={tile.label} className="bg-white rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500 font-medium">{tile.label}</span>
+                  <span className="text-xs text-slate-500 font-medium">{tile.label}</span>
                   <span className="text-sm">{tile.icon}</span>
                 </div>
                 <p className={`text-2xl font-bold ${tile.color}`}>{tile.value}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{tile.sub}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{tile.sub}</p>
                 <div className="mt-2 opacity-60">
                   <Sparkline values={tile.sparkline} color={
                     tile.color.includes('blue') ? '#3b82f6' :
@@ -257,16 +257,16 @@ export default function ControlPlane() {
           </div>
 
           {/* Tab bar */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex border-b border-gray-100">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex border-b border-slate-100">
               {TABS.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   className={`px-4 py-2.5 text-xs font-medium transition-colors ${
                     tab === t.id
-                      ? 'text-gray-900 border-b-2 border-gray-900 -mb-px'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'text-slate-900 border-b-2 border-slate-900 -mb-px'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   {t.label}
@@ -279,28 +279,28 @@ export default function ControlPlane() {
               {tab === 'agents' && (
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Agent</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Persona</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Model</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Status</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Tokens</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Success</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Last Action</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Agent</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Persona</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Model</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Status</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Tokens</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Success</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Last Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-50">
                     {SEED_AGENTS.map(agent => (
-                      <tr key={agent.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-900">{agent.name}</td>
-                        <td className="px-4 py-3 text-gray-500">{agent.persona}</td>
-                        <td className="px-4 py-3 font-mono text-gray-400 text-[10px]">{agent.model}</td>
+                      <tr key={agent.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-slate-900">{agent.name}</td>
+                        <td className="px-4 py-3 text-slate-500">{agent.persona}</td>
+                        <td className="px-4 py-3 font-mono text-slate-400 text-[11px]">{agent.model}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLOR[agent.status]}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_COLOR[agent.status]}`}>
                             {agent.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-500 font-mono">
+                        <td className="px-4 py-3 text-right text-slate-500 font-mono">
                           {(agent.tokensUsed / 1000).toFixed(1)}K
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -308,7 +308,7 @@ export default function ControlPlane() {
                             {Math.round(agent.successRate * 100)}%
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-500 max-w-[220px] truncate">{agent.lastAction}</td>
+                        <td className="px-4 py-3 text-slate-500 max-w-[220px] truncate">{agent.lastAction}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -319,28 +319,28 @@ export default function ControlPlane() {
               {tab === 'router' && (
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Query</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Persona</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Skill</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Confidence</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Latency</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Time</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Query</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Persona</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Skill</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Confidence</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Latency</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Time</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-50">
                     {SEED_ROUTES.map(r => (
-                      <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-3 text-gray-700 max-w-[220px] truncate">{r.query}</td>
-                        <td className="px-4 py-3 text-gray-500">{r.persona}</td>
-                        <td className="px-4 py-3 font-medium text-gray-900">{r.skill}</td>
+                      <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-4 py-3 text-slate-700 max-w-[220px] truncate">{r.query}</td>
+                        <td className="px-4 py-3 text-slate-500">{r.persona}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900">{r.skill}</td>
                         <td className="px-4 py-3 text-right">
                           <span className={`font-medium ${r.confidence >= 0.9 ? 'text-emerald-600' : r.confidence >= 0.8 ? 'text-amber-600' : 'text-red-500'}`}>
                             {Math.round(r.confidence * 100)}%
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-mono text-gray-400">{r.latencyMs}ms</td>
-                        <td className="px-4 py-3 text-gray-400">{r.time}</td>
+                        <td className="px-4 py-3 text-right font-mono text-slate-400">{r.latencyMs}ms</td>
+                        <td className="px-4 py-3 text-slate-400">{r.time}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -352,10 +352,10 @@ export default function ControlPlane() {
                 <div className="p-4 space-y-1.5 font-mono text-[11px] max-h-[400px] overflow-y-auto">
                   {logs.map(log => (
                     <div key={log.id} className="flex items-start gap-3">
-                      <span className="text-gray-300 flex-shrink-0 w-20 text-[10px]">{fmtTime(log.createdAt)}</span>
-                      <span className={`font-semibold uppercase text-[9px] flex-shrink-0 w-8 mt-0.5 ${LOG_COLOR[log.level]}`}>{log.level}</span>
-                      <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded flex-shrink-0">{log.service}</span>
-                      <span className="text-gray-700 leading-relaxed">{log.message}</span>
+                      <span className="text-slate-300 flex-shrink-0 w-20 text-[11px]">{fmtTime(log.createdAt)}</span>
+                      <span className={`font-semibold uppercase text-[11px] flex-shrink-0 w-8 mt-0.5 ${LOG_COLOR[log.level]}`}>{log.level}</span>
+                      <span className="text-[11px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded flex-shrink-0">{log.service}</span>
+                      <span className="text-slate-700 leading-relaxed">{log.message}</span>
                     </div>
                   ))}
                 </div>
@@ -369,18 +369,18 @@ export default function ControlPlane() {
                       <span className="text-base flex-shrink-0 mt-0.5">{ALERT_ICON[alert.severity]}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-xs font-semibold text-gray-900">{alert.title}</p>
+                          <p className="text-xs font-semibold text-slate-900">{alert.title}</p>
                           {alert.resolved && (
-                            <span className="text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-medium">resolved</span>
+                            <span className="text-[11px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-medium">resolved</span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-600">{alert.message}</p>
+                        <p className="text-xs text-slate-600">{alert.message}</p>
                         <div className="flex items-center gap-2 mt-1">
                           {alert.service && (
-                            <span className="text-[10px] text-gray-400">{alert.service}</span>
+                            <span className="text-[11px] text-slate-400">{alert.service}</span>
                           )}
-                          <span className="text-[10px] text-gray-300">·</span>
-                          <span className="text-[10px] text-gray-400">{alert.time}</span>
+                          <span className="text-[11px] text-slate-300">·</span>
+                          <span className="text-[11px] text-slate-400">{alert.time}</span>
                         </div>
                       </div>
                     </div>
@@ -392,23 +392,23 @@ export default function ControlPlane() {
               {tab === 'health' && (
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/60">
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Service</th>
-                      <th className="text-left px-4 py-2.5 text-gray-500 font-medium">Status</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Latency</th>
-                      <th className="text-right px-4 py-2.5 text-gray-500 font-medium">Uptime (30d)</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/60">
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Service</th>
+                      <th className="text-left px-4 py-2.5 text-slate-500 font-medium">Status</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Latency</th>
+                      <th className="text-right px-4 py-2.5 text-slate-500 font-medium">Uptime (30d)</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-50">
                     {SEED_SERVICES.map(svc => (
-                      <tr key={svc.name} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{svc.name}</td>
+                      <tr key={svc.name} className="hover:bg-slate-50/50">
+                        <td className="px-4 py-3 font-medium text-slate-900">{svc.name}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLOR[svc.status]}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_COLOR[svc.status]}`}>
                             {svc.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-mono text-gray-500">{svc.latencyMs}ms</td>
+                        <td className="px-4 py-3 text-right font-mono text-slate-500">{svc.latencyMs}ms</td>
                         <td className="px-4 py-3 text-right">
                           <span className="font-medium text-emerald-600">{svc.uptime.toFixed(2)}%</span>
                         </td>

@@ -17,13 +17,13 @@ export default function TourStepCard() {
 
     return (
         <div
-            className="w-[400px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+            className="w-[400px] rounded-2xl border border-slate-200 shadow-2xl overflow-hidden"
             style={{ background: 'rgba(18, 18, 26, 0.97)', backdropFilter: 'blur(20px)' }}
             role="tooltip"
             aria-live="polite"
         >
             {/* Progress bar */}
-            <div className="h-1 bg-white/5">
+            <div className="h-1 bg-slate-50">
                 <div
                     className="h-full bg-gradient-to-r from-accent to-purple-500 transition-all duration-300"
                     style={{ width: `${progress}%` }}
@@ -33,12 +33,12 @@ export default function TourStepCard() {
             <div className="p-5">
                 {/* Step counter */}
                 <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
+                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-widest">
                         Step {currentStepIndex + 1} of {totalSteps}
                     </span>
                     <button
                         onClick={skip}
-                        className="text-[10px] text-neutral-500 hover:text-white transition-colors uppercase tracking-wider"
+                        className="text-[11px] text-slate-400 hover:text-slate-700 transition-colors uppercase tracking-wider"
                         tabIndex={0}
                     >
                         Skip tour
@@ -46,12 +46,12 @@ export default function TourStepCard() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-white mb-2 leading-tight">
+                <h3 className="text-base font-semibold text-slate-900 mb-2 leading-tight">
                     {currentStep.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-sm text-neutral-300 leading-relaxed mb-4">
+                <p className="text-sm text-slate-600 leading-relaxed mb-4">
                     {currentStep.description}
                 </p>
 
@@ -59,21 +59,21 @@ export default function TourStepCard() {
                 {(currentStep.exampleInput || currentStep.expectedOutput) && (
                     <div className="space-y-2 mb-4">
                         {currentStep.exampleInput && (
-                            <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] p-3">
-                                <div className="text-[10px] uppercase tracking-wider text-accent/80 font-semibold mb-1">
+                            <div className="rounded-lg bg-slate-100 border border-slate-200 p-3">
+                                <div className="text-[11px] uppercase tracking-wider text-accent/80 font-semibold mb-1">
                                     Example Input
                                 </div>
-                                <p className="text-xs text-neutral-200 font-mono">
+                                <p className="text-xs text-slate-700 font-mono">
                                     {currentStep.exampleInput}
                                 </p>
                             </div>
                         )}
                         {currentStep.expectedOutput && (
-                            <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] p-3">
-                                <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 font-semibold mb-1">
+                            <div className="rounded-lg bg-slate-100 border border-slate-200 p-3">
+                                <div className="text-[11px] uppercase tracking-wider text-emerald-400/80 font-semibold mb-1">
                                     Expected Output
                                 </div>
-                                <p className="text-xs text-neutral-300">
+                                <p className="text-xs text-slate-600">
                                     {currentStep.expectedOutput}
                                 </p>
                             </div>
@@ -87,8 +87,8 @@ export default function TourStepCard() {
                         onClick={prev}
                         disabled={isFirst}
                         className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${isFirst
-                            ? 'text-neutral-600 cursor-not-allowed'
-                            : 'text-neutral-300 hover:text-white hover:bg-white/5'
+                            ? 'text-slate-400 cursor-not-allowed'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                             }`}
                         tabIndex={0}
                     >
@@ -99,7 +99,7 @@ export default function TourStepCard() {
                             <div
                                 key={i}
                                 className={`w-1.5 h-1.5 rounded-full transition-colors ${i === currentStepIndex ? 'bg-accent' :
-                                    i < currentStepIndex ? 'bg-accent/40' : 'bg-white/10'
+                                    i < currentStepIndex ? 'bg-accent/40' : 'bg-slate-100'
                                     }`}
                             />
                         ))}

@@ -49,8 +49,8 @@ function ToolbarButton({
       title={title}
       className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${
         active
-          ? 'bg-gray-900 text-white'
-          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+          ? 'bg-slate-900 text-white'
+          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
       }`}
     >
       {children}
@@ -106,12 +106,12 @@ function PostList({
   onCreate: () => void;
 }) {
   return (
-    <div className="w-56 flex-shrink-0 border-r border-gray-100 flex flex-col">
-      <div className="p-3 border-b border-gray-100 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Posts</span>
+    <div className="w-56 flex-shrink-0 border-r border-slate-100 flex flex-col">
+      <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Posts</span>
         <button
           onClick={onCreate}
-          className="text-xs px-2 py-1 rounded bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+          className="text-xs px-2 py-1 rounded bg-slate-900 text-white hover:bg-slate-700 transition-colors"
         >
           + New
         </button>
@@ -122,21 +122,21 @@ function PostList({
             key={p.id}
             onClick={() => onSelect(p.id)}
             className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
-              activeId === p.id ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
+              activeId === p.id ? 'bg-slate-900 text-white' : 'hover:bg-slate-50 text-slate-700'
             }`}
           >
-            <div className={`text-xs font-medium truncate ${activeId === p.id ? 'text-white' : 'text-gray-800'}`}>
+            <div className={`text-xs font-medium truncate ${activeId === p.id ? 'text-slate-900' : 'text-slate-800'}`}>
               {p.title || 'Untitled'}
             </div>
             <div className={`flex items-center gap-1.5 mt-1`}>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                 p.status === 'published'
                   ? activeId === p.id ? 'bg-emerald-400/20 text-emerald-300' : 'bg-emerald-50 text-emerald-600'
-                  : activeId === p.id ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-500'
+                  : activeId === p.id ? 'bg-slate-600 text-slate-300' : 'bg-slate-100 text-slate-500'
               }`}>
                 {p.status}
               </span>
-              <span className={`text-[9px] ${activeId === p.id ? 'text-gray-400' : 'text-gray-400'}`}>
+              <span className={`text-[11px] ${activeId === p.id ? 'text-slate-400' : 'text-slate-400'}`}>
                 {new Date(p.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -195,18 +195,18 @@ function PublishModal({
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-[480px] p-6 mx-4">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-sm font-semibold text-gray-900">Publish Post</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
+          <h3 className="text-sm font-semibold text-slate-900">Publish Post</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg">×</button>
         </div>
 
         {results ? (
           <div className="space-y-3">
-            <p className="text-xs text-gray-500 mb-4">Your post has been published to:</p>
+            <p className="text-xs text-slate-500 mb-4">Your post has been published to:</p>
             {results.map((r) => (
               <div key={r.destination} className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
                 <span className="text-emerald-500 text-lg">✓</span>
                 <div>
-                  <div className="text-xs font-medium text-gray-800 capitalize">{r.destination}</div>
+                  <div className="text-xs font-medium text-slate-800 capitalize">{r.destination}</div>
                   {r.url && (
                     <a href={r.url} target="_blank" rel="noopener noreferrer"
                        className="text-[11px] text-blue-500 hover:underline font-mono">{r.url}</a>
@@ -214,21 +214,21 @@ function PublishModal({
                 </div>
               </div>
             ))}
-            <button onClick={onClose} className="w-full mt-2 py-2 text-xs bg-gray-900 text-white rounded-xl hover:bg-gray-700">
+            <button onClick={onClose} className="w-full mt-2 py-2 text-xs bg-slate-900 text-white rounded-xl hover:bg-slate-700">
               Done
             </button>
           </div>
         ) : (
           <>
-            <p className="text-xs text-gray-500 mb-4">Choose where to publish <strong className="text-gray-800">"{post.title || 'Untitled'}"</strong></p>
+            <p className="text-xs text-slate-500 mb-4">Choose where to publish <strong className="text-slate-800">"{post.title || 'Untitled'}"</strong></p>
 
             <div className="space-y-2 mb-5">
               {DESTINATIONS.map((dest) => (
                 <label key={dest.id}
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
                     selected.includes(dest.id)
-                      ? 'border-gray-900 bg-gray-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-slate-900 bg-slate-50'
+                      : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <input
@@ -239,21 +239,21 @@ function PublishModal({
                   />
                   <span className="text-base">{dest.icon}</span>
                   <div>
-                    <div className="text-xs font-medium text-gray-800">{dest.label}</div>
-                    <div className="text-[11px] text-gray-400">{dest.description}</div>
+                    <div className="text-xs font-medium text-slate-800">{dest.label}</div>
+                    <div className="text-[11px] text-slate-400">{dest.description}</div>
                   </div>
                 </label>
               ))}
             </div>
 
             <div className="flex gap-2">
-              <button onClick={onClose} className="flex-1 py-2 text-xs border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">
+              <button onClick={onClose} className="flex-1 py-2 text-xs border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50">
                 Cancel
               </button>
               <button
                 onClick={handlePublish}
                 disabled={!selected.length || publishing}
-                className="flex-1 py-2 text-xs bg-gray-900 text-white rounded-xl hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-2 text-xs bg-slate-900 text-white rounded-xl hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {publishing ? (
                   <><span className="animate-spin inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full" /> Publishing…</>
@@ -377,8 +377,8 @@ export function BlogEditor() {
   if (!activePost) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3">
-        <p className="text-sm text-gray-400">No post selected</p>
-        <button onClick={createPost} className="text-xs px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-700">
+        <p className="text-sm text-slate-400">No post selected</p>
+        <button onClick={createPost} className="text-xs px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-700">
           Create first post
         </button>
       </div>
@@ -388,10 +388,10 @@ export function BlogEditor() {
   return (
     <div className="h-full flex flex-col bg-white overflow-hidden" data-testid="blog-editor">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-gray-900">Blog Editor</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full transition-opacity ${
+          <span className="text-sm font-semibold text-slate-900">Blog Editor</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full transition-opacity ${
             activePost.status === 'published'
               ? 'bg-emerald-50 text-emerald-600'
               : 'bg-amber-50 text-amber-600'
@@ -399,11 +399,11 @@ export function BlogEditor() {
             {activePost.status}
           </span>
           {saved && (
-            <span className="text-[10px] text-gray-400 animate-fade-in">Saved</span>
+            <span className="text-[11px] text-slate-400 animate-fade-in">Saved</span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-gray-400">{wordCount} words · {readTime} min read</span>
+          <span className="text-[11px] text-slate-400">{wordCount} words · {readTime} min read</span>
           <button
             onClick={deletePost}
             className="text-xs px-2.5 py-1.5 rounded-lg text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors"
@@ -412,7 +412,7 @@ export function BlogEditor() {
           </button>
           <button
             onClick={() => setShowPublish(true)}
-            className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-700 transition-colors"
           >
             Publish →
           </button>
@@ -431,14 +431,14 @@ export function BlogEditor() {
         {/* Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Toolbar */}
-          <div className="flex items-center gap-0.5 px-4 py-2 border-b border-gray-100 flex-shrink-0 flex-wrap">
+          <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-100 flex-shrink-0 flex-wrap">
             <div className="flex items-center gap-0.5 mr-2">
               <ToolbarButton onClick={() => insertTag('h1')} title="Heading 1">H1</ToolbarButton>
               <ToolbarButton onClick={() => insertTag('h2')} title="Heading 2">H2</ToolbarButton>
               <ToolbarButton onClick={() => insertTag('h3')} title="Heading 3">H3</ToolbarButton>
               <ToolbarButton onClick={() => insertTag('p')} title="Paragraph">P</ToolbarButton>
             </div>
-            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <div className="w-px h-5 bg-slate-200 mx-1" />
             <div className="flex items-center gap-0.5 mr-2">
               <ToolbarButton onClick={() => execFormat('bold')} title="Bold" active={activeFormats.has('bold')}>
                 <strong>B</strong>
@@ -453,20 +453,20 @@ export function BlogEditor() {
                 <span className="line-through">S</span>
               </ToolbarButton>
             </div>
-            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <div className="w-px h-5 bg-slate-200 mx-1" />
             <div className="flex items-center gap-0.5 mr-2">
               <ToolbarButton onClick={() => execFormat('insertUnorderedList')} title="Bullet List">•≡</ToolbarButton>
               <ToolbarButton onClick={() => execFormat('insertOrderedList')} title="Numbered List">1≡</ToolbarButton>
               <ToolbarButton onClick={() => insertTag('blockquote')} title="Quote">❝</ToolbarButton>
               <ToolbarButton onClick={() => insertTag('pre')} title="Code Block">{'{}'}</ToolbarButton>
             </div>
-            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <div className="w-px h-5 bg-slate-200 mx-1" />
             <div className="flex items-center gap-0.5">
               <ToolbarButton onClick={() => execFormat('justifyLeft')} title="Align Left">⬅</ToolbarButton>
               <ToolbarButton onClick={() => execFormat('justifyCenter')} title="Center">↔</ToolbarButton>
               <ToolbarButton onClick={() => execFormat('justifyRight')} title="Align Right">➡</ToolbarButton>
             </div>
-            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <div className="w-px h-5 bg-slate-200 mx-1" />
             <ToolbarButton onClick={() => {
               const url = prompt('Enter URL:');
               if (url) execFormat('createLink', url);
@@ -483,7 +483,7 @@ export function BlogEditor() {
                 value={activePost.title}
                 onChange={(e) => updateTitle(e.target.value)}
                 placeholder="Post title…"
-                className="w-full text-2xl font-bold text-gray-900 placeholder-gray-300 border-none outline-none bg-transparent mb-2 leading-tight"
+                className="w-full text-2xl font-bold text-slate-900 placeholder-slate-300 border-none outline-none bg-transparent mb-2 leading-tight"
                 data-testid="blog-title-input"
               />
 
@@ -493,11 +493,11 @@ export function BlogEditor() {
                 value={activePost.excerpt}
                 onChange={(e) => updateExcerpt(e.target.value)}
                 placeholder="Write a short excerpt (shown in previews)…"
-                className="w-full text-sm text-gray-400 placeholder-gray-300 border-none outline-none bg-transparent mb-4 leading-relaxed"
+                className="w-full text-sm text-slate-400 placeholder-slate-300 border-none outline-none bg-transparent mb-4 leading-relaxed"
               />
 
               {/* Meta row */}
-              <div className="flex items-center gap-3 text-[11px] text-gray-400 mb-6 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3 text-[11px] text-slate-400 mb-6 pb-4 border-b border-slate-100">
                 <span>by {activePost.author}</span>
                 <span>·</span>
                 <span>{new Date(activePost.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -524,7 +524,7 @@ export function BlogEditor() {
                 onKeyUp={updateFormats}
                 onMouseUp={updateFormats}
                 data-testid="blog-content-editor"
-                className="min-h-[400px] outline-none text-gray-800 leading-relaxed blog-content"
+                className="min-h-[400px] outline-none text-slate-800 leading-relaxed blog-content"
                 style={{ fontSize: '15px' }}
               />
             </div>
@@ -532,9 +532,9 @@ export function BlogEditor() {
         </div>
 
         {/* Right panel — Post Settings */}
-        <div className="w-52 flex-shrink-0 border-l border-gray-100 p-4 space-y-5 overflow-y-auto">
+        <div className="w-52 flex-shrink-0 border-l border-slate-100 p-4 space-y-5 overflow-y-auto">
           <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Tags</div>
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Tags</div>
             <input
               type="text"
               defaultValue={activePost.tags.join(', ')}
@@ -543,24 +543,24 @@ export function BlogEditor() {
                 setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, tags } : p));
               }}
               placeholder="tag1, tag2…"
-              className="w-full text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-gray-400"
+              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400"
             />
           </div>
 
           <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Author</div>
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Author</div>
             <input
               type="text"
               defaultValue={activePost.author}
               onBlur={(e) => {
                 setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, author: e.target.value } : p));
               }}
-              className="w-full text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-gray-400"
+              className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400"
             />
           </div>
 
           <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Destinations</div>
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-3">Destinations</div>
             {[
               { id: 'internal', label: '🏢 Internal' },
               { id: 'linkedin', label: '💼 LinkedIn' },
@@ -578,13 +578,13 @@ export function BlogEditor() {
                   }}
                   className="w-3.5 h-3.5 accent-gray-900"
                 />
-                <span className="text-xs text-gray-600">{dest.label}</span>
+                <span className="text-xs text-slate-600">{dest.label}</span>
               </label>
             ))}
           </div>
 
           <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Statistics</div>
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Statistics</div>
             <div className="space-y-1.5">
               {[
                 { label: 'Words', value: String(wordCount) },
@@ -593,8 +593,8 @@ export function BlogEditor() {
                 { label: 'Updated', value: new Date(activePost.updatedAt).toLocaleDateString() },
               ].map((stat) => (
                 <div key={stat.label} className="flex items-center justify-between">
-                  <span className="text-[10px] text-gray-400">{stat.label}</span>
-                  <span className="text-[10px] text-gray-700 font-mono">{stat.value}</span>
+                  <span className="text-[11px] text-slate-400">{stat.label}</span>
+                  <span className="text-[11px] text-slate-700 font-mono">{stat.value}</span>
                 </div>
               ))}
             </div>
@@ -602,7 +602,7 @@ export function BlogEditor() {
 
           <button
             onClick={() => setShowPublish(true)}
-            className="w-full py-2 text-xs bg-gray-900 text-white rounded-xl hover:bg-gray-700 transition-colors"
+            className="w-full py-2 text-xs bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition-colors"
           >
             Publish →
           </button>

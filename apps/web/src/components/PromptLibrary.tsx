@@ -176,16 +176,16 @@ export function PromptLibrary() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-white">Prompt Library</h2>
-                    <p className="text-sm text-neutral-400 mt-1">
+                    <h2 className="text-lg font-semibold text-slate-900">Prompt Library</h2>
+                    <p className="text-sm text-slate-500 mt-1">
                         Curated prompts for AI-assisted development — platform, community, and your own.
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => setActiveTab('library')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === 'library' ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}>
+                    <button onClick={() => setActiveTab('library')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === 'library' ? 'bg-accent/20 text-accent' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}>
                         Library
                     </button>
-                    <button onClick={() => setActiveTab('recommendations')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === 'recommendations' ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}>
+                    <button onClick={() => setActiveTab('recommendations')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeTab === 'recommendations' ? 'bg-accent/20 text-accent' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}>
                         Suggestions
                     </button>
                 </div>
@@ -199,30 +199,30 @@ export function PromptLibrary() {
                             <input
                                 type="text" placeholder="Search prompts by title, description, or tag..."
                                 value={search} onChange={e => setSearch(e.target.value)}
-                                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 pl-10 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-accent/40 transition-colors"
+                                className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 pl-10 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-accent/40 transition-colors"
                             />
-                            <span className="absolute left-3.5 top-3.5 text-neutral-500 text-sm">&#x1F50D;</span>
+                            <span className="absolute left-3.5 top-3.5 text-slate-400 text-sm">&#x1F50D;</span>
                         </div>
 
                         {/* Source filter pills */}
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-neutral-500 mr-1">Source:</span>
+                            <span className="text-xs text-slate-400 mr-1">Source:</span>
                             {['all', 'platform', 'community', 'user'].map(s => (
                                 <button key={s} onClick={() => setSelectedSource(s === 'all' ? null : s)}
-                                    className={`px-3 py-1 rounded-full text-xs transition-colors ${(s === 'all' && !selectedSource) || selectedSource === s ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}
+                                    className={`px-3 py-1 rounded-full text-xs transition-colors ${(s === 'all' && !selectedSource) || selectedSource === s ? 'bg-accent/20 text-accent' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}
                                 >
                                     {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
                                 </button>
                             ))}
 
-                            <span className="text-neutral-600 mx-2">|</span>
-                            <span className="text-xs text-neutral-500 mr-1">Category:</span>
-                            <button onClick={() => setSelectedCategory(null)} className={`px-3 py-1 rounded-full text-xs transition-colors ${!selectedCategory ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}>
+                            <span className="text-slate-400 mx-2">|</span>
+                            <span className="text-xs text-slate-400 mr-1">Category:</span>
+                            <button onClick={() => setSelectedCategory(null)} className={`px-3 py-1 rounded-full text-xs transition-colors ${!selectedCategory ? 'bg-accent/20 text-accent' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}>
                                 All
                             </button>
                             {categories.map(cat => (
                                 <button key={cat.slug} onClick={() => setSelectedCategory(selectedCategory === cat.slug ? null : cat.slug)}
-                                    className={`px-3 py-1 rounded-full text-xs transition-colors ${selectedCategory === cat.slug ? 'bg-accent/20 text-accent' : 'bg-white/[0.04] text-neutral-400 hover:text-white'}`}
+                                    className={`px-3 py-1 rounded-full text-xs transition-colors ${selectedCategory === cat.slug ? 'bg-accent/20 text-accent' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}
                                 >
                                     {cat.icon} {cat.name}
                                 </button>
@@ -231,10 +231,10 @@ export function PromptLibrary() {
 
                         {/* Tag filter pills */}
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-neutral-500 mr-1">Tags:</span>
+                            <span className="text-xs text-slate-400 mr-1">Tags:</span>
                             {tags.map(tag => (
                                 <button key={tag.slug} onClick={() => setSelectedTag(selectedTag === tag.slug ? null : tag.slug)}
-                                    className={`px-2.5 py-0.5 rounded-full text-xs transition-colors border ${selectedTag === tag.slug ? 'border-accent/40 text-accent' : 'border-white/[0.06] text-neutral-400 hover:text-white'}`}
+                                    className={`px-2.5 py-0.5 rounded-full text-xs transition-colors border ${selectedTag === tag.slug ? 'border-accent/40 text-accent' : 'border-slate-200 text-slate-500 hover:text-slate-900'}`}
                                     style={selectedTag === tag.slug ? {} : { borderColor: `${tag.color}30` }}
                                 >
                                     {tag.name}
@@ -244,7 +244,7 @@ export function PromptLibrary() {
                     </div>
 
                     {/* Stats bar */}
-                    <div className="flex items-center gap-6 text-xs text-neutral-500">
+                    <div className="flex items-center gap-6 text-xs text-slate-400">
                         <span>{filtered.length} prompt{filtered.length !== 1 ? 's' : ''}</span>
                         <span>{filtered.filter(p => p.source === 'platform').length} platform</span>
                         <span>{filtered.filter(p => p.source === 'community').length} community</span>
@@ -254,7 +254,7 @@ export function PromptLibrary() {
                     {/* Prompt cards */}
                     <div className="space-y-3">
                         {filtered.map(prompt => (
-                            <div key={prompt.id} className={`rounded-xl border transition-all duration-200 ${prompt.isPinned ? 'border-amber-500/30 bg-amber-500/[0.03]' : 'border-white/[0.06] bg-white/[0.02]'} hover:border-white/[0.12]`}>
+                            <div key={prompt.id} className={`rounded-xl border transition-all duration-200 ${prompt.isPinned ? 'border-amber-500/30 bg-amber-500/[0.03]' : 'border-slate-200 bg-slate-50'} hover:border-slate-200`}>
                                 <div className="p-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
@@ -262,22 +262,22 @@ export function PromptLibrary() {
                                                 {prompt.isPinned && <span className="text-amber-400 text-xs" title="Pinned">&#x1F4CC;</span>}
                                                 {prompt.isFeatured && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">Featured</span>}
                                                 <span className={`text-xs px-2 py-0.5 rounded-full ${SOURCE_STYLES[prompt.source]}`}>{prompt.source}</span>
-                                                <span className="text-xs text-neutral-500">{getCategoryIcon(prompt.categorySlug)} {getCategoryName(prompt.categorySlug)}</span>
+                                                <span className="text-xs text-slate-400">{getCategoryIcon(prompt.categorySlug)} {getCategoryName(prompt.categorySlug)}</span>
                                             </div>
-                                            <h4 className="text-sm font-medium text-white cursor-pointer hover:text-accent transition-colors" onClick={() => setExpandedId(expandedId === prompt.id ? null : prompt.id)}>
+                                            <h4 className="text-sm font-medium text-slate-900 cursor-pointer hover:text-accent transition-colors" onClick={() => setExpandedId(expandedId === prompt.id ? null : prompt.id)}>
                                                 {prompt.title}
                                             </h4>
-                                            <p className="text-xs text-neutral-400 mt-1 line-clamp-2">{prompt.description}</p>
+                                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{prompt.description}</p>
 
                                             {/* Tags */}
                                             <div className="flex gap-1.5 mt-2 flex-wrap">
                                                 {prompt.tags.map(tag => (
-                                                    <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.04] text-neutral-500 border border-white/[0.06]">
+                                                    <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 border border-slate-200">
                                                         {tag}
                                                     </span>
                                                 ))}
                                                 {prompt.targetTools.filter(t => t !== 'universal').map(tool => (
-                                                    <span key={tool} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                                    <span key={tool} className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                                                         {tool}
                                                     </span>
                                                 ))}
@@ -286,15 +286,15 @@ export function PromptLibrary() {
 
                                         {/* Engagement sidebar */}
                                         <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                                            <button onClick={() => handleVote(prompt.id, 'upvote')} className="text-neutral-500 hover:text-emerald-400 transition-colors text-lg">&#x25B2;</button>
-                                            <span className="text-sm font-mono text-white">{prompt.upvotes - prompt.downvotes}</span>
-                                            <button onClick={() => handleVote(prompt.id, 'downvote')} className="text-neutral-500 hover:text-red-400 transition-colors text-lg">&#x25BC;</button>
+                                            <button onClick={() => handleVote(prompt.id, 'upvote')} className="text-slate-400 hover:text-emerald-400 transition-colors text-lg">&#x25B2;</button>
+                                            <span className="text-sm font-mono text-slate-900">{prompt.upvotes - prompt.downvotes}</span>
+                                            <button onClick={() => handleVote(prompt.id, 'downvote')} className="text-slate-400 hover:text-red-400 transition-colors text-lg">&#x25BC;</button>
                                         </div>
                                     </div>
 
                                     {/* Author & stats row */}
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.04]">
-                                        <div className="flex items-center gap-4 text-[11px] text-neutral-500">
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                                        <div className="flex items-center gap-4 text-[11px] text-slate-400">
                                             <span>by {prompt.authorName}</span>
                                             <span>{prompt.usageCount} uses</span>
                                             <span>{prompt.forkCount} forks</span>
@@ -304,13 +304,13 @@ export function PromptLibrary() {
                                             <button onClick={() => handleUse(prompt.id)} className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-colors" title="Copy to your workspace">
                                                 Use
                                             </button>
-                                            <button onClick={() => handleFork(prompt.id)} className="px-3 py-1 rounded-lg bg-white/[0.06] text-neutral-400 text-xs hover:text-white hover:bg-white/[0.1] transition-colors" title="Fork to your collection">
+                                            <button onClick={() => handleFork(prompt.id)} className="px-3 py-1 rounded-lg bg-slate-100 text-slate-500 text-xs hover:text-slate-900 hover:bg-slate-200 transition-colors" title="Fork to your collection">
                                                 Fork
                                             </button>
-                                            <button onClick={() => handlePin(prompt.id)} className={`px-2 py-1 rounded-lg text-xs transition-colors ${prompt.isPinned ? 'bg-amber-500/20 text-amber-400' : 'bg-white/[0.06] text-neutral-500 hover:text-amber-400'}`} title="Pin to top">
+                                            <button onClick={() => handlePin(prompt.id)} className={`px-2 py-1 rounded-lg text-xs transition-colors ${prompt.isPinned ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-100 text-slate-400 hover:text-amber-400'}`} title="Pin to top">
                                                 &#x1F4CC;
                                             </button>
-                                            <button onClick={() => handleVote(prompt.id, 'flag')} className="px-2 py-1 rounded-lg bg-white/[0.06] text-neutral-500 text-xs hover:text-red-400 transition-colors" title="Flag for review">
+                                            <button onClick={() => handleVote(prompt.id, 'flag')} className="px-2 py-1 rounded-lg bg-slate-100 text-slate-400 text-xs hover:text-red-400 transition-colors" title="Flag for review">
                                                 &#x1F6A9;
                                             </button>
                                         </div>
@@ -318,8 +318,8 @@ export function PromptLibrary() {
 
                                     {/* Expanded content */}
                                     {expandedId === prompt.id && prompt.content && (
-                                        <div className="mt-3 pt-3 border-t border-white/[0.04]">
-                                            <pre className="text-xs text-neutral-300 whitespace-pre-wrap bg-black/20 rounded-lg p-4 max-h-[400px] overflow-y-auto font-mono leading-relaxed">
+                                        <div className="mt-3 pt-3 border-t border-slate-200">
+                                            <pre className="text-xs text-slate-600 whitespace-pre-wrap bg-black/20 rounded-lg p-4 max-h-[400px] overflow-y-auto font-mono leading-relaxed">
                                                 {prompt.content}
                                             </pre>
                                         </div>
@@ -329,7 +329,7 @@ export function PromptLibrary() {
                         ))}
 
                         {filtered.length === 0 && (
-                            <div className="text-center py-12 text-neutral-500">
+                            <div className="text-center py-12 text-slate-400">
                                 <span className="text-3xl block mb-3">&#x1F50D;</span>
                                 <p className="text-sm">No prompts match your filters.</p>
                                 <button onClick={() => { setSearch(''); setSelectedCategory(null); setSelectedTag(null); setSelectedSource(null); }} className="mt-2 text-xs text-accent hover:text-accent/80">
@@ -343,7 +343,7 @@ export function PromptLibrary() {
                 /* ========== Recommendations Tab ========== */
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <p className="text-sm text-neutral-400">Community suggestions for new prompts. Upvote the best ones.</p>
+                        <p className="text-sm text-slate-500">Community suggestions for new prompts. Upvote the best ones.</p>
                         <button onClick={() => setShowSubmitForm(!showSubmitForm)} className="px-4 py-2 rounded-lg bg-accent/20 text-accent text-sm hover:bg-accent/30 transition-colors">
                             + Suggest a Prompt
                         </button>
@@ -352,32 +352,32 @@ export function PromptLibrary() {
                     {/* Submit form */}
                     {showSubmitForm && (
                         <div className="rounded-xl border border-accent/20 bg-accent/[0.03] p-5 space-y-3">
-                            <h3 className="text-sm font-medium text-white">Submit a Prompt Suggestion</h3>
+                            <h3 className="text-sm font-medium text-slate-900">Submit a Prompt Suggestion</h3>
                             <input type="text" placeholder="Prompt title..." value={recForm.title} onChange={e => setRecForm(f => ({ ...f, title: e.target.value }))}
-                                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-accent/40" />
+                                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-accent/40" />
                             <input type="text" placeholder="Brief description..." value={recForm.description} onChange={e => setRecForm(f => ({ ...f, description: e.target.value }))}
-                                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-accent/40" />
+                                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-accent/40" />
                             <textarea placeholder="Full prompt content..." value={recForm.content} onChange={e => setRecForm(f => ({ ...f, content: e.target.value }))} rows={6}
-                                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-accent/40 font-mono" />
+                                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-accent/40 font-mono" />
                             <select value={recForm.categorySlug} onChange={e => setRecForm(f => ({ ...f, categorySlug: e.target.value }))}
-                                className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-neutral-400 focus:outline-none focus:border-accent/40">
+                                className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-500 focus:outline-none focus:border-accent/40">
                                 <option value="">Select category (optional)</option>
                                 {categories.map(c => <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>)}
                             </select>
                             <div className="flex gap-2">
                                 <button onClick={handleSubmitRec} className="px-4 py-2 rounded-lg bg-accent text-white text-sm hover:bg-accent/80 transition-colors">Submit</button>
-                                <button onClick={() => setShowSubmitForm(false)} className="px-4 py-2 rounded-lg bg-white/[0.06] text-neutral-400 text-sm hover:text-white transition-colors">Cancel</button>
+                                <button onClick={() => setShowSubmitForm(false)} className="px-4 py-2 rounded-lg bg-slate-100 text-slate-500 text-sm hover:text-slate-900 transition-colors">Cancel</button>
                             </div>
                         </div>
                     )}
 
                     {/* Recommendation cards */}
                     {recommendations.map(rec => (
-                        <div key={rec.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 hover:border-white/[0.12] transition-colors">
+                        <div key={rec.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-slate-200 transition-colors">
                             <div className="flex items-start gap-3">
                                 <div className="flex flex-col items-center gap-1 min-w-[50px]">
-                                    <button onClick={() => handleUpvoteRec(rec.id)} className="text-neutral-500 hover:text-emerald-400 transition-colors text-lg">&#x25B2;</button>
-                                    <span className="text-sm font-mono text-white">{rec.upvotes}</span>
+                                    <button onClick={() => handleUpvoteRec(rec.id)} className="text-slate-400 hover:text-emerald-400 transition-colors text-lg">&#x25B2;</button>
+                                    <span className="text-sm font-mono text-slate-900">{rec.upvotes}</span>
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
@@ -385,9 +385,9 @@ export function PromptLibrary() {
                                             {rec.status}
                                         </span>
                                     </div>
-                                    <h4 className="text-sm font-medium text-white">{rec.title}</h4>
-                                    {rec.description && <p className="text-xs text-neutral-400 mt-1">{rec.description}</p>}
-                                    <div className="flex items-center gap-3 mt-2 text-[11px] text-neutral-500">
+                                    <h4 className="text-sm font-medium text-slate-900">{rec.title}</h4>
+                                    {rec.description && <p className="text-xs text-slate-500 mt-1">{rec.description}</p>}
+                                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
                                         <span>by {rec.submittedByName}</span>
                                         <span>{new Date(rec.createdAt).toLocaleDateString()}</span>
                                     </div>
@@ -397,7 +397,7 @@ export function PromptLibrary() {
                     ))}
 
                     {recommendations.length === 0 && !showSubmitForm && (
-                        <div className="text-center py-12 text-neutral-500">
+                        <div className="text-center py-12 text-slate-400">
                             <span className="text-3xl block mb-3">&#x1F4AC;</span>
                             <p className="text-sm">No suggestions yet. Be the first to recommend a prompt.</p>
                         </div>

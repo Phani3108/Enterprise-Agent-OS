@@ -169,13 +169,13 @@ export function AICoursesHub() {
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">AI Learning Hub</h2>
-                        <p className="text-sm text-gray-600 font-medium mt-1">Curated courses, roadmaps, and resources for AI agent development.</p>
+                        <h2 className="text-xl font-bold text-slate-900">AI Learning Hub</h2>
+                        <p className="text-sm text-slate-600 font-medium mt-1">Curated courses, roadmaps, and resources for AI agent development.</p>
                     </div>
                     <div className="flex gap-2">
                         {(['providers', 'roadmap', 'courses'] as const).map(tab => (
                             <button key={tab} onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === tab ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-900'}`}>
+                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === tab ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}>
                                 {tab === 'providers' ? 'Platforms' : tab === 'roadmap' ? '5-Day Roadmap' : 'Courses (24)'}
                             </button>
                         ))}
@@ -185,14 +185,14 @@ export function AICoursesHub() {
                 {/* Global stats bar */}
                 <div className="grid grid-cols-5 gap-3">
                     {[
-                        { label: 'Total Courses', value: courses.length, color: 'text-gray-900' },
+                        { label: 'Total Courses', value: courses.length, color: 'text-slate-900' },
                         { label: 'Total Views', value: totalViews.toLocaleString(), color: 'text-blue-700' },
                         { label: 'Total Likes', value: totalLikes.toLocaleString(), color: 'text-emerald-700' },
                         { label: 'Total Pins', value: totalPins.toLocaleString(), color: 'text-amber-700' },
                         { label: 'Engagement Rate', value: `${avgEngagement}%`, color: 'text-violet-700' },
                     ].map(stat => (
-                        <div key={stat.label} className="rounded-xl border border-gray-200 bg-white shadow-sm p-3">
-                            <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{stat.label}</div>
+                        <div key={stat.label} className="rounded-xl border border-slate-200 bg-white shadow-sm p-3">
+                            <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">{stat.label}</div>
                             <div className={`text-lg font-bold mt-0.5 ${stat.color}`}>{stat.value}</div>
                         </div>
                     ))}
@@ -204,23 +204,23 @@ export function AICoursesHub() {
             {/* ================================================================ */}
             {activeTab === 'providers' && (
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-600 font-medium">Top AI learning platforms — free and paid courses from the companies building AI.</p>
+                    <p className="text-sm text-slate-600 font-medium">Top AI learning platforms — free and paid courses from the companies building AI.</p>
                     <div className="grid grid-cols-5 gap-4">
                         {PROVIDERS.map(p => (
                             <a key={p.name} href={p.url} target="_blank" rel="noreferrer"
-                                className={`group relative rounded-xl border border-gray-200 bg-gradient-to-br ${p.bgGradient} p-5 hover:border-gray-300 hover:shadow-md hover:scale-[1.03] transition-all duration-200 cursor-pointer`}>
+                                className={`group relative rounded-xl border border-slate-200 bg-gradient-to-br ${p.bgGradient} p-5 hover:border-slate-300 hover:shadow-md hover:scale-[1.03] transition-all duration-200 cursor-pointer`}>
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm"
                                         style={{ backgroundColor: `${p.color}20`, color: p.color, border: `1px solid ${p.color}30` }}>
                                         {p.letter}
                                     </div>
                                     <div>
-                                        <div className="text-sm font-bold text-gray-900">{p.name}</div>
-                                        {p.name === 'NVIDIA' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-lime-100 text-lime-700 font-bold border border-lime-200">GOATED</span>}
+                                        <div className="text-sm font-bold text-slate-900">{p.name}</div>
+                                        {p.name === 'NVIDIA' && <span className="text-[11px] px-1.5 py-0.5 rounded bg-lime-100 text-lime-700 font-bold border border-lime-200">GOATED</span>}
                                     </div>
                                 </div>
-                                <p className="text-[11px] text-gray-600 font-medium">{p.tagline}</p>
-                                <div className="mt-3 text-[10px] text-gray-500 group-hover:text-blue-700 transition-colors font-medium truncate">
+                                <p className="text-[11px] text-slate-600 font-medium">{p.tagline}</p>
+                                <div className="mt-3 text-[11px] text-slate-500 group-hover:text-blue-700 transition-colors font-medium truncate">
                                     {p.url.replace('https://', '')} &#x2197;
                                 </div>
                             </a>
@@ -235,8 +235,8 @@ export function AICoursesHub() {
             {activeTab === 'roadmap' && (
                 <div className="space-y-4">
                     <div className="text-center mb-6">
-                        <h3 className="text-base font-bold text-gray-900 mb-1">5-Day AI Agent Mastery Roadmap</h3>
-                        <p className="text-sm text-gray-600 font-medium">260 pages of concentrated knowledge — from zero to production agents.</p>
+                        <h3 className="text-base font-bold text-slate-900 mb-1">5-Day AI Agent Mastery Roadmap</h3>
+                        <p className="text-sm text-slate-600 font-medium">260 pages of concentrated knowledge — from zero to production agents.</p>
                     </div>
 
                     {/* Road visualization */}
@@ -267,17 +267,17 @@ export function AICoursesHub() {
                                         {/* Content card */}
                                         <div className={`w-[calc(50%-40px)] ${isLeft ? 'mr-auto pr-6' : 'ml-auto pl-6'}`}>
                                             <a href={day.url} target="_blank" rel="noreferrer"
-                                                className="block rounded-xl border border-gray-200 bg-white shadow-sm p-5 hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
+                                                className="block rounded-xl border border-slate-200 bg-white shadow-sm p-5 hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold border border-blue-200">DAY {day.day}</span>
-                                                    <span className="text-[10px] text-gray-500 font-medium">{day.pages} pages</span>
+                                                    <span className="text-[11px] text-slate-500 font-medium">{day.pages} pages</span>
                                                 </div>
-                                                <h4 className="text-sm font-bold text-gray-900 mb-2 group-hover:text-blue-700 transition-colors">
+                                                <h4 className="text-sm font-bold text-slate-900 mb-2 group-hover:text-blue-700 transition-colors">
                                                     {day.title}
                                                 </h4>
                                                 <p className="text-xs text-amber-700 italic font-medium mb-2">"{day.hook}"</p>
-                                                <p className="text-[11px] text-gray-600 leading-relaxed font-medium">{day.description}</p>
-                                                <div className="mt-3 text-[10px] text-blue-600 font-semibold group-hover:text-blue-800 transition-colors">
+                                                <p className="text-[11px] text-slate-600 leading-relaxed font-medium">{day.description}</p>
+                                                <div className="mt-3 text-[11px] text-blue-600 font-semibold group-hover:text-blue-800 transition-colors">
                                                     Open resource &#x2197;
                                                 </div>
                                             </a>
@@ -305,23 +305,23 @@ export function AICoursesHub() {
                     {/* Filters & Sort */}
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-500 font-semibold">Category:</span>
+                            <span className="text-xs text-slate-500 font-semibold">Category:</span>
                             <button onClick={() => setSelectedCategory(null)}
-                                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${!selectedCategory ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900'}`}>
+                                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${!selectedCategory ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}>
                                 All ({courses.length})
                             </button>
                             {categories.map(cat => (
                                 <button key={cat} onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${selectedCategory === cat ? 'ring-2 ring-offset-1 ring-blue-400' : ''} ${CATEGORY_COLORS[cat] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${selectedCategory === cat ? 'ring-2 ring-offset-1 ring-blue-400' : ''} ${CATEGORY_COLORS[cat] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                                     {cat} ({courses.filter(c => c.category === cat).length})
                                 </button>
                             ))}
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 font-semibold">Sort:</span>
+                            <span className="text-xs text-slate-500 font-semibold">Sort:</span>
                             {(['likes', 'views', 'pins'] as const).map(s => (
                                 <button key={s} onClick={() => setSortBy(s)}
-                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${sortBy === s ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900'}`}>
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${sortBy === s ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}>
                                     {s === 'likes' ? 'Most Liked' : s === 'views' ? 'Most Viewed' : 'Most Pinned'}
                                 </button>
                             ))}
@@ -332,27 +332,27 @@ export function AICoursesHub() {
                     <div className="grid grid-cols-2 gap-3">
                         {filteredCourses.map((course) => (
                             <div key={course.id}
-                                className={`rounded-xl border transition-all duration-200 hover:shadow-md ${course.isPinned ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
+                                className={`rounded-xl border transition-all duration-200 hover:shadow-md ${course.isPinned ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}>
                                 <div className="p-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                             {/* Badges row */}
                                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                <span className="text-xs font-mono text-gray-400 w-5">#{course.id}</span>
+                                                <span className="text-xs font-mono text-slate-400 w-5">#{course.id}</span>
                                                 {course.isPinned && <span className="text-amber-600 text-xs">&#x1F4CC;</span>}
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${CATEGORY_COLORS[course.category] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                                <span className={`text-[11px] px-2 py-0.5 rounded-full border font-semibold ${CATEGORY_COLORS[course.category] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                                                     {course.category}
                                                 </span>
                                             </div>
 
                                             {/* Title */}
                                             <a href={course.url} target="_blank" rel="noreferrer"
-                                                className="text-sm font-bold text-gray-900 hover:text-blue-700 transition-colors block mb-2">
+                                                className="text-sm font-bold text-slate-900 hover:text-blue-700 transition-colors block mb-2">
                                                 {course.title}
                                             </a>
 
                                             {/* Stats row */}
-                                            <div className="flex items-center gap-4 text-[11px] text-gray-500 font-medium">
+                                            <div className="flex items-center gap-4 text-[11px] text-slate-500 font-medium">
                                                 <span>{course.views.toLocaleString()} views</span>
                                                 <span>{course.likes} likes</span>
                                                 <span>{course.pins} pins</span>
@@ -364,33 +364,33 @@ export function AICoursesHub() {
                                             <button onClick={() => handleLike(course.id)}
                                                 className="flex flex-col items-center p-1.5 rounded-lg hover:bg-emerald-100 transition-colors group"
                                                 title="Like">
-                                                <span className="text-gray-400 group-hover:text-emerald-600 text-sm">&#x25B2;</span>
-                                                <span className="text-[10px] text-gray-400 group-hover:text-emerald-600 font-mono">{course.likes}</span>
+                                                <span className="text-slate-400 group-hover:text-emerald-600 text-sm">&#x25B2;</span>
+                                                <span className="text-[11px] text-slate-400 group-hover:text-emerald-600 font-mono">{course.likes}</span>
                                             </button>
                                             <button onClick={() => handleDislike(course.id)}
                                                 className="flex flex-col items-center p-1.5 rounded-lg hover:bg-red-100 transition-colors group"
                                                 title="Dislike">
-                                                <span className="text-gray-400 group-hover:text-red-600 text-sm">&#x25BC;</span>
-                                                <span className="text-[10px] text-gray-400 group-hover:text-red-600 font-mono">{course.dislikes}</span>
+                                                <span className="text-slate-400 group-hover:text-red-600 text-sm">&#x25BC;</span>
+                                                <span className="text-[11px] text-slate-400 group-hover:text-red-600 font-mono">{course.dislikes}</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Action bar */}
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                                         <div className="flex items-center gap-1.5">
                                             <button onClick={() => handlePin(course.id)}
-                                                className={`px-2 py-1 rounded-lg text-xs font-semibold transition-colors border ${course.isPinned ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-gray-500 border-gray-200 hover:text-amber-700 hover:bg-amber-50'}`}
+                                                className={`px-2 py-1 rounded-lg text-xs font-semibold transition-colors border ${course.isPinned ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-slate-500 border-slate-200 hover:text-amber-700 hover:bg-amber-50'}`}
                                                 title="Pin">
                                                 &#x1F4CC; {course.pins}
                                             </button>
                                             <button onClick={() => handleShare(course.title, course.url)}
-                                                className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold hover:text-gray-900 hover:bg-gray-200 transition-colors border border-gray-200"
+                                                className="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-semibold hover:text-slate-900 hover:bg-slate-200 transition-colors border border-slate-200"
                                                 title="Share">
                                                 &#x1F4E4; Share
                                             </button>
                                             <button onClick={() => handleCopyLink(course.url, course.id)}
-                                                className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold hover:text-gray-900 hover:bg-gray-200 transition-colors border border-gray-200"
+                                                className="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-semibold hover:text-slate-900 hover:bg-slate-200 transition-colors border border-slate-200"
                                                 title="Copy link">
                                                 {copiedId === course.id ? '&#x2705; Copied!' : '&#x1F517; Copy Link'}
                                             </button>
@@ -407,7 +407,7 @@ export function AICoursesHub() {
                     </div>
 
                     {filteredCourses.length === 0 && (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className="text-center py-12 text-slate-500">
                             <p className="text-sm font-medium">No courses in this category.</p>
                             <button onClick={() => setSelectedCategory(null)} className="mt-2 text-xs text-blue-600 font-semibold hover:text-blue-800">Show all</button>
                         </div>

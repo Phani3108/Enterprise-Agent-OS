@@ -161,7 +161,7 @@ export function ToolConnectModal({ tool, onClose, onConnected }: ToolConnectModa
               {tool.connected ? 'Connected' : 'Not Connected'}
             </span>
             {tool.connectedAt && (
-              <span className="text-[10px] text-slate-400 ml-auto">
+              <span className="text-[11px] text-slate-400 ml-auto">
                 Connected {new Date(tool.connectedAt).toLocaleDateString()}
               </span>
             )}

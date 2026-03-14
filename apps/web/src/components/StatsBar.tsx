@@ -37,10 +37,10 @@ export default function StatsBar() {
     return (
         <div className="grid grid-cols-6 gap-3" data-tour="stats-bar">
             {cards.map((card, i) => (
-                <div key={i} className="glass-surface rounded-xl p-3">
-                    <div className="text-xs text-neutral-500 mb-1">{card.label}</div>
+                <div key={i} className="bg-white border border-slate-200 rounded-xl p-3">
+                    <div className="text-xs text-slate-400 mb-1">{card.label}</div>
                     <div className={`text-xl font-semibold ${card.color}`}>{card.value}</div>
-                    {card.trend && <div className="text-xs text-neutral-500 mt-1">{card.trend}</div>}
+                    {card.trend && <div className="text-xs text-slate-400 mt-1">{card.trend}</div>}
                 </div>
             ))}
         </div>

@@ -180,7 +180,7 @@ const SAMPLE_POSTS: ForumPost[] = [
 function Avatar({ emoji, size = 'md' }: { emoji: string; size?: 'sm' | 'md' | 'lg' }) {
   const sizeClass = size === 'sm' ? 'w-6 h-6 text-sm' : size === 'lg' ? 'w-10 h-10 text-xl' : 'w-8 h-8 text-base';
   return (
-    <div className={`${sizeClass} rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0`}>
+    <div className={`${sizeClass} rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0`}>
       {emoji}
     </div>
   );
@@ -203,11 +203,11 @@ function VoteButton({
       className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
         active
           ? direction === 'up' ? 'text-orange-500 bg-orange-50' : 'text-blue-500 bg-blue-50'
-          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
       }`}
     >
       <span className="text-xs">{direction === 'up' ? '▲' : '▼'}</span>
-      <span className="text-[10px] font-medium">{count}</span>
+      <span className="text-[11px] font-medium">{count}</span>
     </button>
   );
 }
@@ -237,34 +237,34 @@ function Comment({
   depth?: number;
 }) {
   return (
-    <div className={`${depth > 0 ? 'ml-8 border-l-2 border-gray-100 pl-4' : ''}`}>
+    <div className={`${depth > 0 ? 'ml-8 border-l-2 border-slate-100 pl-4' : ''}`}>
       <div className="flex gap-3 py-3">
         <Avatar emoji={comment.authorAvatar} size="sm" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-gray-800">{comment.author}</span>
+            <span className="text-xs font-medium text-slate-800">{comment.author}</span>
             {comment.isAccepted && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-medium">
+              <span className="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-medium">
                 ✓ Accepted
               </span>
             )}
-            <span className="text-[10px] text-gray-400">{relativeTime(comment.createdAt)}</span>
+            <span className="text-[11px] text-slate-400">{relativeTime(comment.createdAt)}</span>
           </div>
-          <div className="text-xs text-gray-700 leading-relaxed whitespace-pre-line mb-2">
+          <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line mb-2">
             {comment.body}
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => onVote(comment.id)}
-              className={`flex items-center gap-1 text-[10px] transition-colors ${
-                comment.userVote === 'up' ? 'text-orange-500' : 'text-gray-400 hover:text-orange-500'
+              className={`flex items-center gap-1 text-[11px] transition-colors ${
+                comment.userVote === 'up' ? 'text-orange-500' : 'text-slate-400 hover:text-orange-500'
               }`}
             >
               ▲ {comment.upvotes}
             </button>
             <button
               onClick={() => onReply(comment.id, comment.author)}
-              className="text-[10px] text-gray-400 hover:text-gray-600"
+              className="text-[11px] text-slate-400 hover:text-slate-600"
             >
               Reply
             </button>
@@ -317,7 +317,7 @@ function PostDetail({
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto p-6">
         {/* Back */}
-        <button onClick={onBack} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 mb-4 transition-colors">
+        <button onClick={onBack} className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 mb-4 transition-colors">
           ← Back to discussions
         </button>
 
@@ -326,30 +326,30 @@ function PostDetail({
           {/* Votes */}
           <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-1">
             <VoteButton direction="up" count={post.upvotes} active={post.userVote === 'up'} onClick={() => onVote('up')} />
-            <span className="text-xs font-bold text-gray-700">{score}</span>
+            <span className="text-xs font-bold text-slate-700">{score}</span>
             <VoteButton direction="down" count={post.downvotes} active={post.userVote === 'down'} onClick={() => onVote('down')} />
           </div>
 
           {/* Content */}
           <div className="flex-1">
             <div className="flex items-start gap-2 mb-2">
-              {post.isPinned && <span className="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full font-medium">📌 Pinned</span>}
-              {post.isAnswered && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-medium">✓ Answered</span>}
+              {post.isPinned && <span className="text-[11px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full font-medium">📌 Pinned</span>}
+              {post.isAnswered && <span className="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-medium">✓ Answered</span>}
             </div>
-            <h1 className="text-lg font-semibold text-gray-900 mb-3">{post.title}</h1>
+            <h1 className="text-lg font-semibold text-slate-900 mb-3">{post.title}</h1>
 
-            <div className="flex items-center gap-3 mb-4 text-[10px] text-gray-400">
+            <div className="flex items-center gap-3 mb-4 text-[11px] text-slate-400">
               <Avatar emoji={post.authorAvatar} size="sm" />
-              <span className="font-medium text-gray-600">{post.author}</span>
+              <span className="font-medium text-slate-600">{post.author}</span>
               <span>·</span>
               <span>{relativeTime(post.createdAt)}</span>
               <span>·</span>
               <span>{post.views} views</span>
             </div>
 
-            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line mb-4 prose">
+            <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line mb-4 prose">
               {post.body.split('\n').map((line, i) => {
-                if (line.startsWith('```')) return <code key={i} className="block bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono my-2">{line.replace(/```/g, '')}</code>;
+                if (line.startsWith('```')) return <code key={i} className="block bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono my-2">{line.replace(/```/g, '')}</code>;
                 if (line.startsWith('**') && line.endsWith('**')) return <strong key={i} className="block">{line.replace(/\*\*/g, '')}</strong>;
                 if (!line.trim()) return <br key={i} />;
                 return <p key={i} className="mb-1">{line}</p>;
@@ -358,26 +358,26 @@ function PostDetail({
 
             <div className="flex flex-wrap gap-1.5 mb-6">
               {post.tags.map((t) => (
-                <span key={t} className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">#{t}</span>
+                <span key={t} className="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">#{t}</span>
               ))}
             </div>
 
             {/* Comments */}
-            <div className="border-t border-gray-100 pt-4">
-              <h3 className="text-xs font-semibold text-gray-700 mb-3">{post.comments.length} {post.comments.length === 1 ? 'Comment' : 'Comments'}</h3>
+            <div className="border-t border-slate-100 pt-4">
+              <h3 className="text-xs font-semibold text-slate-700 mb-3">{post.comments.length} {post.comments.length === 1 ? 'Comment' : 'Comments'}</h3>
 
-              <div className="space-y-1 divide-y divide-gray-50">
+              <div className="space-y-1 divide-y divide-slate-50">
                 {post.comments.map((c) => (
                   <Comment key={c.id} comment={c} onVote={onVoteComment} onReply={handleReply} />
                 ))}
               </div>
 
               {/* New comment */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="mt-4 pt-4 border-t border-slate-100">
                 {replyTo && (
-                  <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 mb-2 text-xs text-slate-500">
                     <span>Replying to <strong>{replyTo.author}</strong></span>
-                    <button onClick={() => setReplyTo(null)} className="text-gray-400 hover:text-gray-600">×</button>
+                    <button onClick={() => setReplyTo(null)} className="text-slate-400 hover:text-slate-600">×</button>
                   </div>
                 )}
                 <textarea
@@ -386,14 +386,14 @@ function PostDetail({
                   onChange={(e) => setCommentBody(e.target.value)}
                   placeholder="Add a comment… (be specific and helpful)"
                   rows={3}
-                  className="w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:border-gray-400 resize-none leading-relaxed"
+                  className="w-full text-sm px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-400 resize-none leading-relaxed"
                   data-testid="comment-textarea"
                 />
                 <div className="flex justify-end mt-2">
                   <button
                     onClick={submitComment}
                     disabled={!commentBody.trim()}
-                    className="text-xs px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                    className="text-xs px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 disabled:opacity-40 transition-colors"
                     data-testid="submit-comment-btn"
                   >
                     Comment
@@ -421,7 +421,7 @@ function PostCard({ post, onClick, onVote }: {
 
   return (
     <div
-      className="flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50/50 transition-all cursor-pointer"
+      className="flex gap-4 p-4 rounded-xl border border-slate-100 hover:border-slate-200 bg-white hover:bg-slate-50/50 transition-all cursor-pointer"
       onClick={onClick}
       data-testid={`post-card-${post.id}`}
     >
@@ -429,28 +429,28 @@ function PostCard({ post, onClick, onVote }: {
       <div className="flex flex-col items-center gap-0.5 flex-shrink-0 pt-1" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={(e) => onVote('up', e)}
-          className={`text-xs px-1.5 py-1 rounded transition-colors ${post.userVote === 'up' ? 'text-orange-500' : 'text-gray-300 hover:text-orange-400'}`}
+          className={`text-xs px-1.5 py-1 rounded transition-colors ${post.userVote === 'up' ? 'text-orange-500' : 'text-slate-300 hover:text-orange-400'}`}
         >▲</button>
-        <span className={`text-xs font-bold ${score > 0 ? 'text-orange-500' : score < 0 ? 'text-blue-500' : 'text-gray-400'}`}>{score}</span>
+        <span className={`text-xs font-bold ${score > 0 ? 'text-orange-500' : score < 0 ? 'text-blue-500' : 'text-slate-400'}`}>{score}</span>
         <button
           onClick={(e) => onVote('down', e)}
-          className={`text-xs px-1.5 py-1 rounded transition-colors ${post.userVote === 'down' ? 'text-blue-500' : 'text-gray-300 hover:text-blue-400'}`}
+          className={`text-xs px-1.5 py-1 rounded transition-colors ${post.userVote === 'down' ? 'text-blue-500' : 'text-slate-300 hover:text-blue-400'}`}
         >▼</button>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2 mb-1">
-          {post.isPinned && <span className="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full flex-shrink-0">📌</span>}
-          {post.isAnswered && <span className="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full flex-shrink-0">✓</span>}
-          <h3 className="text-sm font-medium text-gray-900 leading-snug">{post.title}</h3>
+          {post.isPinned && <span className="text-[11px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full flex-shrink-0">📌</span>}
+          {post.isAnswered && <span className="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full flex-shrink-0">✓</span>}
+          <h3 className="text-sm font-medium text-slate-900 leading-snug">{post.title}</h3>
         </div>
 
-        <p className="text-xs text-gray-400 line-clamp-2 mb-2">
+        <p className="text-xs text-slate-400 line-clamp-2 mb-2">
           {post.body.replace(/\n/g, ' ').replace(/\*\*/g, '').substring(0, 120)}…
         </p>
 
-        <div className="flex items-center gap-3 text-[10px] text-gray-400">
+        <div className="flex items-center gap-3 text-[11px] text-slate-400">
           <div className="flex items-center gap-1">
             <Avatar emoji={post.authorAvatar} size="sm" />
             <span>{post.author}</span>
@@ -463,7 +463,7 @@ function PostCard({ post, onClick, onVote }: {
           <span>👁 {post.views}</span>
           <div className="flex gap-1 ml-1">
             {post.tags.slice(0, 3).map((t) => (
-              <span key={t} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">#{t}</span>
+              <span key={t} className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full">#{t}</span>
             ))}
           </div>
         </div>
@@ -499,29 +499,29 @@ function NewPostModal({ onClose, onSubmit }: {
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-[600px] mx-4 flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">New Discussion</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-900">New Discussion</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg">×</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Title *</label>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">Title *</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What's your question or recommendation?"
-              className="w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:border-gray-400"
+              className="w-full text-sm px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-400"
               data-testid="new-post-title"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Category</label>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:border-gray-400 bg-white"
+              className="w-full text-sm px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-400 bg-white"
             >
               {CATEGORIES.filter((c) => c.id !== 'all').map((c) => (
                 <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
@@ -530,36 +530,36 @@ function NewPostModal({ onClose, onSubmit }: {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Description *</label>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">Description *</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Provide context, steps tried, code snippets… The more detail, the better answers you'll get."
               rows={8}
-              className="w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:border-gray-400 resize-none leading-relaxed"
+              className="w-full text-sm px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-400 resize-none leading-relaxed"
               data-testid="new-post-body"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Tags (comma-separated)</label>
+            <label className="text-xs font-medium text-slate-500 mb-1 block">Tags (comma-separated)</label>
             <input
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="workflow, jira, automation…"
-              className="w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:border-gray-400"
+              className="w-full text-sm px-3 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-slate-400"
             />
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="text-xs px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+          <button onClick={onClose} className="text-xs px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50">
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!title.trim() || !body.trim()}
-            className="text-xs px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 disabled:opacity-40 transition-colors"
+            className="text-xs px-5 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 disabled:opacity-40 transition-colors"
             data-testid="submit-post-btn"
           >
             Post Discussion
@@ -695,14 +695,14 @@ export function DiscussionForum() {
       ) : (
         <>
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 flex-shrink-0">
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">Discussion Forum</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Share workflows, ask questions, and discuss skills</p>
+              <h2 className="text-sm font-semibold text-slate-900">Discussion Forum</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Share workflows, ask questions, and discuss skills</p>
             </div>
             <button
               onClick={() => setShowNewPost(true)}
-              className="text-xs px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 transition-colors"
+              className="text-xs px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition-colors"
               data-testid="new-discussion-btn"
             >
               + New Discussion
@@ -710,15 +710,15 @@ export function DiscussionForum() {
           </div>
 
           {/* Stats bar */}
-          <div className="flex items-center gap-6 px-6 py-2 bg-gray-50 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-6 px-6 py-2 bg-slate-50 border-b border-slate-100 flex-shrink-0">
             {[
               { label: 'Discussions', value: totalPosts },
               { label: 'Comments', value: totalComments },
               { label: 'Contributors', value: totalUsers },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-gray-700">{s.value}</span>
-                <span className="text-xs text-gray-400">{s.label}</span>
+                <span className="text-xs font-semibold text-slate-700">{s.value}</span>
+                <span className="text-xs text-slate-400">{s.label}</span>
               </div>
             ))}
             <div className="ml-auto flex items-center gap-2">
@@ -727,7 +727,7 @@ export function DiscussionForum() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search discussions…"
-                className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-gray-400 w-48"
+                className="text-xs px-3 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 w-48"
                 data-testid="forum-search"
               />
             </div>
@@ -735,8 +735,8 @@ export function DiscussionForum() {
 
           <div className="flex flex-1 overflow-hidden">
             {/* Sidebar */}
-            <div className="w-48 flex-shrink-0 border-r border-gray-100 p-3 space-y-1 overflow-y-auto">
-              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-2 mb-2">Categories</div>
+            <div className="w-48 flex-shrink-0 border-r border-slate-100 p-3 space-y-1 overflow-y-auto">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-2 mb-2">Categories</div>
               {CATEGORIES.map((cat) => {
                 const count = cat.id === 'all' ? posts.length : posts.filter((p) => p.category === cat.id).length;
                 return (
@@ -745,13 +745,13 @@ export function DiscussionForum() {
                     onClick={() => setActiveCategory(cat.id)}
                     className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors ${
                       activeCategory === cat.id
-                        ? 'bg-gray-900 text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-600 hover:bg-slate-50'
                     }`}
                     data-testid={`category-${cat.id}`}
                   >
                     <span>{cat.icon} {cat.label}</span>
-                    <span className={`text-[9px] ${activeCategory === cat.id ? 'text-gray-400' : 'text-gray-400'}`}>{count}</span>
+                    <span className={`text-[11px] ${activeCategory === cat.id ? 'text-slate-400' : 'text-slate-400'}`}>{count}</span>
                   </button>
                 );
               })}
@@ -760,31 +760,31 @@ export function DiscussionForum() {
             {/* Main */}
             <div className="flex-1 overflow-y-auto">
               {/* Sort */}
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-50">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-50">
                 {(['hot', 'new', 'top'] as const).map((s) => (
                   <button
                     key={s}
                     onClick={() => setSortBy(s)}
                     className={`text-xs px-3 py-1 rounded-lg capitalize transition-colors ${
-                      sortBy === s ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-400 hover:text-gray-700'
+                      sortBy === s ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-400 hover:text-slate-700'
                     }`}
                     data-testid={`sort-${s}`}
                   >
                     {s === 'hot' ? '🔥' : s === 'new' ? '✨' : '🏆'} {s}
                   </button>
                 ))}
-                <span className="ml-auto text-[10px] text-gray-400">{filtered.length} discussions</span>
+                <span className="ml-auto text-[11px] text-slate-400">{filtered.length} discussions</span>
               </div>
 
               {/* Posts */}
               <div className="p-4 space-y-3">
                 {filtered.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">
+                  <div className="text-center py-12 text-slate-400">
                     <div className="text-3xl mb-2">💬</div>
                     <div className="text-sm">No discussions found</div>
                     <button
                       onClick={() => setShowNewPost(true)}
-                      className="mt-3 text-xs px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700"
+                      className="mt-3 text-xs px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700"
                     >
                       Start the first discussion
                     </button>

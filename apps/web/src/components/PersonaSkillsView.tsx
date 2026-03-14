@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
+import { PERSONAS as PERSONAS_FALLBACK } from '@agentos/gateway/persona-system';
 
 interface PersonaSummary {
   id: string; name: string; icon: string; color: string; description: string;
@@ -50,6 +51,21 @@ interface LicenseSummary {
 
 const GATEWAY = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
 
+const FALLBACK_PERSONAS: PersonaSummary[] = [
+  { id: 'product', name: 'Product', icon: '📦', color: '#8b5cf6', description: 'Product management skills', skillCount: 24, agentCount: 6, toolCount: 10 },
+  { id: 'engineering', name: 'Engineering', icon: '⚙️', color: '#3b82f6', description: 'Software engineering skills', skillCount: 28, agentCount: 6, toolCount: 11 },
+  { id: 'marketing', name: 'Marketing', icon: '📣', color: '#f59e0b', description: 'Marketing operations', skillCount: 22, agentCount: 6, toolCount: 12 },
+  { id: 'program', name: 'Program / Delivery', icon: '📋', color: '#10b981', description: 'Program management', skillCount: 9, agentCount: 4, toolCount: 8 },
+  { id: 'hr', name: 'HR / People Ops', icon: '👥', color: '#ec4899', description: 'Human resources', skillCount: 10, agentCount: 4, toolCount: 6 },
+  { id: 'finance', name: 'Finance', icon: '💰', color: '#06b6d4', description: 'Financial operations', skillCount: 10, agentCount: 4, toolCount: 6 },
+  { id: 'data', name: 'Data / Analytics', icon: '📊', color: '#6366f1', description: 'Data operations', skillCount: 12, agentCount: 5, toolCount: 7 },
+  { id: 'corpit', name: 'Corp IT', icon: '🏛️', color: '#64748b', description: 'IT governance', skillCount: 13, agentCount: 5, toolCount: 7 },
+  { id: 'sales', name: 'Sales / GTM', icon: '🎯', color: '#ef4444', description: 'Sales operations', skillCount: 13, agentCount: 4, toolCount: 7 },
+  { id: 'design', name: 'Design', icon: '🎨', color: '#d946ef', description: 'Design operations', skillCount: 12, agentCount: 4, toolCount: 7 },
+  { id: 'support', name: 'Customer Support', icon: '🎧', color: '#14b8a6', description: 'Support operations', skillCount: 13, agentCount: 4, toolCount: 6 },
+  { id: 'legal', name: 'Legal / Compliance', icon: '⚖️', color: '#78716c', description: 'Legal operations', skillCount: 13, agentCount: 4, toolCount: 6 },
+];
+
 const COMPLEXITY_BADGE: Record<string, { label: string; className: string }> = {
   simple: { label: 'Simple', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   moderate: { label: 'Moderate', className: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -73,19 +89,45 @@ export default function PersonaSkillsView() {
   const [licenseSummary, setLicenseSummary] = useState<LicenseSummary | null>(null);
 
   useEffect(() => {
-    fetch(`${GATEWAY}/api/personas`).then(r => r.json()).then(d => {
-      setPersonas(d.personas || []);
-      setStats(d.stats || null);
-    }).catch(() => {});
+    fetch(`${GATEWAY}/api/personas`)
+      .then(r => r.json())
+      .then(d => {
+        const p = d.personas || [];
+        setPersonas(p.length ? p : FALLBACK_PERSONAS);
+        setStats(d.stats || null);
+      })
+      .catch(() => {
+        setPersonas(FALLBACK_PERSONAS);
+      });
   }, []);
 
   useEffect(() => {
     if (!selectedPersona) return;
-    fetch(`${GATEWAY}/api/personas/${selectedPersona}`).then(r => r.json()).then(d => {
-      setPersona(d.persona || null);
-      setActiveTab('skills');
-      setExpandedCategory(d.persona?.skillCategories?.[0]?.name || null);
-    }).catch(() => {});
+    fetch(`${GATEWAY}/api/personas/${selectedPersona}`)
+      .then(r => r.json())
+      .then(d => {
+        const p = d.persona || null;
+        if (p) {
+          setPersona(p);
+          setActiveTab('skills');
+          setExpandedCategory(p.skillCategories?.[0]?.name || null);
+        } else {
+          const fallback = PERSONAS_FALLBACK.find(x => x.id === selectedPersona);
+          if (fallback) {
+            setPersona(fallback as FullPersona);
+            setActiveTab('skills');
+            setExpandedCategory(fallback.skillCategories?.[0]?.name || null);
+          }
+        }
+      })
+      .catch(() => {
+        const fallback = PERSONAS_FALLBACK.find(x => x.id === selectedPersona);
+        if (fallback) {
+          setPersona(fallback as FullPersona);
+          setActiveTab('skills');
+          setExpandedCategory(fallback.skillCategories?.[0]?.name || null);
+        }
+      });
   }, [selectedPersona]);
 
   useEffect(() => {
@@ -130,11 +172,11 @@ export default function PersonaSkillsView() {
   return (
     <div className="flex h-full" data-tour="persona-skills-view">
       {/* Left — Persona Selector */}
-      <div className="w-56 border-r border-gray-200 bg-gray-50/50 overflow-y-auto flex-shrink-0" data-tour="persona-selector">
-        <div className="p-4 border-b border-gray-200 bg-white">
-          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-widest">Personas</h2>
+      <div className="w-56 border-r border-slate-200 bg-slate-50/50 overflow-y-auto flex-shrink-0" data-tour="persona-selector">
+        <div className="p-4 border-b border-slate-200 bg-white">
+          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Personas</h2>
           {stats && (
-            <p className="text-[11px] text-gray-600 font-medium mt-1">{stats.totalPersonas} personas · {stats.totalSkills} skills</p>
+            <p className="text-[11px] text-slate-600 font-medium mt-1">{stats.totalPersonas} personas · {stats.totalSkills} skills</p>
           )}
         </div>
         <div className="py-1">
@@ -144,15 +186,15 @@ export default function PersonaSkillsView() {
               onClick={() => setSelectedPersona(p.id)}
               className={`flex items-center gap-2.5 w-full px-4 py-2.5 text-left transition-all text-sm ${
                 selectedPersona === p.id
-                  ? 'bg-white text-gray-900 font-semibold shadow-sm border-r-2'
-                  : 'text-gray-700 hover:bg-white/80 hover:text-gray-900'
+                  ? 'bg-white text-slate-900 font-semibold shadow-sm border-r-2'
+                  : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
               }`}
               style={selectedPersona === p.id ? { borderRightColor: p.color } : {}}
             >
               <span className="text-lg">{p.icon}</span>
               <div className="min-w-0">
                 <div className="truncate font-medium">{p.name}</div>
-                <div className="text-[11px] text-gray-600 font-medium mt-0.5">{p.skillCount} skills</div>
+                <div className="text-[11px] text-slate-600 font-medium mt-0.5">{p.skillCount} skills</div>
               </div>
             </button>
           ))}
@@ -164,14 +206,14 @@ export default function PersonaSkillsView() {
         {persona && (
           <>
             {/* Header */}
-            <div className="px-6 pt-6 pb-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+            <div className="px-6 pt-6 pb-4 border-b border-slate-200 bg-white sticky top-0 z-10">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: `${persona.color}15` }}>
                   {persona.icon}
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900">{persona.name}</h1>
-                  <p className="text-sm text-gray-700 font-medium">{persona.description}</p>
+                  <h1 className="text-lg font-bold text-slate-900">{persona.name}</h1>
+                  <p className="text-sm text-slate-700 font-medium">{persona.description}</p>
                 </div>
               </div>
 
@@ -183,13 +225,13 @@ export default function PersonaSkillsView() {
                     onClick={() => setActiveTab(tab.key)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                       activeTab === tab.key
-                        ? 'bg-gray-900 text-white'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     {tab.label}
                     {tab.count !== undefined && (
-                      <span className={`ml-1.5 text-xs font-bold ${activeTab === tab.key ? 'text-gray-300' : 'text-gray-500'}`}>{tab.count}</span>
+                      <span className={`ml-1.5 text-xs font-bold ${activeTab === tab.key ? 'text-slate-300' : 'text-slate-500'}`}>{tab.count}</span>
                     )}
                   </button>
                 ))}
@@ -202,7 +244,7 @@ export default function PersonaSkillsView() {
                     placeholder="Search skills..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-transparent"
                   />
                 </div>
               )}
@@ -214,40 +256,40 @@ export default function PersonaSkillsView() {
               {activeTab === 'skills' && (
                 <div className="space-y-4">
                   {filteredCategories?.map(cat => (
-                    <div key={cat.name} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                    <div key={cat.name} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                       <button
                         onClick={() => setExpandedCategory(expandedCategory === cat.name ? null : cat.name)}
-                        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-gray-900">{cat.name}</span>
-                          <span className="text-xs text-gray-700 font-bold bg-gray-200 px-2 py-0.5 rounded-full">{cat.skills.length}</span>
+                          <span className="text-sm font-bold text-slate-900">{cat.name}</span>
+                          <span className="text-xs text-slate-700 font-bold bg-slate-200 px-2 py-0.5 rounded-full">{cat.skills.length}</span>
                         </div>
-                        <span className="text-gray-600 text-xs font-bold">{expandedCategory === cat.name ? '▾' : '▸'}</span>
+                        <span className="text-slate-600 text-xs font-bold">{expandedCategory === cat.name ? '▾' : '▸'}</span>
                       </button>
                       {expandedCategory === cat.name && (
-                        <div className="border-t border-gray-100">
+                        <div className="border-t border-slate-100">
                           {cat.skills.map(skill => (
                             <div
                               key={skill.id}
-                              className="flex items-start justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-b-0 transition-colors group"
+                              className="flex items-start justify-between px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-b-0 transition-colors group"
                             >
                               <div className="flex-1 min-w-0 mr-4">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-bold text-gray-900">{skill.name}</span>
-                                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${COMPLEXITY_BADGE[skill.complexity].className}`}>
+                                  <span className="text-sm font-bold text-slate-900">{skill.name}</span>
+                                  <span className={`text-[11px] px-1.5 py-0.5 rounded border ${COMPLEXITY_BADGE[skill.complexity].className}`}>
                                     {COMPLEXITY_BADGE[skill.complexity].label}
                                   </span>
                                 </div>
-                                <p className="text-xs text-gray-700 mt-0.5 font-medium">{skill.description}</p>
-                                <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-600 font-medium">
+                                <p className="text-xs text-slate-700 mt-0.5 font-medium">{skill.description}</p>
+                                <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-600 font-medium">
                                   <span>⏱ {skill.estimatedTime}</span>
                                   <span>→ {skill.outputs.join(', ')}</span>
                                 </div>
                               </div>
                               <button
                                 onClick={() => simulateExecution(skill)}
-                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                               >
                                 Run
                               </button>
@@ -261,10 +303,10 @@ export default function PersonaSkillsView() {
                   {/* Prompt examples */}
                   {persona.promptExamples.length > 0 && (
                     <div className="mt-6">
-                      <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest mb-3">Example prompts</h3>
+                      <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest mb-3">Example prompts</h3>
                       <div className="flex flex-wrap gap-2">
                         {persona.promptExamples.map((p, i) => (
-                          <span key={i} className="px-3 py-1.5 rounded-full border border-gray-300 text-xs text-gray-700 font-medium bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm">
+                          <span key={i} className="px-3 py-1.5 rounded-full border border-slate-300 text-xs text-slate-700 font-medium bg-white hover:bg-slate-50 cursor-pointer transition-colors shadow-sm">
                             &ldquo;{p}&rdquo;
                           </span>
                         ))}
@@ -278,26 +320,26 @@ export default function PersonaSkillsView() {
               {activeTab === 'agents' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {persona.agents.map(agent => (
-                    <div key={agent.id} className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
+                    <div key={agent.id} className="border border-slate-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ backgroundColor: `${persona.color}15` }}>
                           🤖
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-gray-900">{agent.name}</span>
-                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full border ${
+                          <span className="text-sm font-semibold text-slate-900">{agent.name}</span>
+                          <span className={`ml-2 text-[11px] px-1.5 py-0.5 rounded-full border ${
                             agent.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                             agent.status === 'beta' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                            'bg-gray-50 text-gray-500 border-gray-200'
+                            'bg-slate-50 text-slate-500 border-slate-200'
                           }`}>
                             {agent.status}
                           </span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-700 font-medium mb-3">{agent.description}</p>
+                      <p className="text-xs text-slate-700 font-medium mb-3">{agent.description}</p>
                       <div className="flex flex-wrap gap-1">
                         {agent.tools.map(t => (
-                          <span key={t} className="px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 font-semibold border border-blue-100">{t}</span>
+                          <span key={t} className="px-2 py-0.5 rounded text-[11px] bg-blue-50 text-blue-700 font-semibold border border-blue-100">{t}</span>
                         ))}
                       </div>
                     </div>
@@ -309,21 +351,21 @@ export default function PersonaSkillsView() {
               {activeTab === 'tools' && (
                 <div className="space-y-3">
                   {persona.tools.map(tool => (
-                    <div key={tool.id} className="flex items-center justify-between px-4 py-3 border border-gray-200 rounded-xl bg-white hover:shadow-sm transition-shadow">
+                    <div key={tool.id} className="flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition-shadow">
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{tool.icon}</span>
                         <div>
-                          <span className="text-sm font-bold text-gray-900">{tool.name}</span>
-                          <span className="text-xs text-gray-600 font-semibold ml-2 bg-gray-100 px-1.5 py-0.5 rounded">{tool.category}</span>
-                          <p className="text-xs text-gray-700 font-medium mt-0.5">{tool.description}</p>
+                          <span className="text-sm font-bold text-slate-900">{tool.name}</span>
+                          <span className="text-xs text-slate-600 font-semibold ml-2 bg-slate-100 px-1.5 py-0.5 rounded">{tool.category}</span>
+                          <p className="text-xs text-slate-700 font-medium mt-0.5">{tool.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-gray-700 font-semibold bg-gray-100 px-2 py-0.5 rounded border border-gray-200">{tool.authType}</span>
+                        <span className="text-[11px] text-slate-700 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{tool.authType}</span>
                         {tool.connected ? (
                           <span className="text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg font-medium">Connected</span>
                         ) : (
-                          <button className="text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                          <button className="text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg hover:bg-slate-200 transition-colors font-medium">
                             Connect
                           </button>
                         )}
@@ -342,10 +384,10 @@ export default function PersonaSkillsView() {
                       href={course.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow block"
+                      className="border border-slate-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow block"
                     >
-                      <h4 className="text-sm font-semibold text-gray-900 mb-1">{course.title}</h4>
-                      <div className="flex items-center gap-3 text-xs text-gray-700 font-medium">
+                      <h4 className="text-sm font-semibold text-slate-900 mb-1">{course.title}</h4>
+                      <div className="flex items-center gap-3 text-xs text-slate-700 font-medium">
                         <span>{course.provider}</span>
                         <span>·</span>
                         <span>{course.duration}</span>
@@ -365,8 +407,8 @@ export default function PersonaSkillsView() {
 
               {/* ── Corp IT License Governance (only for corpit persona) ── */}
               {selectedPersona === 'corpit' && activeTab === 'skills' && licenseSummary && (
-                <div className="mt-8 border-t border-gray-200 pt-6" data-tour="license-governance">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-4">License Governance Dashboard</h3>
+                <div className="mt-8 border-t border-slate-200 pt-6" data-tour="license-governance">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-4">License Governance Dashboard</h3>
 
                   {/* Summary cards */}
                   <div className="grid grid-cols-4 gap-4 mb-6">
@@ -376,39 +418,39 @@ export default function PersonaSkillsView() {
                       { label: 'Unused Licenses', value: licenseSummary.unusedLicenses.toString(), color: '#f59e0b' },
                       { label: 'Expiring Soon', value: licenseSummary.expiringWithin90Days.toString(), color: '#ef4444' },
                     ].map(card => (
-                      <div key={card.label} className="border border-gray-200 rounded-xl p-4 bg-white">
-                        <p className="text-xs text-gray-500">{card.label}</p>
+                      <div key={card.label} className="border border-slate-200 rounded-xl p-4 bg-white">
+                        <p className="text-xs text-slate-500">{card.label}</p>
                         <p className="text-2xl font-semibold mt-1" style={{ color: card.color }}>{card.value}</p>
                       </div>
                     ))}
                   </div>
 
                   {/* License table */}
-                  <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Tool</th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Users</th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Cost/mo</th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Usage</th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Expiration</th>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase">Tool</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase">Users</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase">Cost/mo</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase">Usage</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase">Expiration</th>
                         </tr>
                       </thead>
                       <tbody>
                         {licenses.map(lic => (
-                          <tr key={lic.toolId} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                          <tr key={lic.toolId} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <span>{lic.icon}</span>
-                                <span className="font-medium text-gray-900">{lic.toolName}</span>
+                                <span className="font-medium text-slate-900">{lic.toolName}</span>
                               </div>
                             </td>
-                            <td className="text-right px-4 py-3 text-gray-600">{lic.usedLicenses}/{lic.totalLicenses}</td>
-                            <td className="text-right px-4 py-3 text-gray-600">${lic.costPerMonth.toLocaleString()}</td>
+                            <td className="text-right px-4 py-3 text-slate-600">{lic.usedLicenses}/{lic.totalLicenses}</td>
+                            <td className="text-right px-4 py-3 text-slate-600">${lic.costPerMonth.toLocaleString()}</td>
                             <td className="text-right px-4 py-3">
                               <div className="flex items-center justify-end gap-2">
-                                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                                   <div
                                     className="h-full rounded-full"
                                     style={{
@@ -417,10 +459,10 @@ export default function PersonaSkillsView() {
                                     }}
                                   />
                                 </div>
-                                <span className="text-xs text-gray-500">{lic.usageFrequency}%</span>
+                                <span className="text-xs text-slate-500">{lic.usageFrequency}%</span>
                               </div>
                             </td>
-                            <td className="text-right px-4 py-3 text-xs text-gray-500">{lic.expirationDate}</td>
+                            <td className="text-right px-4 py-3 text-xs text-slate-500">{lic.expirationDate}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -435,13 +477,13 @@ export default function PersonaSkillsView() {
 
       {/* Right — Execution Panel */}
       {executingSkill && (
-        <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0" data-tour="skill-execution">
-          <div className="p-4 border-b border-gray-200">
+        <div className="w-80 border-l border-slate-200 bg-white overflow-y-auto flex-shrink-0" data-tour="skill-execution">
+          <div className="p-4 border-b border-slate-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Execution</h3>
-              <button onClick={() => { setExecutingSkill(null); setExecutionSteps([]); }} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+              <h3 className="text-sm font-semibold text-slate-900">Execution</h3>
+              <button onClick={() => { setExecutingSkill(null); setExecutionSteps([]); }} className="text-xs text-slate-400 hover:text-slate-600">✕</button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">{executingSkill.name}</p>
+            <p className="text-xs text-slate-500 mt-1">{executingSkill.name}</p>
           </div>
 
           <div className="p-4">
@@ -453,18 +495,18 @@ export default function PersonaSkillsView() {
                   <div key={agentId} className="flex items-start gap-3">
                     <div className="mt-1 flex-shrink-0">
                       {!step ? (
-                        <div className="w-5 h-5 rounded-full border-2 border-gray-200" />
+                        <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
                       ) : step.status === 'running' ? (
                         <div className="w-5 h-5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px]">✓</div>
+                        <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[11px]">✓</div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{agentId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                      <p className="text-sm font-medium text-slate-900">{agentId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                       {step?.status === 'running' && <p className="text-xs text-blue-600 mt-0.5">Running...</p>}
                       {step?.status === 'complete' && <p className="text-xs text-emerald-600 mt-0.5">{step.output}</p>}
-                      {!step && <p className="text-xs text-gray-400 mt-0.5">Queued</p>}
+                      {!step && <p className="text-xs text-slate-400 mt-0.5">Queued</p>}
                     </div>
                   </div>
                 );

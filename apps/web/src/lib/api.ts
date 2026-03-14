@@ -867,7 +867,86 @@ export async function getGovernanceCosts(): Promise<unknown> {
 // ---------------------------------------------------------------------------
 
 export async function getACPExecutions(): Promise<unknown> {
-    const res = await fetch(`${GATEWAY_URL}/api/acp/executions`);
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    return res.json();
+  const res = await fetch(`${GATEWAY_URL}/api/acp/executions`);
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Marketing Module API
+// ---------------------------------------------------------------------------
+
+export interface MarketingWorkflowRef {
+  id: string;
+  slug: string;
+  name: string;
+  cluster: string;
+  steps: Array<{ id: string; order: number; name: string; agent: string; tool?: string; outputKey: string; requiresApproval?: boolean }>;
+}
+
+export interface MarketingExecutionRecord {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'paused';
+  steps: Array<{
+    stepId: string;
+    stepName: string;
+    agent: string;
+    tool?: string;
+    status: string;
+    startedAt?: string;
+    completedAt?: string;
+    outputKey?: string;
+    outputPreview?: string;
+    error?: string;
+  }>;
+  outputs: Record<string, string>;
+  inputs: Record<string, unknown>;
+  startedAt: string;
+  completedAt?: string;
+  userId?: string;
+}
+
+export async function getMarketingWorkflows(): Promise<{
+  workflows: MarketingWorkflowRef[];
+  clusters: Record<string, { label: string; icon: string; color: string }>;
+  byCluster: Record<string, MarketingWorkflowRef[]>;
+}> {
+  const res = await fetch(`${GATEWAY_URL}/api/marketing/workflows`);
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
+}
+
+export async function executeMarketingWorkflow(
+  workflowId: string,
+  inputs: Record<string, unknown>
+): Promise<{ execution: MarketingExecutionRecord }> {
+  const res = await fetch(`${GATEWAY_URL}/api/marketing/execute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workflowId, inputs }),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
+}
+
+export async function getMarketingExecution(id: string): Promise<{ execution: MarketingExecutionRecord }> {
+  const res = await fetch(`${GATEWAY_URL}/api/marketing/executions/${id}`);
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
+}
+
+export async function uploadMarketingFile(
+  fileName: string,
+  contentBase64: string,
+  mimeType?: string
+): Promise<{ fileId: string; fileName: string }> {
+  const res = await fetch(`${GATEWAY_URL}/api/marketing/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName, contentBase64, mimeType }),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
 }

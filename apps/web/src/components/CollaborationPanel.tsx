@@ -52,17 +52,17 @@ export function CollaborationPanel({ executionId = 'exec-001', goal = 'Campaign 
     };
 
     return (
-        <div className="glass rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-white mb-1">📤 Share & Export</h3>
-            <p className="text-xs text-neutral-500 mb-4">Share this result or convert it into action</p>
+        <div className="bg-white border border-slate-200 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">📤 Share & Export</h3>
+            <p className="text-xs text-slate-400 mb-4">Share this result or convert it into action</p>
 
             {/* Output preview */}
-            <div className="p-3 rounded-lg bg-surface border border-white/[0.04] mb-4">
+            <div className="p-3 rounded-lg bg-white border border-slate-200 mb-4">
                 <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs">🎯</span>
-                    <span className="text-xs font-medium text-white truncate">{goal}</span>
+                    <span className="text-xs font-medium text-slate-900 truncate">{goal}</span>
                 </div>
-                <span className="text-[10px] text-neutral-500 font-mono">{executionId}</span>
+                <span className="text-[11px] text-slate-400 font-mono">{executionId}</span>
             </div>
 
             {/* Targets */}
@@ -80,15 +80,15 @@ export function CollaborationPanel({ executionId = 'exec-001', goal = 'Campaign 
                                     ? 'bg-success/5 border-success/20 cursor-default'
                                     : isSharing
                                         ? 'bg-accent/5 border-accent/20 animate-pulse'
-                                        : 'bg-surface border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-overlay cursor-pointer'
+                                        : 'bg-white border-slate-200 hover:border-slate-200 hover:bg-slate-50 cursor-pointer'
                                 }`}
                         >
                             <span className="text-lg">{isShared ? '✅' : target.icon}</span>
                             <div className="min-w-0">
-                                <div className="text-xs font-medium text-white">
+                                <div className="text-xs font-medium text-slate-900">
                                     {isSharing ? 'Sharing...' : isShared ? 'Shared' : target.label}
                                 </div>
-                                <div className="text-[10px] text-neutral-500 truncate">{target.description}</div>
+                                <div className="text-[11px] text-slate-400 truncate">{target.description}</div>
                             </div>
                         </button>
                     );
@@ -96,8 +96,8 @@ export function CollaborationPanel({ executionId = 'exec-001', goal = 'Campaign 
             </div>
 
             {/* Quick Jira Creator */}
-            <div className="mt-4 pt-4 border-t border-white/[0.06]">
-                <h4 className="text-xs font-semibold text-neutral-400 mb-2">Quick Actions</h4>
+            <div className="mt-4 pt-4 border-t border-slate-200">
+                <h4 className="text-xs font-semibold text-slate-500 mb-2">Quick Actions</h4>
                 <div className="space-y-2">
                     {[
                         { label: 'Create follow-up ticket', icon: '🎫', action: 'Review ICP with sales team' },
@@ -106,12 +106,12 @@ export function CollaborationPanel({ executionId = 'exec-001', goal = 'Campaign 
                     ].map((item, idx) => (
                         <button
                             key={idx}
-                            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-surface hover:bg-surface-overlay border border-transparent hover:border-white/[0.06] transition-colors text-left"
+                            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-white hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors text-left"
                         >
                             <span className="text-sm">{item.icon}</span>
                             <div>
-                                <div className="text-xs text-white">{item.label}</div>
-                                <div className="text-[10px] text-neutral-500">{item.action}</div>
+                                <div className="text-xs text-slate-700">{item.label}</div>
+                                <div className="text-[11px] text-slate-400">{item.action}</div>
                             </div>
                         </button>
                     ))}

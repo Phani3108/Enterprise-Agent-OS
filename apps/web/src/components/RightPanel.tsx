@@ -51,8 +51,8 @@ const STATUS_DOT: Record<string, string> = {
   completed: 'bg-emerald-500',
   running: 'bg-blue-500 animate-pulse',
   failed: 'bg-red-500',
-  queued: 'bg-gray-300',
-  skipped: 'bg-gray-300',
+  queued: 'bg-slate-300',
+  skipped: 'bg-slate-300',
 };
 
 const STEP_ICON: Record<string, string> = {
@@ -66,7 +66,7 @@ const STEP_ICON: Record<string, string> = {
 };
 
 const LOG_COLOR: Record<string, string> = {
-  debug: 'text-gray-400',
+  debug: 'text-slate-400',
   info: 'text-blue-600',
   warn: 'text-amber-600',
   error: 'text-red-600',
@@ -114,24 +114,24 @@ export function RightPanel() {
   if (!visible) return null;
 
   return (
-    <aside className="w-[288px] flex-shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
+    <aside className="w-[288px] flex-shrink-0 flex flex-col border-l border-slate-200 bg-white overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-900">Live Execution</span>
+      <div className="flex items-center justify-between px-4 h-12 border-b border-slate-200 flex-shrink-0">
+        <span className="text-xs font-semibold text-slate-900">Live Execution</span>
         <div className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-[10px] text-gray-400">Running</span>
+          <span className="text-[11px] text-slate-400">Running</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-100 flex-shrink-0">
+      <div className="flex border-b border-slate-100 flex-shrink-0">
         {(['timeline', 'logs', 'actions'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 text-[11px] font-medium capitalize transition-colors ${
-              tab === t ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-600'
+              tab === t ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             {t}
@@ -149,28 +149,28 @@ export function RightPanel() {
                 <div className="flex flex-col items-center flex-shrink-0 mt-1">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[step.status]}`} />
                   {idx < steps.length - 1 && (
-                    <div className="w-px flex-1 bg-gray-200 mt-1 min-h-[20px]" />
+                    <div className="w-px flex-1 bg-slate-200 mt-1 min-h-[20px]" />
                   )}
                 </div>
                 <div className="min-w-0 pb-3">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs">{STEP_ICON[step.stepType] ?? '•'}</span>
-                    <span className="text-xs font-medium text-gray-900 truncate">{step.name}</span>
+                    <span className="text-xs font-medium text-slate-900 truncate">{step.name}</span>
                   </div>
                   {(step.agentName || step.toolName) && (
-                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
                       {step.agentName ?? step.toolName}
                     </p>
                   )}
                   <div className="flex items-center gap-2 mt-0.5">
                     {step.startedAt && (
-                      <span className="text-[10px] text-gray-400">{relativeTime(step.startedAt)}</span>
+                      <span className="text-[11px] text-slate-400">{relativeTime(step.startedAt)}</span>
                     )}
                     {step.durationMs && (
-                      <span className="text-[10px] text-gray-400">· {step.durationMs}ms</span>
+                      <span className="text-[11px] text-slate-400">· {step.durationMs}ms</span>
                     )}
                     {step.status === 'running' && (
-                      <span className="text-[10px] text-blue-500 font-medium">running…</span>
+                      <span className="text-[11px] text-blue-500 font-medium">running…</span>
                     )}
                   </div>
                 </div>
@@ -183,10 +183,10 @@ export function RightPanel() {
           <div className="p-3 space-y-1.5">
             {logs.map(log => (
               <div key={log.id} className="flex gap-2 text-[11px]">
-                <span className={`flex-shrink-0 font-mono uppercase text-[9px] font-semibold mt-0.5 w-8 ${LOG_COLOR[log.level]}`}>
+                <span className={`flex-shrink-0 font-mono uppercase text-[11px] font-semibold mt-0.5 w-8 ${LOG_COLOR[log.level]}`}>
                   {log.level}
                 </span>
-                <span className="text-gray-600 leading-relaxed min-w-0">{log.message}</span>
+                <span className="text-slate-600 leading-relaxed min-w-0">{log.message}</span>
               </div>
             ))}
             <div ref={logsEndRef} />
@@ -213,8 +213,8 @@ export function RightPanel() {
               action="Awaiting tool output to continue"
               status="waiting"
             />
-            <div className="mt-4 pt-3 border-t border-gray-100">
-              <p className="text-[11px] font-semibold text-gray-700 mb-2">Recent completions</p>
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <p className="text-[11px] font-semibold text-slate-700 mb-2">Recent completions</p>
               <ActionCard icon="🎯" title="Intent Router" action="Routed to Marketing persona" status="done" />
               <ActionCard icon="🔧" title="Campaign Strategy Skill" action="Skill context loaded v2.1" status="done" />
             </div>
@@ -223,19 +223,19 @@ export function RightPanel() {
       </div>
 
       {/* Footer stats */}
-      <div className="flex-shrink-0 border-t border-gray-100 px-4 py-2 bg-gray-50/60">
+      <div className="flex-shrink-0 border-t border-slate-100 px-4 py-2 bg-slate-50/60">
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <p className="text-[10px] text-gray-400">Steps</p>
-            <p className="text-xs font-semibold text-gray-900">4 / 5</p>
+            <p className="text-[11px] text-slate-400">Steps</p>
+            <p className="text-xs font-semibold text-slate-900">4 / 5</p>
           </div>
           <div>
-            <p className="text-[10px] text-gray-400">Duration</p>
-            <p className="text-xs font-semibold text-gray-900">12.4s</p>
+            <p className="text-[11px] text-slate-400">Duration</p>
+            <p className="text-xs font-semibold text-slate-900">12.4s</p>
           </div>
           <div>
-            <p className="text-[10px] text-gray-400">Cost</p>
-            <p className="text-xs font-semibold text-gray-900">$0.024</p>
+            <p className="text-[11px] text-slate-400">Cost</p>
+            <p className="text-xs font-semibold text-slate-900">$0.024</p>
           </div>
         </div>
       </div>
@@ -251,17 +251,17 @@ function ActionCard({ icon, title, action, status }: {
     <div className={`flex items-start gap-2 p-2 rounded-lg border text-xs ${
       status === 'running' ? 'border-blue-100 bg-blue-50/40' :
       status === 'waiting' ? 'border-amber-100 bg-amber-50/30' :
-      'border-gray-100 bg-gray-50/50 opacity-60'
+      'border-slate-100 bg-slate-50/50 opacity-60'
     }`}>
       <span className="text-sm flex-shrink-0 mt-0.5">{icon}</span>
       <div className="min-w-0">
-        <p className="font-medium text-gray-900 truncate">{title}</p>
-        <p className="text-gray-500 text-[10px] mt-0.5 truncate">{action}</p>
+        <p className="font-medium text-slate-900 truncate">{title}</p>
+        <p className="text-slate-500 text-[11px] mt-0.5 truncate">{action}</p>
       </div>
       <div className="flex-shrink-0 mt-1">
         {status === 'running' && <span className="w-2 h-2 rounded-full bg-blue-500 block animate-pulse" />}
         {status === 'waiting' && <span className="w-2 h-2 rounded-full bg-amber-400 block" />}
-        {status === 'done' && <span className="text-emerald-500 text-[10px]">✓</span>}
+        {status === 'done' && <span className="text-emerald-500 text-[11px]">✓</span>}
       </div>
     </div>
   );

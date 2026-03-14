@@ -30,8 +30,8 @@ const SKILLS: Skill[] = [
 
 export function SkillLibrary() {
     return (
-        <div className="glass rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-white mb-4">🧩 Skill Library</h3>
+        <div className="bg-white border border-slate-200 rounded-xl p-6">
+            <h3 className="text-[16px] font-semibold text-slate-900 mb-4">🧩 Skill Library</h3>
 
             <div className="grid grid-cols-2 gap-3">
                 {SKILLS.map((skill) => (
@@ -40,16 +40,16 @@ export function SkillLibrary() {
                         className={`p-4 rounded-xl bg-gradient-to-br ${DOMAIN_COLORS[skill.domain]} border cursor-pointer hover:scale-[1.02] transition-transform`}
                     >
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-neutral-400">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
                                 {skill.domain}
                             </span>
                             <span className={`text-xs font-mono ${skill.successRate >= 0.9 ? 'text-success' : 'text-warning'}`}>
                                 {(skill.successRate * 100).toFixed(0)}%
                             </span>
                         </div>
-                        <h4 className="text-sm font-medium text-white mb-1">{skill.name}</h4>
-                        <p className="text-[11px] text-neutral-400 line-clamp-2 mb-3">{skill.description}</p>
-                        <div className="flex items-center justify-between text-[10px] text-neutral-500">
+                        <h4 className="text-sm font-medium text-slate-900 mb-1">{skill.name}</h4>
+                        <p className="text-[11px] text-slate-500 line-clamp-2 mb-3">{skill.description}</p>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
                             <span>{skill.usageCount} uses</span>
                             <span>~{skill.avgLatency}</span>
                         </div>

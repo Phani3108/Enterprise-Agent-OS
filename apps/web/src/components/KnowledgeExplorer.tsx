@@ -37,8 +37,8 @@ export function KnowledgeExplorer() {
     const [query, setQuery] = useState('card authorization architecture');
 
     return (
-        <div className="bg-gray-50 min-h-full bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">Knowledge Explorer</h3>
+        <div className="bg-slate-50 min-h-full bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Knowledge Explorer</h3>
 
             {/* Search */}
             <input
@@ -46,7 +46,7 @@ export function KnowledgeExplorer() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search internal knowledge..."
-                className="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none mb-4 shadow-sm"
+                className="w-full px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none mb-4 shadow-sm"
             />
 
             {/* Source Filters */}
@@ -54,9 +54,9 @@ export function KnowledgeExplorer() {
                 {['All', 'Confluence', 'GitHub', 'Jira', 'Blogin', 'Transcripts'].map((filter) => (
                     <button
                         key={filter}
-                        className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors ${filter === 'All'
+                        className={`px-3 py-1 rounded-full text-[11px] font-medium transition-colors ${filter === 'All'
                                 ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 hover:text-gray-900'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 hover:text-slate-900'
                             }`}
                     >
                         {filter}
@@ -70,21 +70,21 @@ export function KnowledgeExplorer() {
                     <a
                         key={idx}
                         href={result.url}
-                        className="block p-3 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-gray-200 hover:border-gray-300 shadow-sm"
+                        className="block p-3 rounded-lg bg-white hover:bg-slate-50 transition-colors border border-slate-200 hover:border-slate-300 shadow-sm"
                     >
                         <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase ${TYPE_COLORS[result.type]}`}>
+                            <span className={`text-[11px] px-1.5 py-0.5 rounded font-mono uppercase ${TYPE_COLORS[result.type]}`}>
                                 {result.type}
                             </span>
-                            <span className="text-xs font-medium text-gray-900">{result.title}</span>
-                            <span className="ml-auto text-[10px] text-gray-600">{result.updatedAt}</span>
+                            <span className="text-xs font-medium text-slate-900">{result.title}</span>
+                            <span className="ml-auto text-[11px] text-slate-600">{result.updatedAt}</span>
                         </div>
-                        <p className="text-xs text-gray-700 font-medium leading-relaxed line-clamp-2">{result.excerpt}</p>
+                        <p className="text-xs text-slate-700 font-medium leading-relaxed line-clamp-2">{result.excerpt}</p>
                         <div className="mt-1.5 flex items-center gap-2">
-                            <div className="h-1 flex-1 bg-gray-200 rounded-full">
+                            <div className="h-1 flex-1 bg-slate-200 rounded-full">
                                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${result.relevance * 100}%` }} />
                             </div>
-                            <span className="text-[10px] text-gray-600">{(result.relevance * 100).toFixed(0)}%</span>
+                            <span className="text-[11px] text-slate-600">{(result.relevance * 100).toFixed(0)}%</span>
                         </div>
                     </a>
                 ))}

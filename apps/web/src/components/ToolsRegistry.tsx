@@ -21,7 +21,7 @@ const CATEGORY_META: Record<string, { label: string; icon: string; color: string
     deployment: { label: 'Deployment', icon: '🚀', color: 'from-sky-50 to-blue-50 border-sky-200' },
     database: { label: 'Database', icon: '🗄️', color: 'from-amber-50 to-yellow-50 border-amber-200' },
     analytics: { label: 'Analytics', icon: '📊', color: 'from-violet-50 to-purple-50 border-violet-200' },
-    custom: { label: 'Custom', icon: '🔧', color: 'from-gray-50 to-gray-100 border-gray-200' },
+    custom: { label: 'Custom', icon: '🔧', color: 'from-gray-50 to-gray-100 border-slate-200' },
 };
 
 const AUTH_LABELS: Record<string, string> = {
@@ -86,20 +86,20 @@ export function ToolsRegistry() {
     const formatLatency = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
 
     return (
-        <div className="bg-gray-50 min-h-full p-6 space-y-6 max-w-[1400px] mx-auto" data-tour="tools-registry">
+        <div className="bg-slate-50 min-h-full p-6 space-y-6 max-w-[1400px] mx-auto" data-tour="tools-registry">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-bold text-gray-900">Tools Registry</h2>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <h2 className="text-lg font-bold text-slate-900">Tools Registry</h2>
+                    <p className="text-sm text-slate-600 mt-1">
                         Internal tools and connectors used by AgentOS workers and skills at runtime.
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${viewMode === 'grid' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-900'}`}>
+                    <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${viewMode === 'grid' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'}`}>
                         Grid
                     </button>
-                    <button onClick={() => setViewMode('table')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${viewMode === 'table' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-900'}`}>
+                    <button onClick={() => setViewMode('table')} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${viewMode === 'table' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'}`}>
                         Table
                     </button>
                 </div>
@@ -108,13 +108,13 @@ export function ToolsRegistry() {
             {/* Stats */}
             <div className="grid grid-cols-4 gap-3">
                 {[
-                    { label: 'Total Tools', value: filtered.length, color: 'text-gray-900' },
+                    { label: 'Total Tools', value: filtered.length, color: 'text-slate-900' },
                     { label: 'Active', value: activeCount, color: 'text-emerald-600' },
                     { label: 'Total Invocations', value: totalUsage.toLocaleString(), color: 'text-blue-600' },
                     { label: 'Avg Success Rate', value: `${(avgSuccess * 100).toFixed(1)}%`, color: avgSuccess >= 0.95 ? 'text-emerald-600' : 'text-yellow-600' },
                 ].map(stat => (
-                    <div key={stat.label} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                        <div className="text-[11px] text-gray-600 uppercase tracking-wider font-medium">{stat.label}</div>
+                    <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="text-[11px] text-slate-600 uppercase tracking-wider font-medium">{stat.label}</div>
                         <div className={`text-xl font-semibold mt-1 ${stat.color}`}>{stat.value}</div>
                     </div>
                 ))}
@@ -122,15 +122,15 @@ export function ToolsRegistry() {
 
             {/* Category filter */}
             <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-600 font-medium mr-1">Category:</span>
-                <button onClick={() => setSelectedCategory(null)} className={`px-3 py-1 rounded-full text-xs transition-colors ${!selectedCategory ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-900'}`}>
+                <span className="text-xs text-slate-600 font-medium mr-1">Category:</span>
+                <button onClick={() => setSelectedCategory(null)} className={`px-3 py-1 rounded-full text-xs transition-colors ${!selectedCategory ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'}`}>
                     All
                 </button>
                 {allCategories.map(cat => {
                     const meta = CATEGORY_META[cat] || CATEGORY_META.custom;
                     return (
                         <button key={cat} onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                            className={`px-3 py-1 rounded-full text-xs transition-colors ${selectedCategory === cat ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-900'}`}
+                            className={`px-3 py-1 rounded-full text-xs transition-colors ${selectedCategory === cat ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'}`}
                         >
                             {meta.icon} {meta.label}
                         </button>
@@ -149,30 +149,30 @@ export function ToolsRegistry() {
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                                         {meta.icon} {meta.label}
                                     </span>
-                                    <span className={`w-2 h-2 rounded-full ${tool.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} title={tool.isActive ? 'Active' : 'Inactive'} />
+                                    <span className={`w-2 h-2 rounded-full ${tool.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} title={tool.isActive ? 'Active' : 'Inactive'} />
                                 </div>
-                                <h4 className="text-sm font-bold text-gray-900 mb-0.5">{tool.name}</h4>
-                                <p className="text-[11px] text-gray-700 font-medium line-clamp-2 mb-3">{tool.description}</p>
-                                <code className="text-[10px] text-blue-600 font-mono block mb-3">{tool.id}</code>
+                                <h4 className="text-sm font-bold text-slate-900 mb-0.5">{tool.name}</h4>
+                                <p className="text-[11px] text-slate-700 font-medium line-clamp-2 mb-3">{tool.description}</p>
+                                <code className="text-[11px] text-blue-600 font-mono block mb-3">{tool.id}</code>
                                 <div className="grid grid-cols-3 gap-2 text-center">
                                     <div>
-                                        <div className="text-[10px] text-gray-600 font-medium">Uses</div>
-                                        <div className="text-xs text-gray-900 font-mono font-semibold">{tool.usageCount}</div>
+                                        <div className="text-[11px] text-slate-600 font-medium">Uses</div>
+                                        <div className="text-xs text-slate-900 font-mono font-semibold">{tool.usageCount}</div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] text-gray-600 font-medium">Latency</div>
-                                        <div className="text-xs text-gray-900 font-mono font-semibold">{formatLatency(tool.avgLatencyMs)}</div>
+                                        <div className="text-[11px] text-slate-600 font-medium">Latency</div>
+                                        <div className="text-xs text-slate-900 font-mono font-semibold">{formatLatency(tool.avgLatencyMs)}</div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] text-gray-600 font-medium">Success</div>
+                                        <div className="text-[11px] text-slate-600 font-medium">Success</div>
                                         <div className={`text-xs font-mono font-semibold ${tool.successRate >= 0.95 ? 'text-emerald-600' : tool.successRate >= 0.90 ? 'text-yellow-600' : 'text-red-600'}`}>
                                             {(tool.successRate * 100).toFixed(0)}%
                                         </div>
                                     </div>
                                 </div>
-                                <div className="mt-3 pt-2 border-t border-gray-200 flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-600 font-medium">{AUTH_LABELS[tool.authType] || tool.authType}</span>
-                                    {tool.connector && <span className="text-[10px] text-blue-700 font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded">via {tool.connector}</span>}
+                                <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between">
+                                    <span className="text-[11px] text-slate-600 font-medium">{AUTH_LABELS[tool.authType] || tool.authType}</span>
+                                    {tool.connector && <span className="text-[11px] text-blue-700 font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded">via {tool.connector}</span>}
                                 </div>
                             </div>
                         );
@@ -180,37 +180,37 @@ export function ToolsRegistry() {
                 </div>
             ) : (
                 /* Table view */
-                <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-gray-200 bg-gray-100">
-                                <th className="text-left px-4 py-3 text-xs font-bold text-gray-700">Tool</th>
-                                <th className="text-left px-4 py-3 text-xs font-bold text-gray-700">Category</th>
-                                <th className="text-left px-4 py-3 text-xs font-bold text-gray-700">Auth</th>
-                                <th className="text-right px-4 py-3 text-xs font-bold text-gray-700">Uses</th>
-                                <th className="text-right px-4 py-3 text-xs font-bold text-gray-700">Latency</th>
-                                <th className="text-right px-4 py-3 text-xs font-bold text-gray-700">Success</th>
-                                <th className="text-center px-4 py-3 text-xs font-bold text-gray-700">Status</th>
+                            <tr className="border-b border-slate-200 bg-slate-100">
+                                <th className="text-left px-4 py-3 text-xs font-bold text-slate-700">Tool</th>
+                                <th className="text-left px-4 py-3 text-xs font-bold text-slate-700">Category</th>
+                                <th className="text-left px-4 py-3 text-xs font-bold text-slate-700">Auth</th>
+                                <th className="text-right px-4 py-3 text-xs font-bold text-slate-700">Uses</th>
+                                <th className="text-right px-4 py-3 text-xs font-bold text-slate-700">Latency</th>
+                                <th className="text-right px-4 py-3 text-xs font-bold text-slate-700">Success</th>
+                                <th className="text-center px-4 py-3 text-xs font-bold text-slate-700">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filtered.map(tool => {
                                 const meta = CATEGORY_META[tool.category] || CATEGORY_META.custom;
                                 return (
-                                    <tr key={tool.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <tr key={tool.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                         <td className="px-4 py-3">
-                                            <div className="text-gray-900 font-medium">{tool.name}</div>
-                                            <code className="text-[10px] text-blue-600 font-mono">{tool.id}</code>
+                                            <div className="text-slate-900 font-medium">{tool.name}</div>
+                                            <code className="text-[11px] text-blue-600 font-mono">{tool.id}</code>
                                         </td>
-                                        <td className="px-4 py-3 text-gray-700 text-xs font-medium">{meta.icon} {meta.label}</td>
-                                        <td className="px-4 py-3 text-gray-700 text-xs font-medium">{AUTH_LABELS[tool.authType]}</td>
-                                        <td className="px-4 py-3 text-right text-gray-900 font-mono text-xs font-semibold">{tool.usageCount}</td>
-                                        <td className="px-4 py-3 text-right text-gray-900 font-mono text-xs font-semibold">{formatLatency(tool.avgLatencyMs)}</td>
+                                        <td className="px-4 py-3 text-slate-700 text-xs font-medium">{meta.icon} {meta.label}</td>
+                                        <td className="px-4 py-3 text-slate-700 text-xs font-medium">{AUTH_LABELS[tool.authType]}</td>
+                                        <td className="px-4 py-3 text-right text-slate-900 font-mono text-xs font-semibold">{tool.usageCount}</td>
+                                        <td className="px-4 py-3 text-right text-slate-900 font-mono text-xs font-semibold">{formatLatency(tool.avgLatencyMs)}</td>
                                         <td className={`px-4 py-3 text-right font-mono text-xs font-semibold ${tool.successRate >= 0.95 ? 'text-emerald-600' : tool.successRate >= 0.90 ? 'text-yellow-600' : 'text-red-600'}`}>
                                             {(tool.successRate * 100).toFixed(1)}%
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            <span className={`inline-block w-2 h-2 rounded-full ${tool.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                                            <span className={`inline-block w-2 h-2 rounded-full ${tool.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                                         </td>
                                     </tr>
                                 );

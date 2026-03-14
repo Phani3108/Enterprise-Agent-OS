@@ -96,7 +96,7 @@ export function CampaignPipelineView() {
                 >
                   <span className="text-2xl">{stage.icon}</span>
                   <span className="text-xs">{stage.label}</span>
-                  {isCompleted && <span className="text-[10px] text-emerald-500">✓</span>}
+                  {isCompleted && <span className="text-[11px] text-emerald-500">✓</span>}
                 </div>
                 {i < PIPELINE_STAGES.length - 1 && (
                   <div className={`w-8 h-0.5 mx-1 flex-shrink-0 ${isPast ? 'bg-emerald-300' : 'bg-slate-200'}`} />

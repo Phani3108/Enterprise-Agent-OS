@@ -12,19 +12,19 @@ const QUICK_ACTIONS = [
 export function QuickActions() {
     return (
         <div data-tour="quick-actions">
-            <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
                 Quick Actions
             </h2>
             <div className="grid grid-cols-3 gap-3">
                 {QUICK_ACTIONS.map((action) => (
                     <button
                         key={action.action}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br ${action.color} border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]`}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-br ${action.color} border border-slate-200 hover:border-slate-200 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]`}
                     >
                         <span className="text-xl">{action.icon}</span>
                         <div className="text-left">
-                            <div className="text-sm font-medium text-white">{action.label}</div>
-                            <div className="text-[10px] text-neutral-500">{action.domain}</div>
+                            <div className="text-sm font-medium text-slate-900">{action.label}</div>
+                            <div className="text-[11px] text-slate-400">{action.domain}</div>
                         </div>
                     </button>
                 ))}

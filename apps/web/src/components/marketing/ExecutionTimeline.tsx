@@ -62,7 +62,7 @@ function StepRow({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-slate-400 font-mono">#{index + 1}</span>
             <span className="text-sm font-semibold text-slate-900 truncate">{step.stepName}</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold flex-shrink-0 ${statusInfo.classes}`}>
+            <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold flex-shrink-0 ${statusInfo.classes}`}>
               {statusInfo.label}
             </span>
           </div>
@@ -70,10 +70,10 @@ function StepRow({
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-[11px] text-slate-500">{step.agent} Agent</span>
             {step.tool && (
-              <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{step.tool}</span>
+              <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{step.tool}</span>
             )}
             {step.startedAt && step.completedAt && (
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[11px] text-slate-400">
                 {Math.round((new Date(step.completedAt).getTime() - new Date(step.startedAt).getTime()) / 1000)}s
               </span>
             )}
@@ -85,7 +85,7 @@ function StepRow({
           )}
 
           {/* Output preview */}
-          {step.status === 'completed' && hasOutput && (
+          {(step.status === 'completed' || step.status === 'approval_required') && hasOutput && (
             <div className="mt-1.5">
               <button
                 onClick={() => setExpanded(!expanded)}
@@ -103,7 +103,7 @@ function StepRow({
                       onClick={() => {
                         navigator.clipboard?.writeText(output ?? '');
                       }}
-                      className="text-[10px] text-slate-500 hover:text-slate-700 border border-slate-200 rounded px-2 py-1"
+                      className="text-[11px] text-slate-500 hover:text-slate-700 border border-slate-200 rounded px-2 py-1"
                     >
                       Copy
                     </button>
@@ -136,7 +136,7 @@ function StepRow({
 }
 
 export function ExecutionTimeline({ steps, workflowName, status, outputs = {}, onApprove }: ExecutionTimelineProps) {
-  const completed = steps.filter((s) => s.status === 'completed').length;
+  const completed = steps.filter((s) => s.status === 'completed' || s.status === 'approval_required').length;
   const total = steps.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
   const [showAllOutputs, setShowAllOutputs] = useState(false);
@@ -156,7 +156,7 @@ export function ExecutionTimeline({ steps, workflowName, status, outputs = {}, o
             }`} />
             <span className="text-sm font-bold text-slate-900 truncate">{workflowName}</span>
           </div>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold capitalize ${
             status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
             status === 'running' ? 'bg-blue-100 text-blue-700' :
             status === 'queued' ? 'bg-amber-100 text-amber-700' :
@@ -175,7 +175,7 @@ export function ExecutionTimeline({ steps, workflowName, status, outputs = {}, o
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-[10px] text-slate-500 mt-1">{completed} of {total} steps done</p>
+            <p className="text-[11px] text-slate-500 mt-1">{completed} of {total} steps done</p>
           </div>
         )}
       </div>
@@ -210,7 +210,7 @@ export function ExecutionTimeline({ steps, workflowName, status, outputs = {}, o
                     <span className="text-[11px] font-semibold text-slate-700">{key.replace(/_/g, ' ')}</span>
                     <button
                       onClick={() => navigator.clipboard?.writeText(outputs[key] ?? '')}
-                      className="text-[10px] text-slate-400 hover:text-slate-600"
+                      className="text-[11px] text-slate-400 hover:text-slate-600"
                     >
                       Copy
                     </button>

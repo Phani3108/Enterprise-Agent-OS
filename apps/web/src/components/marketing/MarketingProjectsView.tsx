@@ -161,7 +161,7 @@ export function MarketingProjectsView() {
                 <div key={t.id} className="rounded-lg border border-slate-100 p-2 text-xs">
                   <div className="font-medium text-slate-800">{t.name}</div>
                   <div className="text-slate-500 mt-0.5">{t.agent} · {t.tool ?? '—'}</div>
-                  <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] ${
+                  <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[11px] ${
                     t.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
                     t.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
                     t.delayTracking?.isDelayed ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
@@ -184,13 +184,13 @@ export function MarketingProjectsView() {
               {graph.nodes.map((n) => (
                 <div
                   key={n.id}
-                  className={`inline-block px-2 py-1 rounded text-[10px] border mr-1 mb-1 ${nodeColors[n.type] ?? 'bg-slate-50 border-slate-200'}`}
+                  className={`inline-block px-2 py-1 rounded text-[11px] border mr-1 mb-1 ${nodeColors[n.type] ?? 'bg-slate-50 border-slate-200'}`}
                 >
                   <span className="font-medium">{n.label}</span>
                   <span className="text-slate-500 ml-1">({n.type})</span>
                 </div>
               ))}
-              <div className="text-[10px] text-slate-500 mt-2">
+              <div className="text-[11px] text-slate-500 mt-2">
                 {graph.edges.length} edges (depends_on, uses, produces, executes)
               </div>
             </div>

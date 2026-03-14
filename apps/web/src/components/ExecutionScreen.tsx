@@ -1,0 +1,717 @@
+/**
+ * ExecutionScreen — The core work surface of AgentOS.
+ * Three phases: Configure → Execute (with live timeline) → Output (with export).
+ * Generic — works with any persona/skill. The frontend's "money screen."
+ */
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useExecutionStore, type SkillDefinition, type Execution, type PreCheckResult } from '../store/execution-store';
+import { useConnectionsStore, resolveConnectorId } from '../store/connections-store';
+import { OutputViewer } from './OutputViewer';
+
+const GATEWAY = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+const POLL_MS = 2000;
+
+// ── Step status styling ────────────────────────────────────────────────────
+
+const STEP_DOT: Record<string, string> = {
+  pending:           'bg-slate-300',
+  running:           'bg-blue-500 animate-pulse',
+  completed:         'bg-emerald-500',
+  failed:            'bg-red-500',
+  approval_required: 'bg-amber-500',
+  skipped:           'bg-slate-300',
+};
+
+const STEP_TEXT: Record<string, string> = {
+  pending:           'text-slate-400',
+  running:           'text-blue-600 font-medium',
+  completed:         'text-emerald-700',
+  failed:            'text-red-600',
+  approval_required: 'text-amber-600',
+  skipped:           'text-slate-400 line-through',
+};
+
+const STEP_LABEL: Record<string, string> = {
+  pending:           'Queued',
+  running:           'Running…',
+  completed:         'Complete',
+  failed:            'Failed',
+  approval_required: 'Needs approval',
+  skipped:           'Skipped',
+};
+
+// ── Component ──────────────────────────────────────────────────────────────
+
+interface Props {
+  persona: string;
+  workspace: string;
+  /** If provided, resumes/views an existing execution */
+  executionId?: string;
+  /** Called when user navigates back */
+  onBack?: () => void;
+}
+
+export function ExecutionScreen({ persona, workspace, onBack }: Props) {
+  const {
+    activeExecution,
+    selectedSkill,
+    availableSkills,
+    setSelectedSkill,
+    setAvailableSkills,
+    createExecution,
+    updateExecution,
+    updateStep,
+    clearActive,
+  } = useExecutionStore();
+
+  const isToolConnected = useConnectionsStore(s => s.isToolConnected);
+
+  // Phase: 'pick' → 'configure' → 'running' → 'output'
+  const phase = !selectedSkill && !activeExecution ? 'pick'
+    : selectedSkill && !activeExecution ? 'configure'
+    : activeExecution && (activeExecution.status === 'running' || activeExecution.status === 'queued') ? 'running'
+    : activeExecution && activeExecution.status === 'completed' ? 'output'
+    : activeExecution && activeExecution.status === 'failed' ? 'output'
+    : 'configure';
+
+  // ── Load available skills for this persona ───────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${GATEWAY}/api/${persona}/skills`);
+        if (res.ok) {
+          const data = await res.json();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const raw: any[] = data.skills ?? data ?? [];
+          const skills: SkillDefinition[] = raw.map((s) => ({
+            id: s.id ?? s.skill_id ?? s.slug,
+            name: s.name ?? s.title,
+            description: s.description ?? '',
+            persona,
+            category: s.category ?? s.cluster ?? '',
+            requiredTools: s.requiredTools ?? s.tools ?? [],
+            steps: (s.steps ?? []).map((st: any, i: number) => ({
+              id: st.id ?? st.stepId ?? `step-${i + 1}`,
+              name: st.name ?? st.stepName ?? `Step ${i + 1}`,
+              agent: st.agent ?? 'default',
+              tool: st.tool,
+              outputKey: st.outputKey ?? st.output_key,
+              requiresApproval: st.requiresApproval ?? false,
+              description: st.description ?? '',
+            })),
+            inputFields: (s.inputFields ?? s.inputs ?? s.fields ?? []).map((f: any) => ({
+              key: f.key ?? f.id ?? f.name,
+              label: f.label ?? f.key ?? f.name,
+              type: f.type ?? 'text',
+              placeholder: f.placeholder ?? '',
+              required: f.required ?? false,
+              hint: f.hint ?? f.helpText,
+              options: f.options
+                ? (Array.isArray(f.options) && typeof f.options[0] === 'string'
+                    ? f.options.map((o: string) => ({ label: o, value: o }))
+                    : f.options)
+                : undefined,
+            })),
+            outputFormat: s.outputFormat,
+            icon: s.icon,
+            estimatedTime: s.estimatedTime ?? s.estimated_time,
+          }));
+          setAvailableSkills(skills);
+        }
+      } catch {
+        // Gateway not reachable — use empty list
+      }
+    })();
+  }, [persona, setAvailableSkills]);
+
+  // ── Polling for running execution ────────────────────────────────────────
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  }, []);
+
+  useEffect(() => {
+    if (!activeExecution || (activeExecution.status !== 'running' && activeExecution.status !== 'queued')) {
+      stopPolling();
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`${GATEWAY}/api/${persona}/executions/${activeExecution.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const exec = data.execution ?? data;
+
+        updateExecution(activeExecution.id, {
+          status: exec.status,
+          completedAt: exec.completedAt,
+          outputs: exec.outputs ?? {},
+        });
+
+        for (const step of exec.steps ?? []) {
+          updateStep(activeExecution.id, step.stepId ?? step.id, {
+            status: step.status,
+            startedAt: step.startedAt,
+            completedAt: step.completedAt,
+            outputPreview: step.outputPreview,
+            error: step.error,
+          });
+        }
+
+        if (exec.status === 'completed' || exec.status === 'failed') {
+          stopPolling();
+        }
+      } catch { /* gateway unreachable — keep trying */ }
+    };
+
+    pollRef.current = setInterval(poll, POLL_MS);
+    poll(); // immediate first poll
+    return stopPolling;
+  }, [activeExecution?.id, activeExecution?.status, persona, updateExecution, updateStep, stopPolling]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const handleBack = () => {
+    stopPolling();
+    clearActive();
+    onBack?.();
+  };
+
+  return (
+    <div className="page-container">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-[13px] text-slate-400 mb-4">
+        <button onClick={handleBack} className="hover:text-slate-700 transition-colors">
+          {persona.charAt(0).toUpperCase() + persona.slice(1)}
+        </button>
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+        {selectedSkill || activeExecution ? (
+          <>
+            <button onClick={() => { clearActive(); }} className="hover:text-slate-700 transition-colors">Skills</button>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <span className="text-slate-700 font-medium">{activeExecution?.skillName ?? selectedSkill?.name}</span>
+          </>
+        ) : (
+          <span className="text-slate-700 font-medium">Skills</span>
+        )}
+      </div>
+
+      {/* Phase: Pick a skill */}
+      {phase === 'pick' && (
+        <SkillPicker
+          skills={availableSkills}
+          persona={persona}
+          onSelect={setSelectedSkill}
+        />
+      )}
+
+      {/* Phase: Configure */}
+      {phase === 'configure' && selectedSkill && (
+        <ConfigurePanel
+          skill={selectedSkill}
+          persona={persona}
+          workspace={workspace}
+          isToolConnected={isToolConnected}
+          onRun={(inputs, fileIds, simulate) => {
+            const exec = createExecution({ persona, skill: selectedSkill, workspace, inputs, fileIds, simulate });
+            // Fire execution on gateway
+            fetch(`${GATEWAY}/api/${persona}/execute`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                workflowId: selectedSkill.id,
+                skillId: selectedSkill.id,
+                inputs: { ...inputs, _fileIds: fileIds },
+                simulate,
+              }),
+            })
+              .then(r => r.json())
+              .then(data => {
+                const remote = data.execution ?? data;
+                if (remote?.id) {
+                  // Overwrite local ID with gateway's ID so polling works
+                  updateExecution(exec.id, { id: remote.id, status: remote.status ?? 'queued' });
+                }
+              })
+              .catch(() => {
+                updateExecution(exec.id, { status: 'failed' });
+              });
+          }}
+          onBack={() => setSelectedSkill(null)}
+        />
+      )}
+
+      {/* Phase: Running / Output */}
+      {(phase === 'running' || phase === 'output') && activeExecution && (
+        <ExecutionView
+          execution={activeExecution}
+          onBack={handleBack}
+          onRerun={() => {
+            const skill = availableSkills.find(s => s.id === activeExecution.skillId);
+            clearActive();
+            if (skill) setSelectedSkill(skill);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Sub-components
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Skill Picker ───────────────────────────────────────────────────────────
+
+function SkillPicker({ skills, persona, onSelect }: {
+  skills: SkillDefinition[];
+  persona: string;
+  onSelect: (skill: SkillDefinition) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = skills.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.description.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Group by category
+  const grouped: Record<string, SkillDefinition[]> = {};
+  filtered.forEach(s => {
+    const cat = s.category || 'General';
+    (grouped[cat] ??= []).push(s);
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-[22px] font-semibold text-slate-900">
+            {persona.charAt(0).toUpperCase() + persona.slice(1)} Skills
+          </h1>
+          <p className="text-[13px] text-slate-500 mt-1">
+            Choose a skill to run. Each skill orchestrates tools, prompts, and agents to deliver output.
+          </p>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-6">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          className="input pl-10 w-full max-w-md"
+          placeholder="Search skills…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Skill cards */}
+      {Object.entries(grouped).map(([category, catSkills]) => (
+        <div key={category} className="mb-6">
+          <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">{category}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {catSkills.map(skill => (
+              <button
+                key={skill.id}
+                onClick={() => onSelect(skill)}
+                className="card p-4 text-left hover:border-blue-200 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 text-lg">
+                    {skill.icon || '⚡'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[14px] font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {skill.name}
+                    </h3>
+                    <p className="text-[12px] text-slate-500 mt-0.5 line-clamp-2">{skill.description}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      {skill.requiredTools.length > 0 && (
+                        <span className="text-[11px] text-slate-400">
+                          {skill.requiredTools.length} tool{skill.requiredTools.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {skill.steps.length > 0 && (
+                        <span className="text-[11px] text-slate-400">
+                          {skill.steps.length} step{skill.steps.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {skill.estimatedTime && (
+                        <span className="text-[11px] text-slate-400">~{skill.estimatedTime}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {skills.length === 0 && (
+        <div className="empty-state">
+          <svg className="w-10 h-10 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+          </svg>
+          <p className="text-[13px] text-slate-500">No skills available for {persona}.</p>
+          <p className="text-[12px] text-slate-400 mt-1">Connect tools and check the gateway is running.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Configure Panel ────────────────────────────────────────────────────────
+
+function ConfigurePanel({ skill, persona, workspace, isToolConnected, onRun, onBack }: {
+  skill: SkillDefinition;
+  persona: string;
+  workspace: string;
+  isToolConnected: (toolNameOrId: string) => boolean;
+  onRun: (inputs: Record<string, unknown>, fileIds: string[], simulate: boolean) => void;
+  onBack: () => void;
+}) {
+  const [inputs, setInputs] = useState<Record<string, string>>({});
+  const [simulate, setSimulate] = useState(false);
+  const [preCheck, setPreCheck] = useState<PreCheckResult | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+
+  // Run pre-check
+  useEffect(() => {
+    setChecking(true);
+    fetch(`${GATEWAY_URL}/api/${persona}/execute/precheck`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflowId: skill.id, skillId: skill.id, simulate }),
+    })
+      .then(r => r.json())
+      .then(data => setPreCheck(data))
+      .catch(() => setPreCheck({ canExecute: true })) // if gateway down, allow simulate
+      .finally(() => setChecking(false));
+  }, [skill.id, simulate, persona, GATEWAY_URL]);
+
+  const allRequiredFilled = skill.inputFields
+    .filter(f => f.required)
+    .every(f => (inputs[f.key] ?? '').trim().length > 0);
+
+  const canRun = (preCheck?.canExecute || simulate) && allRequiredFilled;
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={onBack} className="text-slate-400 hover:text-slate-700 transition-colors">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div>
+          <h1 className="text-[18px] font-semibold text-slate-900">{skill.name}</h1>
+          <p className="text-[13px] text-slate-500 mt-0.5">{skill.description}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Input form */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="card p-5">
+            <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Configure Inputs</h2>
+
+            {skill.inputFields.length > 0 ? (
+              <div className="space-y-4">
+                {skill.inputFields.map(field => (
+                  <div key={field.key}>
+                    <label className="block text-[13px] font-medium text-slate-700 mb-1.5">
+                      {field.label}
+                      {field.required && <span className="text-red-400 ml-0.5">*</span>}
+                    </label>
+                    {field.type === 'textarea' ? (
+                      <textarea
+                        className="input w-full min-h-[100px] resize-y"
+                        placeholder={field.placeholder}
+                        value={inputs[field.key] ?? ''}
+                        onChange={e => setInputs(p => ({ ...p, [field.key]: e.target.value }))}
+                      />
+                    ) : field.type === 'select' && field.options ? (
+                      <select
+                        className="input w-full"
+                        value={inputs[field.key] ?? ''}
+                        onChange={e => setInputs(p => ({ ...p, [field.key]: e.target.value }))}
+                      >
+                        <option value="">{field.placeholder || 'Select…'}</option>
+                        {field.options.map(o => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                        className="input w-full"
+                        placeholder={field.placeholder}
+                        value={inputs[field.key] ?? ''}
+                        onChange={e => setInputs(p => ({ ...p, [field.key]: e.target.value }))}
+                      />
+                    )}
+                    {field.hint && <p className="text-[11px] text-slate-400 mt-1">{field.hint}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-slate-500">This skill runs automatically — no inputs required.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Tool check + run */}
+        <div className="space-y-4">
+          {/* Tool connections */}
+          <div className="card p-4">
+            <h3 className="text-[13px] font-semibold text-slate-900 mb-3">Required Tools</h3>
+            {skill.requiredTools.length > 0 ? (
+              <div className="space-y-2">
+                {skill.requiredTools.map(tool => {
+                  const connected = isToolConnected(tool);
+                  return (
+                    <div key={tool} className="flex items-center gap-2 text-[13px]">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                      <span className={connected ? 'text-slate-700' : 'text-slate-500'}>{tool}</span>
+                      {!connected && (
+                        <span className="text-[11px] text-red-400 ml-auto">Not connected</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[12px] text-slate-400">No specific tools required.</p>
+            )}
+
+            {/* Pre-check status */}
+            {checking && (
+              <div className="mt-3 text-[12px] text-slate-400 flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                Checking connections…
+              </div>
+            )}
+            {preCheck && !preCheck.canExecute && !simulate && (
+              <div className="mt-3 p-2.5 rounded-lg bg-amber-50 border border-amber-100 text-[12px] text-amber-700">
+                {preCheck.reason || 'Some tools are not connected.'}
+                {preCheck.missingTools && (
+                  <div className="mt-1 text-[11px] text-amber-600">
+                    Missing: {preCheck.missingTools.join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Steps preview */}
+          <div className="card p-4">
+            <h3 className="text-[13px] font-semibold text-slate-900 mb-3">Execution Steps</h3>
+            <div className="space-y-2">
+              {skill.steps.map((step, i) => (
+                <div key={step.id} className="flex items-start gap-2.5">
+                  <div className="flex flex-col items-center">
+                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[11px] font-medium text-slate-500">{i + 1}</div>
+                    {i < skill.steps.length - 1 && <div className="w-px h-4 bg-slate-200 mt-0.5" />}
+                  </div>
+                  <div>
+                    <div className="text-[13px] text-slate-700">{step.name}</div>
+                    {step.tool && <div className="text-[11px] text-slate-400">via {step.tool}</div>}
+                    {step.requiresApproval && (
+                      <span className="inline-block text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded mt-0.5">Approval required</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Simulate toggle + Run button */}
+          <div className="card p-4 space-y-3">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={simulate}
+                onChange={e => setSimulate(e.target.checked)}
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <div className="text-[13px] text-slate-700 font-medium">Simulation mode</div>
+                <div className="text-[11px] text-slate-400">Run without real tool connections</div>
+              </div>
+            </label>
+
+            <button
+              onClick={() => onRun(inputs, [], simulate)}
+              disabled={!canRun}
+              className="btn btn-primary w-full py-2.5 text-[14px] disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {simulate ? 'Simulate Execution' : 'Run Skill'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Execution View (Timeline + Output) ─────────────────────────────────────
+
+function ExecutionView({ execution, onBack, onRerun }: {
+  execution: Execution;
+  onBack: () => void;
+  onRerun: () => void;
+}) {
+  const isRunning = execution.status === 'running' || execution.status === 'queued';
+  const isDone = execution.status === 'completed';
+  const isFailed = execution.status === 'failed';
+
+  const completedSteps = execution.steps.filter(s => s.status === 'completed').length;
+  const totalSteps = execution.steps.length;
+  const progressPct = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+  const duration = execution.completedAt
+    ? ((new Date(execution.completedAt).getTime() - new Date(execution.startedAt).getTime()) / 1000).toFixed(1)
+    : ((Date.now() - new Date(execution.startedAt).getTime()) / 1000).toFixed(0);
+
+  // Tab: 'timeline' or 'output'
+  const [tab, setTab] = useState<'timeline' | 'output'>(isDone ? 'output' : 'timeline');
+
+  // Switch to output tab when execution completes
+  useEffect(() => {
+    if (isDone) setTab('output');
+  }, [isDone]);
+
+  return (
+    <div>
+      {/* Header bar */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="text-slate-400 hover:text-slate-700 transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-[18px] font-semibold text-slate-900">{execution.skillName}</h1>
+            <div className="flex items-center gap-3 mt-0.5">
+              <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${
+                isRunning ? 'text-blue-600' : isDone ? 'text-emerald-600' : 'text-red-600'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${
+                  isRunning ? 'bg-blue-500 animate-pulse' : isDone ? 'bg-emerald-500' : 'bg-red-500'
+                }`} />
+                {isRunning ? 'Running' : isDone ? 'Completed' : 'Failed'}
+              </span>
+              <span className="text-[12px] text-slate-400">{duration}s</span>
+              <span className="text-[12px] text-slate-400">{completedSteps}/{totalSteps} steps</span>
+              {execution.simulate && (
+                <span className="text-[11px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded font-medium">Sandbox</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isDone && (
+            <button onClick={onRerun} className="btn btn-secondary text-[13px]">
+              Edit & Re-run
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {isRunning && (
+        <div className="h-1 bg-slate-100 rounded-full mb-5 overflow-hidden">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-5 border-b border-slate-200">
+        <button
+          onClick={() => setTab('timeline')}
+          className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
+            tab === 'timeline' ? 'text-blue-600 border-blue-600' : 'text-slate-500 border-transparent hover:text-slate-700'
+          }`}
+        >
+          Timeline
+        </button>
+        <button
+          onClick={() => setTab('output')}
+          className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
+            tab === 'output' ? 'text-blue-600 border-blue-600' : 'text-slate-500 border-transparent hover:text-slate-700'
+          }`}
+        >
+          Output
+          {isDone && (
+            <span className="ml-1.5 w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+          )}
+        </button>
+      </div>
+
+      {/* Timeline tab */}
+      {tab === 'timeline' && (
+        <div className="card p-5">
+          <div className="space-y-1">
+            {execution.steps.map((step, i) => (
+              <div key={step.stepId} className="flex items-start gap-3 py-2.5">
+                {/* Connector line + dot */}
+                <div className="flex flex-col items-center pt-0.5">
+                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ${STEP_DOT[step.status]}`} />
+                  {i < execution.steps.length - 1 && (
+                    <div className={`w-px flex-1 min-h-[20px] mt-1 ${
+                      step.status === 'completed' ? 'bg-emerald-200' : 'bg-slate-200'
+                    }`} />
+                  )}
+                </div>
+
+                {/* Step content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[13px] ${STEP_TEXT[step.status]}`}>{step.stepName}</span>
+                    <span className={`text-[11px] ${STEP_TEXT[step.status]}`}>{STEP_LABEL[step.status]}</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="text-[11px] text-slate-400">{step.agent}</span>
+                    {step.tool && <span className="text-[11px] text-slate-400">via {step.tool}</span>}
+                    {step.durationMs && <span className="text-[11px] text-slate-400">{(step.durationMs / 1000).toFixed(1)}s</span>}
+                  </div>
+                  {step.error && (
+                    <div className="mt-1.5 p-2 rounded bg-red-50 text-[12px] text-red-700">{step.error}</div>
+                  )}
+                  {step.outputPreview && step.status === 'completed' && (
+                    <div className="mt-1.5 p-2.5 rounded-lg bg-slate-50 text-[12px] text-slate-600 border border-slate-100 line-clamp-3">
+                      {step.outputPreview}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Output tab */}
+      {tab === 'output' && (
+        <OutputViewer
+          execution={execution}
+          isRunning={isRunning}
+        />
+      )}
+    </div>
+  );
+}

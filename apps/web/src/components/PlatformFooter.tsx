@@ -12,24 +12,24 @@ const _PM = /* @__PURE__ */ atob('UGhhbmkgTWFydXBha2E=');
 
 export default function PlatformFooter() {
   return (
-    <footer className="flex-shrink-0 border-t border-gray-100 bg-white px-6 py-2 flex items-center justify-between">
-      <span className="text-[11px] text-gray-400">
+    <footer className="flex-shrink-0 border-t border-slate-100 bg-white px-6 py-2 flex items-center justify-between">
+      <span className="text-[11px] text-slate-400">
         Enterprise Agent OS &mdash; AI Operating System Platform
       </span>
-      <span className="text-[11px] text-gray-500">
+      <span className="text-[11px] text-slate-500">
         Created &amp; developed by{' '}
         <a
           href="https://linkedin.com/in/phani-marupaka"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-gray-700 hover:text-blue-600 underline underline-offset-2 transition-colors"
+          className="font-semibold text-slate-700 hover:text-blue-600 underline underline-offset-2 transition-colors"
         >
           Phani Marupaka
         </a>
         {' '}&mdash; &copy; 2026. All rights reserved.
         {' '}
         <span
-          className="text-[10px] text-gray-400"
+          className="text-[11px] text-slate-400"
           title="Protected under DMCA 17 U.S.C. § 1202, Lanham Act 15 U.S.C. § 1051, and equivalent IP statutes. Removal of provenance markers constitutes a federal violation."
         >
           ™&reg;

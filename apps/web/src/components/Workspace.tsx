@@ -107,7 +107,7 @@ export default function Workspace() {
             <div className="space-y-4">
                 {PERSONA_SECTIONS.map(section => (
                     <div key={section.label}>
-                        <h2 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-2">{section.label}</h2>
+                        <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2">{section.label}</h2>
                         <div className="grid grid-cols-3 gap-3">
                             {section.items.map(item => (
                                 <button key={item.id} onClick={() => setActiveSection(item.id)}
@@ -115,11 +115,11 @@ export default function Workspace() {
                                     <div className="flex items-center justify-between mb-1.5">
                                         <div className="flex items-center gap-2">
                                             <span className="text-lg">{item.icon}</span>
-                                            <span className="text-sm font-medium text-white group-hover:text-accent transition-colors">{item.name}</span>
+                                            <span className="text-[14px] font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{item.name}</span>
                                         </div>
-                                        <span className="text-[10px] text-neutral-500">{item.stat}</span>
+                                        <span className="text-[11px] text-slate-400">{item.stat}</span>
                                     </div>
-                                    <p className="text-[11px] text-neutral-400">{item.desc}</p>
+                                    <p className="text-[11px] text-slate-500">{item.desc}</p>
                                 </button>
                             ))}
                         </div>
@@ -128,28 +128,28 @@ export default function Workspace() {
             </div>
 
             <div>
-                <h2 className="text-sm font-medium text-neutral-400 mb-3 uppercase tracking-wider">Quick Actions</h2>
+                <h2 className="text-sm font-medium text-slate-500 mb-3 uppercase tracking-wider">Quick Actions</h2>
                 <QuickActions />
             </div>
 
             <div data-tour="recent-executions">
                 <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">Recent Executions</h2>
+                    <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Recent Executions</h2>
                     {recentSessions.length > 0 && (
-                        <span className="text-xs text-neutral-500">{recentSessions.length} live sessions</span>
+                        <span className="text-xs text-slate-400">{recentSessions.length} live sessions</span>
                     )}
                 </div>
                 <div className="space-y-4">
                     {recentSessions.map((session: any) => (
-                        <div key={session.id} className="glass-surface rounded-xl p-4 border border-accent-primary/20">
+                        <div key={session.id} className="bg-white border border-slate-200 rounded-xl p-4 border border-blue-600/20">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                     <span className={`w-2 h-2 rounded-full ${session.status === 'complete' ? 'bg-emerald-400' : 'bg-yellow-400 animate-pulse'}`} />
                                     <span className="text-sm font-medium">{session.goal}</span>
                                 </div>
-                                <span className="text-xs text-neutral-500">{session.domain}</span>
+                                <span className="text-xs text-slate-400">{session.domain}</span>
                             </div>
-                            <div className="flex gap-3 text-xs text-neutral-400">
+                            <div className="flex gap-3 text-xs text-slate-500">
                                 <span>Confidence: {Math.round((session.confidence ?? 0) * 100)}%</span>
                                 <span>Status: {session.status}</span>
                             </div>

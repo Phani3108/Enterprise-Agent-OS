@@ -46,12 +46,14 @@ const executions = new Map<string, PersonaExecutionRecord>();
 // Claude API call
 // ---------------------------------------------------------------------------
 
-async function callClaude(systemPrompt: string, userPrompt: string): Promise<string> {
+async function callClaude(systemPrompt: string, userPrompt: string, modelId?: string): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
     return generatePlaceholder(userPrompt);
   }
+
+  const model = modelId || 'claude-sonnet-4-6-20251001';
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -61,7 +63,7 @@ async function callClaude(systemPrompt: string, userPrompt: string): Promise<str
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6-20251001',
+      model,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
@@ -83,6 +85,584 @@ function generatePlaceholder(prompt: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Sandbox Output Generator — produces structured, realistic sample content
+// ---------------------------------------------------------------------------
+
+function generateSandboxOutput(
+  persona: 'engineering' | 'product',
+  skillName: string,
+  step: SkillStep,
+  inputs: Record<string, unknown>,
+  previousOutputs: Record<string, string>
+): string {
+  const key = step.outputKey.toLowerCase();
+  const name = step.name;
+  const inputSummary = Object.entries(inputs)
+    .filter(([, v]) => v !== undefined && v !== '' && v !== null)
+    .map(([k, v]) => `- **${k.replace(/_/g, ' ')}**: ${Array.isArray(v) ? v.join(', ') : String(v).slice(0, 120)}`)
+    .join('\n');
+
+  // Pick a generator based on the output key / step name patterns
+  if (key.includes('review') || key.includes('correctness'))
+    return sandboxReview(name, inputSummary);
+  if (key.includes('security'))
+    return sandboxSecurity(name, inputSummary);
+  if (key.includes('performance'))
+    return sandboxPerformance(name, inputSummary);
+  if (key.includes('test') || key.includes('unit_test') || key.includes('integration'))
+    return sandboxTests(name, inputSummary, inputs);
+  if (key.includes('summary') || key.includes('checklist'))
+    return sandboxSummary(name, skillName, inputSummary);
+  if (key.includes('analysis') || key.includes('logic') || key.includes('detection'))
+    return sandboxAnalysis(name, inputSummary);
+  if (key.includes('diff') || key.includes('metadata') || key.includes('context') || key.includes('source'))
+    return sandboxMetadata(name, inputSummary);
+  if (key.includes('suggestion') || key.includes('inline') || key.includes('patch'))
+    return sandboxSuggestions(name, inputSummary);
+  if (key.includes('architecture') || key.includes('design') || key.includes('diagram'))
+    return sandboxArchitecture(name, inputSummary);
+  if (key.includes('roadmap') || key.includes('plan') || key.includes('timeline'))
+    return sandboxPlan(name, inputSummary);
+  if (key.includes('doc') || key.includes('readme') || key.includes('guide'))
+    return sandboxDocumentation(name, inputSummary);
+  if (key.includes('requirement') || key.includes('spec') || key.includes('story') || key.includes('prd'))
+    return sandboxRequirements(name, inputSummary);
+  if (key.includes('deploy') || key.includes('ci') || key.includes('pipeline'))
+    return sandboxPipeline(name, inputSummary);
+
+  // Fallback: generic structured output
+  return sandboxGeneric(name, skillName, persona, inputSummary);
+}
+
+function sandboxReview(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Code Review Findings
+
+### Critical Issues (2)
+| # | File | Line | Finding | Severity |
+|---|------|------|---------|----------|
+| 1 | \`src/api/handler.ts\` | 42 | Missing input validation on user-supplied \`id\` parameter — potential injection vector | 🔴 Critical |
+| 2 | \`src/db/queries.ts\` | 118 | Unbounded query without \`LIMIT\` — could return entire table on edge cases | 🟠 High |
+
+### Warnings (3)
+- **Dead code**: \`calculateLegacyDiscount()\` in \`pricing.ts:67\` is never called
+- **Inconsistent error handling**: Some controllers return \`{ error }\`, others throw — standardize pattern
+- **Missing null check**: \`user.profile.avatar\` accessed without optional chaining at \`profile.ts:23\`
+
+### Positive Observations
+- Clean separation of concerns between service and controller layers
+- Good use of TypeScript discriminated unions for API responses
+- Test coverage for happy paths is solid
+
+${inputSummary ? `## Review Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run in Live mode with API key for AI-generated analysis of your actual code.*`;
+}
+
+function sandboxSecurity(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Security Scan Results
+
+### Vulnerabilities Found
+| Severity | Category | Location | Description |
+|----------|----------|----------|-------------|
+| 🔴 Critical | SQL Injection | \`db/queries.ts:45\` | String concatenation in query builder — use parameterized queries |
+| 🟠 High | XSS | \`components/Comment.tsx:12\` | \`dangerouslySetInnerHTML\` with unsanitized user content |
+| 🟡 Medium | Secrets | \`.env.example\` | Contains placeholder that resembles actual API key format |
+| 🟢 Low | CORS | \`server.ts:8\` | Wildcard CORS origin in non-development config |
+
+### Recommendations
+1. Replace string concatenation with parameterized queries or ORM methods
+2. Sanitize HTML content through DOMPurify before rendering
+3. Rotate any credentials matching the exposed pattern
+4. Restrict CORS to specific allowed origins in production config
+
+${inputSummary ? `## Scan Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — connect security tools and run Live for real vulnerability scanning.*`;
+}
+
+function sandboxPerformance(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Performance Analysis
+
+### Hot Spots Identified
+| Area | Impact | Issue | Recommendation |
+|------|--------|-------|----------------|
+| Database | High | N+1 query in user list endpoint | Use \`JOIN\` or batch loader pattern |
+| Rendering | Medium | Large list without virtualization (2000+ items) | Implement windowing with \`react-window\` |
+| Bundle | Medium | Importing entire \`lodash\` (72KB gzipped) | Switch to \`lodash-es\` with tree-shaking |
+| API | Low | No response caching for static catalog data | Add \`Cache-Control\` headers, consider Redis |
+
+### Metrics Estimate
+- **Current P95 latency**: ~420ms (list endpoint)
+- **After fixes**: ~85ms (projected)
+- **Bundle reduction**: ~45KB gzipped savings
+
+${inputSummary ? `## Analysis Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for AI-powered analysis of your actual codebase.*`;
+}
+
+function sandboxTests(stepName: string, inputSummary: string, inputs: Record<string, unknown>): string {
+  const lang = (inputs.language as string) || 'TypeScript';
+  const framework = (inputs.test_framework as string) || 'Jest';
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Generated Tests — ${lang} / ${framework}
+
+\`\`\`typescript
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { UserService } from '../src/services/user-service';
+import { mockDb } from './helpers/mock-db';
+
+describe('UserService', () => {
+  let service: UserService;
+
+  beforeEach(() => {
+    service = new UserService(mockDb());
+  });
+
+  describe('createUser', () => {
+    it('should create a user with valid input', async () => {
+      const result = await service.createUser({
+        email: 'test@example.com',
+        name: 'Test User',
+      });
+      expect(result.id).toBeDefined();
+      expect(result.email).toBe('test@example.com');
+    });
+
+    it('should reject duplicate email addresses', async () => {
+      await service.createUser({ email: 'dup@example.com', name: 'First' });
+      await expect(
+        service.createUser({ email: 'dup@example.com', name: 'Second' })
+      ).rejects.toThrow('Email already exists');
+    });
+
+    it('should trim and lowercase email', async () => {
+      const result = await service.createUser({
+        email: '  Test@Example.COM  ',
+        name: 'User',
+      });
+      expect(result.email).toBe('test@example.com');
+    });
+  });
+
+  describe('getUser', () => {
+    it('should return null for non-existent user', async () => {
+      const result = await service.getUser('nonexistent-id');
+      expect(result).toBeNull();
+    });
+  });
+});
+\`\`\`
+
+### Coverage Summary
+| Category | Tests | Scenarios |
+|----------|-------|-----------|
+| Happy path | 3 | Create, read, update |
+| Edge cases | 2 | Duplicate email, empty name |
+| Error handling | 2 | Not found, invalid input |
+| **Total** | **7** | |
+
+${inputSummary ? `## Test Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for AI-generated tests against your actual source code.*`;
+}
+
+function sandboxSummary(stepName: string, skillName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Summary — ${skillName}
+
+### Overview
+This analysis covers the submitted changes across 12 files (8 modified, 3 added, 1 deleted). The changes primarily affect the authentication module and user management service.
+
+### Key Changes
+1. **Authentication flow refactored** to support OAuth 2.0 PKCE alongside existing session-based auth
+2. **New middleware** added for rate limiting on public API endpoints
+3. **Database migration** adds \`refresh_token\` column to users table
+4. **Deprecated endpoint** \`/api/v1/login\` marked for removal in next major version
+
+### Risk Assessment
+- **Breaking change risk**: Low — new auth flow is additive, old sessions still honored
+- **Data migration risk**: Medium — \`refresh_token\` column requires backfill for existing users
+- **Rollback plan**: Feature-flagged behind \`ENABLE_OAUTH_PKCE\`
+
+### Reviewer Checklist
+- [ ] Verify migration is reversible
+- [ ] Check rate limit thresholds match production traffic patterns
+- [ ] Confirm OAuth callback URLs are allowlisted
+- [ ] Validate refresh token rotation logic
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for AI-generated analysis of your actual changes.*`;
+}
+
+function sandboxAnalysis(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Analysis Results
+
+### Code Structure
+- **Entry points**: 3 public functions, 2 exported classes
+- **Complexity**: Cyclomatic complexity 14 (moderate — consider extracting helper functions above 10)
+- **Dependencies**: 6 external imports, 4 internal modules
+
+### Logic Branches Identified
+| Branch | Condition | Test Coverage |
+|--------|-----------|---------------|
+| Auth check | \`user.isAuthenticated\` | ✅ Covered |
+| Admin override | \`user.role === 'admin'\` | ✅ Covered |
+| Rate limit bypass | \`config.skipRateLimit\` | ⚠️ Missing |
+| Fallback handler | \`catch (err)\` | ⚠️ Partial |
+| Edge: empty input | \`items.length === 0\` | ❌ Not covered |
+
+### Recommendations
+1. Add guard clause for empty array input
+2. Extract the nested conditional in \`processOrder()\` into a strategy pattern
+3. The fallback handler swallows errors silently — log or re-throw
+
+${inputSummary ? `## Analysis Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for actual code analysis.*`;
+}
+
+function sandboxMetadata(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Metadata Retrieved
+
+| Field | Value |
+|-------|-------|
+| **Title** | feat: Add OAuth 2.0 PKCE authentication flow |
+| **Author** | developer@example.com |
+| **Branch** | feature/oauth-pkce → main |
+| **Files Changed** | 12 (8 modified, 3 added, 1 deleted) |
+| **Lines** | +342 / -89 |
+| **Labels** | \`feature\`, \`auth\`, \`needs-review\` |
+| **CI Status** | ✅ All checks passed |
+| **Created** | 2 hours ago |
+
+### Changed File Categories
+- **Auth module** (5 files): Core flow changes
+- **Middleware** (2 files): Rate limiting
+- **Database** (2 files): Migration + model update
+- **Tests** (2 files): New test coverage
+- **Config** (1 file): Environment variables
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — connect GitHub and run Live to fetch real PR data.*`;
+}
+
+function sandboxSuggestions(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Inline Suggestions
+
+### Suggestion 1 — \`src/auth/oauth.ts:42\`
+\`\`\`diff
+- const token = jwt.sign(payload, SECRET);
++ const token = jwt.sign(payload, SECRET, { expiresIn: '15m', algorithm: 'RS256' });
+\`\`\`
+**Reason:** Token has no expiration — set a reasonable TTL and use asymmetric signing.
+
+### Suggestion 2 — \`src/middleware/rate-limit.ts:18\`
+\`\`\`diff
+- const limit = 100;
++ const limit = parseInt(process.env.RATE_LIMIT ?? '100', 10);
+\`\`\`
+**Reason:** Make rate limit configurable via environment for different deployment tiers.
+
+### Suggestion 3 — \`src/db/queries.ts:67\`
+\`\`\`diff
+- const users = await db.query(\`SELECT * FROM users WHERE org = '\${orgId}'\`);
++ const users = await db.query('SELECT * FROM users WHERE org = $1', [orgId]);
+\`\`\`
+**Reason:** SQL injection vulnerability — use parameterized query.
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for suggestions based on your actual diff.*`;
+}
+
+function sandboxArchitecture(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Architecture Analysis
+
+### System Components
+\`\`\`
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│   Frontend   │────▶│  API Gateway  │────▶│  Auth Service│
+│  (React SPA) │     │  (Express)    │     │  (OAuth 2.0) │
+└─────────────┘     └──────┬───────┘     └─────────────┘
+                           │
+                    ┌──────┴───────┐
+                    │              │
+              ┌─────▼────┐  ┌─────▼────┐
+              │  User     │  │  Order    │
+              │  Service  │  │  Service  │
+              └─────┬────┘  └─────┬────┘
+                    │              │
+              ┌─────▼──────────────▼────┐
+              │     PostgreSQL DB        │
+              └─────────────────────────┘
+\`\`\`
+
+### Design Patterns Identified
+- **API Gateway pattern** for request routing and auth
+- **Service layer** with domain separation (users, orders)
+- **Repository pattern** for data access abstraction
+
+### Recommendations
+1. Consider event-driven communication between User and Order services
+2. Add a caching layer (Redis) for frequently-accessed catalog data
+3. Introduce circuit breaker for external service calls
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for analysis of your actual architecture.*`;
+}
+
+function sandboxPlan(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Roadmap & Timeline
+
+### Phase 1 — Foundation (Weeks 1–2)
+- [ ] Set up project scaffolding and CI/CD pipeline
+- [ ] Define API contracts and data models
+- [ ] Implement core authentication flow
+- [ ] Set up monitoring and alerting baseline
+
+### Phase 2 — Core Features (Weeks 3–5)
+- [ ] Build primary user-facing workflows
+- [ ] Implement data access layer with migrations
+- [ ] Add integration tests for critical paths
+- [ ] Performance baseline and load testing
+
+### Phase 3 — Polish & Launch (Weeks 6–7)
+- [ ] UI/UX refinements based on internal testing
+- [ ] Security audit and penetration testing
+- [ ] Documentation for API consumers
+- [ ] Staged rollout plan with feature flags
+
+### Milestones
+| Milestone | Target | Status |
+|-----------|--------|--------|
+| Alpha | Week 3 | ⬜ Not started |
+| Beta | Week 5 | ⬜ Not started |
+| GA | Week 7 | ⬜ Not started |
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for AI-generated planning tailored to your project.*`;
+}
+
+function sandboxDocumentation(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Generated Documentation
+
+### API Reference
+
+#### \`POST /api/v2/users\`
+Creates a new user account.
+
+**Request Body:**
+\`\`\`json
+{
+  "email": "user@example.com",
+  "name": "Jane Doe",
+  "role": "member"
+}
+\`\`\`
+
+**Response (201):**
+\`\`\`json
+{
+  "id": "usr_abc123",
+  "email": "user@example.com",
+  "name": "Jane Doe",
+  "role": "member",
+  "createdAt": "2025-01-15T10:30:00Z"
+}
+\`\`\`
+
+**Error Responses:**
+| Code | Description |
+|------|-------------|
+| 400 | Invalid email format or missing required fields |
+| 409 | Email already registered |
+| 429 | Rate limit exceeded |
+
+### Quick Start
+\`\`\`bash
+# Install dependencies
+npm install
+
+# Set up environment
+cp .env.example .env
+
+# Run migrations
+npm run db:migrate
+
+# Start development server
+npm run dev
+\`\`\`
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for documentation generated from your actual code.*`;
+}
+
+function sandboxRequirements(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## Requirements Specification
+
+### User Stories
+
+**US-001: User Registration**
+> As a new user, I want to create an account with my email so that I can access the platform.
+
+**Acceptance Criteria:**
+- [ ] User can register with email and password
+- [ ] Email validation prevents invalid formats
+- [ ] Duplicate emails show clear error message
+- [ ] Welcome email sent on successful registration
+- [ ] Account is created in "pending" state until email verified
+
+**US-002: Dashboard Overview**
+> As a logged-in user, I want to see a dashboard with my key metrics so that I can quickly understand my status.
+
+**Acceptance Criteria:**
+- [ ] Dashboard loads within 2 seconds
+- [ ] Shows 4 KPI cards with real-time data
+- [ ] Supports date range filtering (7d, 30d, 90d)
+- [ ] Data refreshes automatically every 60 seconds
+
+### Non-Functional Requirements
+| Category | Requirement |
+|----------|-------------|
+| Performance | P95 API latency < 200ms |
+| Availability | 99.9% uptime SLA |
+| Security | SOC 2 Type II compliance |
+| Scale | Support 10K concurrent users |
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for requirements generated from your actual inputs.*`;
+}
+
+function sandboxPipeline(stepName: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+
+## CI/CD Pipeline Configuration
+
+\`\`\`yaml
+name: Deploy Pipeline
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t app:$GITHUB_SHA .
+      - run: docker push registry.example.com/app:$GITHUB_SHA
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - run: kubectl set image deployment/app app=registry.example.com/app:$GITHUB_SHA
+\`\`\`
+
+### Pipeline Stages
+| Stage | Duration | Gate |
+|-------|----------|------|
+| Lint + Test | ~2min | Auto |
+| Build + Push | ~3min | Auto |
+| Deploy Staging | ~1min | Auto |
+| Deploy Production | ~1min | Manual approval |
+
+${inputSummary ? `## Context\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run Live for pipeline config tailored to your stack.*`;
+}
+
+function sandboxGeneric(stepName: string, skillName: string, persona: string, inputSummary: string): string {
+  return `# ${stepName}
+**Mode:** 🧪 Sandbox Simulation
+**Skill:** ${skillName} | **Persona:** ${persona}
+
+## Output
+
+### Analysis
+This step analyzed the provided inputs and produced the following structured output:
+
+**Key Findings:**
+1. The primary objective has been identified and decomposed into 4 actionable work items
+2. Dependencies mapped across 3 related systems
+3. Risk factors assessed with mitigation strategies for each
+
+**Recommendations:**
+- Start with the highest-impact, lowest-risk item to build momentum
+- Schedule a review checkpoint after the first deliverable
+- Document assumptions explicitly to reduce rework
+
+### Next Steps
+| Priority | Action | Owner | ETA |
+|----------|--------|-------|-----|
+| P0 | Validate core assumptions with stakeholders | Lead | Day 1 |
+| P1 | Prototype the primary workflow | Engineering | Week 1 |
+| P2 | Set up monitoring for success metrics | DevOps | Week 1 |
+| P3 | Draft rollback plan | Lead | Week 2 |
+
+${inputSummary ? `## Inputs Received\n${inputSummary}` : ''}
+
+> 🧪 *Sandbox output — run with Live mode for AI-generated content specific to your inputs.*`;
+}
+
+// ---------------------------------------------------------------------------
 // Prompt builder
 // ---------------------------------------------------------------------------
 
@@ -91,7 +671,8 @@ function buildStepPrompt(
   skillName: string,
   step: SkillStep,
   inputs: Record<string, unknown>,
-  previousOutputs: Record<string, string>
+  previousOutputs: Record<string, string>,
+  customPrompt?: string
 ): { system: string; user: string } {
   const inputLines = Object.entries(inputs)
     .filter(([k, v]) => v !== undefined && v !== '' && v !== null)
@@ -126,10 +707,14 @@ Guidelines:
 - Output should be ready to review and use with minimal editing
 - Include actionable recommendations and specific details`;
 
+  const customSection = customPrompt
+    ? `\n\n## Additional Instructions (from selected prompt)\n${customPrompt}`
+    : '';
+
   const user = `## Skill Step: ${step.name}
 
 ## User Inputs
-${inputLines || 'No structured inputs provided.'}${prevContext}
+${inputLines || 'No structured inputs provided.'}${prevContext}${customSection}
 
 Please execute this step now. Produce specific, high-quality output for: "${step.name}".`;
 
@@ -145,7 +730,9 @@ async function processSkillSteps(
   persona: 'engineering' | 'product',
   skill: PersonaSkillDef,
   inputs: Record<string, unknown>,
-  simulate: boolean
+  simulate: boolean,
+  customPrompt?: string,
+  modelId?: string
 ): Promise<void> {
   const exec = executions.get(execId);
   if (!exec) return;
@@ -170,11 +757,11 @@ async function processSkillSteps(
       let output: string;
 
       if (simulate) {
-        await new Promise((r) => setTimeout(r, 400 + Math.random() * 600));
-        output = `[Simulation] ${skillStep.name} completed successfully.\n\nThis is a simulated output for the "${skillStep.name}" step of the "${skill.name}" skill. Configure real tool connections and disable simulation to generate actual content.`;
+        await new Promise((r) => setTimeout(r, 600 + Math.random() * 800));
+        output = generateSandboxOutput(persona, skill.name, skillStep, inputs, previousOutputs);
       } else {
-        const { system, user } = buildStepPrompt(persona, skill.name, skillStep, inputs, previousOutputs);
-        output = await callClaude(system, user);
+        const { system, user } = buildStepPrompt(persona, skill.name, skillStep, inputs, previousOutputs, customPrompt);
+        output = await callClaude(system, user, modelId);
       }
 
       previousOutputs[skillStep.outputKey] = output;
@@ -215,7 +802,9 @@ export function createPersonaExecution(
   skill: PersonaSkillDef,
   inputs: Record<string, unknown>,
   userId?: string,
-  simulate?: boolean
+  simulate?: boolean,
+  customPrompt?: string,
+  modelId?: string
 ): PersonaExecutionRecord {
   const id = `${persona}-exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -244,7 +833,7 @@ export function createPersonaExecution(
   executions.set(id, exec);
 
   // Fire execution asynchronously
-  processSkillSteps(id, persona, skill, inputs, simulate ?? false).catch((err) => {
+  processSkillSteps(id, persona, skill, inputs, simulate ?? false, customPrompt, modelId).catch((err) => {
     console.error(`[persona-api] processSkillSteps error for ${id}:`, err);
     const e = executions.get(id);
     if (e) { e.status = 'failed'; executions.set(id, e); }

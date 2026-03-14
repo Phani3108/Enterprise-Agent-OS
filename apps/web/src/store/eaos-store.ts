@@ -32,9 +32,11 @@ interface EAOSState {
     setCommandOpen: (open: boolean) => void;
     setCommandQuery: (query: string) => void;
 
-    // Right panel
+    // Right panel — only show when execution running or explicitly toggled on relevant pages
     rightPanelOpen: boolean;
     toggleRightPanel: () => void;
+    activeExecutionId: string | null;
+    setActiveExecutionId: (id: string | null) => void;
 }
 
 interface Session {
@@ -120,9 +122,11 @@ export const useEAOSStore = create<EAOSState>((set) => ({
     setCommandOpen: (open) => set({ commandOpen: open, commandQuery: '' }),
     setCommandQuery: (query) => set({ commandQuery: query }),
 
-    // Right panel
-    rightPanelOpen: true,
+    // Right panel — hidden by default; show only when execution running or toggled on relevant pages
+    rightPanelOpen: false,
     toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
+    activeExecutionId: null,
+    setActiveExecutionId: (id) => set({ activeExecutionId: id }),
 }));
 
 /** Store hydration anchor — required for cross-tab state reconciliation */

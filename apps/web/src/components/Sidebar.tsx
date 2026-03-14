@@ -1,81 +1,106 @@
 'use client';
 /**
  * Sidebar — AgentOS primary navigation
- * 7 top-level groups: Home · Workspaces · Library · Operations · Learning · Community · Admin
+ * Flow: Home → Connections (integration-first) → Workspaces (persona) → Library → Operations → Learning → Admin
  * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
 import { useState, useEffect } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
+import { useConnectionsStore } from '../store/connections-store';
 
-interface NavItem { id: string; label: string; icon: string; badge?: string; }
+/* ── SVG icon paths (consistent, no emoji) ───────────────────── */
+const ICONS: Record<string, React.ReactNode> = {
+  home:        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z" />,
+  connections: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />,
+  marketing:   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />,
+  engineering: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />,
+  product:     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />,
+  skills:      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />,
+  workflows:   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm10 0a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z" />,
+  prompts:     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />,
+  agents:      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />,
+  templates:   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />,
+  tools:       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" />,
+  executions:  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />,
+  projects:    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />,
+  courses:     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />,
+  playbooks:   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />,
+  discussions: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />,
+  blogs:       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />,
+  governance:  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />,
+  usage:       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+  settings:    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />,
+  collapse:    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />,
+  expand:      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 5l7 7-7 7M5 5l7 7-7 7" />,
+  chevron:     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />,
+};
+
+function Icon({ name, className = 'w-4 h-4' }: { name: string; className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {ICONS[name] ?? ICONS.home}
+    </svg>
+  );
+}
+
+/* ── Navigation structure ──────────────────────────────────── */
+interface NavItem { id: string; label: string; icon: string; badge?: number; }
 interface NavGroup { id: string; label?: string; collapsible?: boolean; items: NavItem[]; }
 
 const NAV: NavGroup[] = [
   {
     id: 'home-group',
-    items: [{ id: 'home', label: 'Command Center', icon: '⌂' }],
-  },
-  {
-    id: 'workspaces', label: 'Workspaces', collapsible: true,
-    items: [
-      { id: 'ws-marketing',   label: 'Marketing',   icon: '📣' },
-      { id: 'ws-engineering', label: 'Engineering', icon: '⚙️' },
-      { id: 'ws-product',     label: 'Product',     icon: '🗺️' },
-    ],
+    items: [{ id: 'home', label: 'Home', icon: 'home' }],
   },
   {
     id: 'connections', label: 'Connections', collapsible: true,
     items: [
-      { id: 'conn-ai-models', label: 'AI Models',    icon: '🤖' },
-      { id: 'conn-storage',   label: 'Storage & Docs',icon: '📁' },
-      { id: 'conn-design',    label: 'Design',        icon: '🎨' },
-      { id: 'conn-crm',       label: 'CRM & Ads',     icon: '📣' },
-      { id: 'conn-devtools',  label: 'Dev Tools',     icon: '⚙️' },
-      { id: 'conn-cms',       label: 'CMS & Publishing',icon: '📝' },
-      { id: 'conn-messaging', label: 'Messaging',     icon: '💬' },
-      { id: 'conn-data',      label: 'Data & Infra',  icon: '📊' },
+      { id: 'conn-ai-models', label: 'AI Models',        icon: 'connections' },
+      { id: 'conn-storage',   label: 'Storage & Docs',   icon: 'connections' },
+      { id: 'conn-design',    label: 'Design',           icon: 'connections' },
+      { id: 'conn-crm',       label: 'CRM & Ads',        icon: 'connections' },
+      { id: 'conn-devtools',  label: 'Dev Tools',        icon: 'connections' },
+      { id: 'conn-cms',       label: 'CMS & Publishing', icon: 'connections' },
+      { id: 'conn-messaging', label: 'Messaging',        icon: 'connections' },
+      { id: 'conn-data',      label: 'Data & Infra',     icon: 'connections' },
+    ],
+  },
+  {
+    id: 'workspaces', label: 'Workspaces', collapsible: true,
+    items: [
+      { id: 'ws-marketing',     label: 'Marketing',     icon: 'marketing'   },
+      { id: 'ws-engineering',   label: 'Engineering',   icon: 'engineering' },
+      { id: 'ws-product',       label: 'Product',       icon: 'product'     },
     ],
   },
   {
     id: 'library', label: 'Library', collapsible: true,
     items: [
-      { id: 'library-skills',    label: 'Skills',    icon: '✦'  },
-      { id: 'library-workflows', label: 'Workflows', icon: '⚡' },
-      { id: 'library-prompts',   label: 'Prompts',   icon: '✨' },
-      { id: 'library-templates', label: 'Templates', icon: '📚' },
-      { id: 'library-agents',    label: 'Agents',    icon: '🤖' },
+      { id: 'library-skills',    label: 'Skills',    icon: 'skills'    },
+      { id: 'library-workflows', label: 'Workflows', icon: 'workflows' },
+      { id: 'library-templates', label: 'Templates', icon: 'templates' },
+      { id: 'library-agents',    label: 'Agents',    icon: 'agents'    },
+      { id: 'library-courses',  label: 'Courses',   icon: 'courses'   },
     ],
   },
   {
     id: 'operations', label: 'Operations', collapsible: true,
     items: [
-      { id: 'ops-integrations', label: 'Tool Registry', icon: '🔌' },
-      { id: 'ops-executions',   label: 'Executions',   icon: '📋' },
-      { id: 'ops-projects',     label: 'Projects',     icon: '🗂️' },
-    ],
-  },
-  {
-    id: 'learning', label: 'Learning', collapsible: true,
-    items: [
-      { id: 'learning-courses',   label: 'Courses',   icon: '🎓' },
-      { id: 'learning-playbooks', label: 'Playbooks', icon: '📖' },
-    ],
-  },
-  {
-    id: 'community', label: 'Community', collapsible: true,
-    items: [
-      { id: 'community-discussions', label: 'Discussions', icon: '💬' },
-      { id: 'community-blogs',       label: 'Blogs',       icon: '✍️' },
+      { id: 'ops-integrations', label: 'Tool Registry', icon: 'tools'      },
+      { id: 'ops-executions',   label: 'Executions',   icon: 'executions' },
+      { id: 'ops-projects',     label: 'Projects',     icon: 'projects'   },
+      { id: 'ops-discussions', label: 'Discussions',  icon: 'discussions'},
+      { id: 'ops-blog',        label: 'Blog',         icon: 'blogs'      },
     ],
   },
   {
     id: 'admin', label: 'Admin', collapsible: true,
     items: [
-      { id: 'admin-governance', label: 'Governance', icon: '🏛️' },
-      { id: 'admin-usage',      label: 'Usage',      icon: '📊' },
-      { id: 'admin-settings',   label: 'Settings',   icon: '⚙️' },
+      { id: 'admin-governance', label: 'Governance', icon: 'governance' },
+      { id: 'admin-usage',      label: 'Usage',      icon: 'usage'      },
+      { id: 'admin-settings',   label: 'Settings',   icon: 'settings'   },
     ],
   },
 ];
@@ -90,9 +115,10 @@ function findGroupId(sectionId: string): string | null {
 export function Sidebar() {
   const activeSection = useEAOSStore(s => s.activeSection);
   const setActiveSection = useEAOSStore(s => s.setActiveSection);
+  const connectedCount = useConnectionsStore(s => s.getConnectedCount());
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(
-    () => new Set(['home-group', 'workspaces'])
+    () => new Set(['home-group', 'connections', 'workspaces'])
   );
 
   useEffect(() => {
@@ -101,7 +127,6 @@ export function Sidebar() {
   }, [activeSection]);
 
   const toggleGroup = (id: string) => {
-    if (id === findGroupId(activeSection)) return; // keep active group open
     setOpenGroups(prev => {
       const n = new Set(prev);
       n.has(id) ? n.delete(id) : n.add(id);
@@ -111,39 +136,51 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${collapsed ? 'w-14' : 'w-56'} flex-shrink-0 flex flex-col h-screen bg-white border-r border-gray-200 transition-all duration-200 overflow-hidden`}
+      className={`${collapsed ? 'w-[52px]' : 'w-[220px]'} flex-shrink-0 flex flex-col h-screen bg-white border-r border-slate-200 transition-all duration-200 overflow-hidden`}
       data-tour="sidebar"
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-12 border-b border-gray-200 flex-shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">A</div>
+      <div className="flex items-center gap-2.5 px-3.5 h-[52px] border-b border-slate-200 flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
         {!collapsed && (
           <div className="min-w-0">
-            <span className="text-sm font-semibold text-gray-900 tracking-tight block truncate">AgentOS</span>
-            <span className="text-[10px] text-gray-400">Enterprise AI OS</span>
+            <span className="text-sm font-semibold text-slate-900 tracking-tight block truncate">AgentOS</span>
+            <span className="text-[11px] text-slate-400 leading-none">Enterprise AI</span>
           </div>
         )}
       </div>
 
-      {/* Nav */}
+      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2 px-2">
         {NAV.map(group => {
           const isOpen = !group.collapsible || openGroups.has(group.id);
+          const isConnections = group.id === 'connections';
           return (
-            <div key={group.id} className="mb-1">
+            <div key={group.id} className="mb-0.5">
               {group.label && !collapsed && (
                 <button
                   onClick={() => group.collapsible && toggleGroup(group.id)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-slate-50 transition-colors mt-2 first:mt-0"
                 >
-                  <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">{group.label}</span>
-                  {group.collapsible && (
-                    <span className={`text-[11px] text-gray-300 leading-none transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`}>›</span>
-                  )}
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{group.label}</span>
+                  <div className="flex items-center gap-1.5">
+                    {isConnections && connectedCount > 0 && (
+                      <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{connectedCount}</span>
+                    )}
+                    {group.collapsible && (
+                      <svg className={`w-3 h-3 text-slate-300 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        {ICONS.chevron}
+                      </svg>
+                    )}
+                  </div>
                 </button>
               )}
               {isOpen && (
-                <div className="space-y-0.5">
+                <div className="space-y-px mt-0.5">
                   {group.items.map(item => {
                     const isActive = activeSection === item.id;
                     return (
@@ -152,14 +189,16 @@ export function Sidebar() {
                         data-tour={`sidebar-${item.id}`}
                         onClick={() => setActiveSection(item.id)}
                         title={collapsed ? item.label : undefined}
-                        className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs transition-all text-left ${
-                          isActive ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                        className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-md text-[13px] transition-all text-left ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                       >
-                        <span className="flex-shrink-0 w-4 text-center leading-none">{item.icon}</span>
+                        <Icon name={item.icon} className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
                         {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
-                        {!collapsed && isActive && (
-                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-800 flex-shrink-0" />
+                        {!collapsed && item.badge !== undefined && item.badge > 0 && (
+                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">{item.badge}</span>
                         )}
                       </button>
                     );
@@ -172,13 +211,13 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="flex-shrink-0 border-t border-gray-200 px-2 py-2 space-y-1">
+      <div className="flex-shrink-0 border-t border-slate-200 px-2 py-2 space-y-1">
         {!collapsed && <GatewayStatusBadge />}
         <button
           onClick={() => setCollapsed(c => !c)}
-          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-all"
+          className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-[13px] text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-md transition-all"
         >
-          <span className="text-[10px]">{collapsed ? '→' : '←'}</span>
+          <Icon name={collapsed ? 'expand' : 'collapse'} className="w-3.5 h-3.5" />
           {!collapsed && <span>Collapse</span>}
         </button>
       </div>
@@ -188,21 +227,28 @@ export function Sidebar() {
 
 function GatewayStatusBadge() {
   const [status, setStatus] = useState<'connected' | 'connecting' | 'offline'>('connecting');
-  useState(() => {
+
+  useEffect(() => {
     const check = async () => {
-      try { const r = await fetch('http://localhost:3000/api/health'); setStatus(r.ok ? 'connected' : 'offline'); }
-      catch { setStatus('offline'); }
+      try {
+        const r = await fetch('http://localhost:3000/api/health');
+        setStatus(r.ok ? 'connected' : 'offline');
+      } catch {
+        setStatus('offline');
+      }
     };
     check();
     const t = setInterval(check, 15000);
     return () => clearInterval(t);
-  });
-  const color = status === 'connected' ? 'bg-emerald-500' : status === 'connecting' ? 'bg-amber-400' : 'bg-red-500';
-  const label = status === 'connected' ? 'Connected' : status === 'connecting' ? 'Connecting…' : 'Offline';
+  }, []);
+
+  const color = status === 'connected' ? 'bg-emerald-500' : status === 'connecting' ? 'bg-amber-400' : 'bg-red-400';
+  const label = status === 'connected' ? 'Gateway connected' : status === 'connecting' ? 'Connecting…' : 'Gateway offline';
+
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md">
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color}`} />
-      <span className="text-[11px] text-gray-500 truncate">{label}</span>
+    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md">
+      <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 ${color}`} />
+      <span className="text-[12px] text-slate-500 truncate">{label}</span>
     </div>
   );
 }

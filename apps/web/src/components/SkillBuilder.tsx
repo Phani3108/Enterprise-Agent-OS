@@ -273,10 +273,10 @@ export default function SkillBuilder() {
   return (
     <div className="flex h-full" data-tour="skill-builder">
       {/* Left — Steps */}
-      <div className="w-56 border-r border-gray-200 bg-gray-50/50 overflow-y-auto flex-shrink-0">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Skill Builder</h2>
-          <p className="text-[10px] text-gray-400 mt-1">Create custom skills</p>
+      <div className="w-56 border-r border-slate-200 bg-slate-50/50 overflow-y-auto flex-shrink-0">
+        <div className="p-4 border-b border-slate-200">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Skill Builder</h2>
+          <p className="text-[11px] text-slate-400 mt-1">Create custom skills</p>
         </div>
         <div className="py-2">
           {STEPS.map((s) => (
@@ -284,10 +284,10 @@ export default function SkillBuilder() {
               key={s.id}
               onClick={() => setStep(s.id)}
               className={`flex items-center gap-2 w-full px-4 py-2 text-left text-sm ${
-                step === s.id ? 'bg-white font-medium text-gray-900 shadow-sm border-r-2 border-gray-900' : 'text-gray-600 hover:bg-white/60'
+                step === s.id ? 'bg-white font-medium text-slate-900 shadow-sm border-r-2 border-slate-900' : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs bg-gray-200 text-gray-600">
+              <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs bg-slate-200 text-slate-600">
                 {s.id}
               </span>
               {s.label}
@@ -300,18 +300,18 @@ export default function SkillBuilder() {
       <div className="flex-1 overflow-y-auto p-6">
         {step === 1 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Choose Persona</h3>
-            <p className="text-sm text-gray-500 mb-4">Select the persona this skill belongs to.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Choose Persona</h3>
+            <p className="text-sm text-slate-500 mb-4">Select the persona this skill belongs to.</p>
             {templates.length > 0 && (
               <div className="mb-6">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Or start from template</h4>
+                <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">Or start from template</h4>
                 <div className="flex flex-wrap gap-2">
                   {templates.map((t) => (
                     <button
                       key={t.id}
                       onClick={() => setSelectedTemplateId(selectedTemplateId === t.id ? null : t.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs border ${
-                        selectedTemplateId === t.id ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                        selectedTemplateId === t.id ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                       }`}
                     >
                       {t.name}
@@ -334,11 +334,11 @@ export default function SkillBuilder() {
                     }))
                   }
                   className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                    draft.personaId === p.id ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                    draft.personaId === p.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <span className="text-2xl">{p.icon}</span>
-                  <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                  <span className="text-sm font-medium text-slate-900">{p.name}</span>
                 </button>
               ))}
             </div>
@@ -347,27 +347,27 @@ export default function SkillBuilder() {
 
         {step === 2 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Define Skill Name</h3>
-            <p className="text-sm text-gray-500 mb-4">Give your skill a clear, descriptive name.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Define Skill Name</h3>
+            <p className="text-sm text-slate-500 mb-4">Give your skill a clear, descriptive name.</p>
             <div className="space-y-4 max-w-md">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Skill Name</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Skill Name</label>
                 <input
                   type="text"
                   value={draft.name}
                   onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g. Write PRD + Create Jira Epics"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description (optional)</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Description (optional)</label>
                 <textarea
                   value={draft.description}
                   onChange={(e) => setDraft((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="What does this skill do?"
                   rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300"
                 />
               </div>
             </div>
@@ -376,8 +376,8 @@ export default function SkillBuilder() {
 
         {step === 3 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Select Required Tools</h3>
-            <p className="text-sm text-gray-500 mb-4">Choose tools this skill will use.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Select Required Tools</h3>
+            <p className="text-sm text-slate-500 mb-4">Choose tools this skill will use.</p>
             <div className="flex flex-wrap gap-2">
               {TOOLS.map((t) => {
                 const selected = draft.requiredTools.some((x) => x.id === t.id);
@@ -393,7 +393,7 @@ export default function SkillBuilder() {
                       }))
                     }
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border ${
-                      selected ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      selected ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     <span>{t.icon}</span>
@@ -407,8 +407,8 @@ export default function SkillBuilder() {
 
         {step === 4 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Choose Agents</h3>
-            <p className="text-sm text-gray-500 mb-4">Select agents that will execute this skill.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Choose Agents</h3>
+            <p className="text-sm text-slate-500 mb-4">Select agents that will execute this skill.</p>
             <div className="flex flex-wrap gap-2">
               {AGENTS.map((a) => {
                 const selected = draft.agents.some((x) => x.id === a.id);
@@ -424,7 +424,7 @@ export default function SkillBuilder() {
                       }))
                     }
                     className={`px-3 py-2 rounded-lg text-sm border ${
-                      selected ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      selected ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     {a.name}
@@ -437,30 +437,30 @@ export default function SkillBuilder() {
 
         {step === 5 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Define Workflow</h3>
-            <p className="text-sm text-gray-500 mb-4">Arrange agents in execution order. Drag to reorder.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Define Workflow</h3>
+            <p className="text-sm text-slate-500 mb-4">Arrange agents in execution order. Drag to reorder.</p>
             <div className="space-y-2 mb-4">
               {draft.workflow.map((w, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
-                  <span className="text-xs text-gray-400 w-6">{i + 1}</span>
-                  <span className="text-sm font-medium text-gray-900">{w.agentName}</span>
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-white">
+                  <span className="text-xs text-slate-400 w-6">{i + 1}</span>
+                  <span className="text-sm font-medium text-slate-900">{w.agentName}</span>
                   <button
                     onClick={() => removeWorkflowStep(i)}
-                    className="ml-auto text-xs text-gray-500 hover:text-red-600"
+                    className="ml-auto text-xs text-slate-500 hover:text-red-600"
                   >
                     Remove
                   </button>
                 </div>
               ))}
             </div>
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Add agent</h4>
+            <div className="border-t border-slate-200 pt-4">
+              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">Add agent</h4>
               <div className="flex flex-wrap gap-2">
                 {AGENTS.filter((a) => !draft.workflow.some((w) => w.agentId === a.id)).map((a) => (
                   <button
                     key={a.id}
                     onClick={() => addAgentToWorkflow(a.id)}
-                    className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
                   >
                     + {a.name}
                   </button>
@@ -472,12 +472,12 @@ export default function SkillBuilder() {
 
         {step === 6 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Add Prompts</h3>
-            <p className="text-sm text-gray-500 mb-4">Prompt templates for this skill.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Add Prompts</h3>
+            <p className="text-sm text-slate-500 mb-4">Prompt templates for this skill.</p>
             <div className="space-y-2 mb-4">
               {draft.promptTemplates.map((p, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 rounded border border-gray-200 bg-gray-50">
-                  <span className="text-xs text-gray-500 flex-1">{p}</span>
+                <div key={i} className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50">
+                  <span className="text-xs text-slate-500 flex-1">{p}</span>
                   <button
                     onClick={() =>
                       setDraft((prev) => ({
@@ -485,7 +485,7 @@ export default function SkillBuilder() {
                         promptTemplates: prev.promptTemplates.filter((_, j) => j !== i),
                       }))
                     }
-                    className="text-xs text-gray-500 hover:text-red-600"
+                    className="text-xs text-slate-500 hover:text-red-600"
                   >
                     Remove
                   </button>
@@ -498,7 +498,7 @@ export default function SkillBuilder() {
                 value={newPrompt}
                 onChange={(e) => setNewPrompt(e.target.value)}
                 placeholder="e.g. Write PRD for {product}"
-                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200"
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newPrompt.trim()) {
                     setDraft((prev) => ({ ...prev, promptTemplates: [...prev.promptTemplates, newPrompt.trim()] }));
@@ -513,7 +513,7 @@ export default function SkillBuilder() {
                     setNewPrompt('');
                   }
                 }}
-                className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800"
               >
                 Add
               </button>
@@ -523,12 +523,12 @@ export default function SkillBuilder() {
 
         {step === 7 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Define Outputs</h3>
-            <p className="text-sm text-gray-500 mb-4">What outputs does this skill produce?</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Define Outputs</h3>
+            <p className="text-sm text-slate-500 mb-4">What outputs does this skill produce?</p>
             <div className="space-y-2 mb-4">
               {draft.outputs.map((o, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 rounded border border-gray-200 bg-gray-50">
-                  <span className="text-xs text-gray-700 flex-1">{o}</span>
+                <div key={i} className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-slate-50">
+                  <span className="text-xs text-slate-700 flex-1">{o}</span>
                   <button
                     onClick={() =>
                       setDraft((prev) => ({
@@ -536,7 +536,7 @@ export default function SkillBuilder() {
                         outputs: prev.outputs.filter((_, j) => j !== i),
                       }))
                     }
-                    className="text-xs text-gray-500 hover:text-red-600"
+                    className="text-xs text-slate-500 hover:text-red-600"
                   >
                     Remove
                   </button>
@@ -549,7 +549,7 @@ export default function SkillBuilder() {
                 value={newOutput}
                 onChange={(e) => setNewOutput(e.target.value)}
                 placeholder="e.g. PRD document"
-                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200"
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newOutput.trim()) {
                     setDraft((prev) => ({ ...prev, outputs: [...prev.outputs, newOutput.trim()] }));
@@ -564,7 +564,7 @@ export default function SkillBuilder() {
                     setNewOutput('');
                   }
                 }}
-                className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800"
               >
                 Add
               </button>
@@ -574,19 +574,19 @@ export default function SkillBuilder() {
 
         {step === 8 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Publish Skill</h3>
-            <p className="text-sm text-gray-500 mb-4">Review and publish. Choose visibility.</p>
-            <div className="border border-gray-200 rounded-xl p-4 mb-6 bg-gray-50/50">
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">{draft.name}</h4>
-              <p className="text-xs text-gray-500 mb-3">{draft.description || 'No description'}</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Publish Skill</h3>
+            <p className="text-sm text-slate-500 mb-4">Review and publish. Choose visibility.</p>
+            <div className="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">{draft.name}</h4>
+              <p className="text-xs text-slate-500 mb-3">{draft.description || 'No description'}</p>
               <div className="flex flex-wrap gap-2">
                 {draft.requiredTools.map((t) => (
-                  <span key={t.id} className="px-2 py-0.5 rounded text-[10px] bg-gray-200 text-gray-700">
+                  <span key={t.id} className="px-2 py-0.5 rounded text-[11px] bg-slate-200 text-slate-700">
                     {t.icon} {t.name}
                   </span>
                 ))}
               </div>
-              <div className="mt-2 text-xs text-gray-500">
+              <div className="mt-2 text-xs text-slate-500">
                 {draft.workflow.map((w, i) => (
                   <span key={i}>
                     {i > 0 && ' → '}
@@ -596,14 +596,14 @@ export default function SkillBuilder() {
               </div>
             </div>
             <div className="mb-6">
-              <label className="block text-xs font-medium text-gray-600 mb-2">Visibility</label>
+              <label className="block text-xs font-medium text-slate-600 mb-2">Visibility</label>
               <div className="flex gap-1">
                 {VISIBILITY_OPTIONS.map((v) => (
                   <button
                     key={v.value}
                     onClick={() => setDraft((prev) => ({ ...prev, visibility: v.value as DraftSkill['visibility'] }))}
                     className={`px-3 py-2 rounded-lg text-sm border ${
-                      draft.visibility === v.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600'
+                      draft.visibility === v.value ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600'
                     }`}
                   >
                     {v.label}
@@ -614,7 +614,7 @@ export default function SkillBuilder() {
             <button
               onClick={handlePublish}
               disabled={publishing}
-              className="px-6 py-3 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+              className="px-6 py-3 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
             >
               {publishing ? 'Publishing...' : 'Publish Skill'}
             </button>
@@ -622,11 +622,11 @@ export default function SkillBuilder() {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+        <div className="flex justify-between mt-8 pt-6 border-t border-slate-200">
           <button
             onClick={() => setStep((s) => Math.max(1, s - 1))}
             disabled={step === 1}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
           >
             Back
           </button>
@@ -634,7 +634,7 @@ export default function SkillBuilder() {
             <button
               onClick={() => setStep((s) => Math.min(8, s + 1))}
               disabled={!canProceed()}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
             >
               Next
             </button>
@@ -642,7 +642,7 @@ export default function SkillBuilder() {
             <button
               onClick={handlePublish}
               disabled={publishing}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
             >
               {publishing ? 'Publishing...' : 'Publish'}
             </button>

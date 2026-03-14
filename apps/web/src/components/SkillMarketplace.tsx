@@ -13,6 +13,7 @@ import {
   type MarketplaceSkill,
   type SkillGovernanceRecord,
 } from '../lib/api';
+import { useEAOSStore } from '../store/eaos-store';
 
 const GATEWAY = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
 
@@ -127,9 +128,12 @@ export default function SkillMarketplace() {
     }
   };
 
+  const setActiveExecutionId = useEAOSStore((s) => s.setActiveExecutionId);
+
   const handleRun = async (skill: MarketplaceSkill, simulate = false) => {
     setExecutingSkill(skill.id);
     setExecutionResult(null);
+    setActiveExecutionId(`skill-${skill.id}`);
     try {
       const res = await runMarketplaceSkill(skill.id, undefined, simulate);
       setExecutionResult({
@@ -147,6 +151,7 @@ export default function SkillMarketplace() {
       });
     } finally {
       setExecutingSkill(null);
+      setActiveExecutionId(null);
     }
   };
 
@@ -164,12 +169,12 @@ export default function SkillMarketplace() {
   return (
     <div className="flex h-full" data-tour="skill-marketplace">
       {/* Left — Persona filter */}
-      <div className="w-56 border-r border-gray-200 bg-gray-50/50 overflow-y-auto flex-shrink-0">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <div className="w-56 border-r border-slate-200 bg-slate-50/50 overflow-y-auto flex-shrink-0">
+        <div className="p-4 border-b border-slate-200">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Skill Marketplace
           </h2>
-          <p className="text-[10px] text-gray-400 mt-1">
+          <p className="text-[11px] text-slate-400 mt-1">
             Browse and run skills by persona
           </p>
         </div>
@@ -178,8 +183,8 @@ export default function SkillMarketplace() {
             onClick={() => setView('marketplace')}
             className={`flex items-center gap-2.5 w-full px-4 py-2.5 text-left text-sm ${
               view === 'marketplace'
-                ? 'bg-white text-gray-900 font-medium shadow-sm border-r-2 border-gray-900'
-                : 'text-gray-600 hover:bg-white/60'
+                ? 'bg-white text-slate-900 font-medium shadow-sm border-r-2 border-slate-900'
+                : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
             <span>🛒</span>
@@ -189,8 +194,8 @@ export default function SkillMarketplace() {
             onClick={() => setView('governance')}
             className={`flex items-center gap-2.5 w-full px-4 py-2.5 text-left text-sm ${
               view === 'governance'
-                ? 'bg-white text-gray-900 font-medium shadow-sm border-r-2 border-gray-900'
-                : 'text-gray-600 hover:bg-white/60'
+                ? 'bg-white text-slate-900 font-medium shadow-sm border-r-2 border-slate-900'
+                : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
             <span>🏛️</span>
@@ -199,14 +204,14 @@ export default function SkillMarketplace() {
         </div>
         {view === 'marketplace' && (
           <>
-            <div className="px-4 py-2 border-t border-gray-200">
-              <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            <div className="px-4 py-2 border-t border-slate-200">
+              <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
                 Filter by Persona
               </h3>
               <button
                 onClick={() => setSelectedPersona(null)}
                 className={`flex items-center gap-2 w-full px-3 py-1.5 text-left text-xs rounded-lg ${
-                  !selectedPersona ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100'
+                  !selectedPersona ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 All Personas
@@ -216,7 +221,7 @@ export default function SkillMarketplace() {
                   key={p.id}
                   onClick={() => setSelectedPersona(p.id)}
                   className={`flex items-center gap-2 w-full px-3 py-1.5 text-left text-xs rounded-lg mt-0.5 ${
-                    selectedPersona === p.id ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100'
+                    selectedPersona === p.id ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   <span>{p.icon}</span>
@@ -232,9 +237,9 @@ export default function SkillMarketplace() {
       <div className="flex-1 overflow-y-auto flex flex-col">
         {view === 'marketplace' ? (
           <>
-            <div className="px-6 pt-6 pb-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-              <h1 className="text-lg font-semibold text-gray-900 mb-1">Skill Marketplace</h1>
-              <p className="text-sm text-gray-500 mb-4">
+            <div className="px-6 pt-6 pb-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+              <h1 className="text-lg font-semibold text-slate-900 mb-1">Skill Marketplace</h1>
+              <p className="text-sm text-slate-500 mb-4">
                 Discover and run skills. Each skill orchestrates agents and tools automatically.
               </p>
               <div className="flex gap-3">
@@ -243,14 +248,14 @@ export default function SkillMarketplace() {
                   placeholder="Search skills... (e.g. Launch Campaign, PRD, PR Review)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                  className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-transparent"
                 />
-                <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={simulateMode}
                     onChange={(e) => setSimulateMode(e.target.checked)}
-                    className="rounded border-gray-300"
+                    className="rounded border-slate-300"
                   />
                   Simulate (no real APIs)
                 </label>
@@ -260,21 +265,21 @@ export default function SkillMarketplace() {
             <div className="p-6">
               {recommendations.length > 0 && !searchQuery && (
                 <div className="mb-6">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Recommended for you</h3>
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Recommended for you</h3>
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {recommendations.map((r) => (
                       <div
                         key={r.skill.id}
-                        className="flex-shrink-0 w-48 p-3 rounded-xl border border-gray-200 bg-white hover:shadow-sm"
+                        className="flex-shrink-0 w-48 p-3 rounded-xl border border-slate-200 bg-white hover:shadow-sm"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">{r.skill.personaIcon}</span>
-                          <span className="text-xs font-medium text-gray-900 truncate">{r.skill.name}</span>
+                          <span className="text-xs font-medium text-slate-900 truncate">{r.skill.name}</span>
                         </div>
-                        <p className="text-[10px] text-gray-500 truncate mb-2">{r.skill.description}</p>
+                        <p className="text-[11px] text-slate-500 truncate mb-2">{r.skill.description}</p>
                         <button
                           onClick={() => handleRun(r.skill, simulateMode)}
-                          className="w-full px-2 py-1 text-[10px] font-medium rounded bg-gray-900 text-white"
+                          className="w-full px-2 py-1 text-[11px] font-medium rounded bg-slate-900 text-white"
                         >
                           Run
                         </button>
@@ -284,15 +289,15 @@ export default function SkillMarketplace() {
                 </div>
               )}
               {loading ? (
-                <div className="text-sm text-gray-500">Loading skills...</div>
+                <div className="text-sm text-slate-500">Loading skills...</div>
               ) : skills.length === 0 ? (
-                <div className="text-sm text-gray-500">No skills found.</div>
+                <div className="text-sm text-slate-500">No skills found.</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {skills.map((skill) => (
                     <div
                       key={skill.id}
-                      className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-md transition-shadow"
+                      className="border border-slate-200 rounded-xl p-4 bg-white hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div
@@ -302,27 +307,27 @@ export default function SkillMarketplace() {
                           {skill.personaIcon}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-sm font-semibold text-gray-900 truncate">{skill.name}</h3>
-                          <span className="text-[10px] text-gray-500">{skill.personaName}</span>
+                          <h3 className="text-sm font-semibold text-slate-900 truncate">{skill.name}</h3>
+                          <span className="text-[11px] text-slate-500">{skill.personaName}</span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mb-3 line-clamp-2">{skill.description}</p>
+                      <p className="text-xs text-slate-500 mb-3 line-clamp-2">{skill.description}</p>
                       <div className="flex flex-wrap gap-1 mb-2">
                         {skill.requiredTools.slice(0, 3).map((t) => (
                           <span
                             key={t.id}
-                            className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600"
+                            className="px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-600"
                             title={t.name}
                           >
                             {t.icon} {t.name}
                           </span>
                         ))}
                         {skill.requiredTools.length > 3 && (
-                          <span className="text-[10px] text-gray-400">+{skill.requiredTools.length - 3}</span>
+                          <span className="text-[11px] text-slate-400">+{skill.requiredTools.length - 3}</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
                           {skill.usageCount !== undefined && <span>👥 {skill.usageCount}</span>}
                           {skill.avgRuntimeSec !== undefined && skill.avgRuntimeSec > 0 && (
                             <span>⏱ ~{Math.round(skill.avgRuntimeSec)}s</span>
@@ -334,14 +339,14 @@ export default function SkillMarketplace() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleVote(skill.id, 'up')}
-                            className="px-1.5 py-0.5 rounded text-[10px] text-gray-500 hover:bg-gray-100"
+                            className="px-1.5 py-0.5 rounded text-[11px] text-slate-500 hover:bg-slate-100"
                             title="Upvote"
                           >
                             ▲ {votes[skill.id]?.up ?? 0}
                           </button>
                           <button
                             onClick={() => handleVote(skill.id, 'down')}
-                            className="px-1.5 py-0.5 rounded text-[10px] text-gray-500 hover:bg-gray-100"
+                            className="px-1.5 py-0.5 rounded text-[11px] text-slate-500 hover:bg-slate-100"
                             title="Downvote"
                           >
                             ▼ {votes[skill.id]?.down ?? 0}
@@ -352,14 +357,14 @@ export default function SkillMarketplace() {
                         <button
                           onClick={() => handleRun(skill, false)}
                           disabled={!!executingSkill}
-                          className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {executingSkill === skill.id ? 'Running...' : 'Run'}
                         </button>
                         <button
                           onClick={() => handleRun(skill, true)}
                           disabled={!!executingSkill}
-                          className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                          className="px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                           title="Simulate (no real API calls)"
                         >
                           Simulate
@@ -373,40 +378,40 @@ export default function SkillMarketplace() {
           </>
         ) : (
           <>
-            <div className="px-6 pt-6 pb-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-              <h1 className="text-lg font-semibold text-gray-900 mb-1">Skill Governance</h1>
-              <p className="text-sm text-gray-500">
+            <div className="px-6 pt-6 pb-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+              <h1 className="text-lg font-semibold text-slate-900 mb-1">Skill Governance</h1>
+              <p className="text-sm text-slate-500">
                 Corp IT: Monitor skill costs, usage, and disable expensive skills.
               </p>
             </div>
             <div className="p-6">
-              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">Skill</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">Persona</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-700">Tools Used</th>
-                      <th className="text-right px-4 py-3 font-semibold text-gray-700">Monthly Cost</th>
-                      <th className="text-right px-4 py-3 font-semibold text-gray-700">Usage</th>
-                      <th className="text-center px-4 py-3 font-semibold text-gray-700">Status</th>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-left px-4 py-3 font-semibold text-slate-700">Skill</th>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-700">Persona</th>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-700">Tools Used</th>
+                      <th className="text-right px-4 py-3 font-semibold text-slate-700">Monthly Cost</th>
+                      <th className="text-right px-4 py-3 font-semibold text-slate-700">Usage</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-700">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {governanceSkills.map((s) => (
-                      <tr key={s.skillId} className="border-b border-gray-100 hover:bg-gray-50/50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{s.skillName}</td>
-                        <td className="px-4 py-3 text-gray-600">{s.personaName}</td>
-                        <td className="px-4 py-3 text-gray-500">{s.toolsUsed.join(', ')}</td>
-                        <td className="px-4 py-3 text-right text-gray-700">${s.monthlyCost.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right text-gray-600">{s.usageCount}</td>
+                      <tr key={s.skillId} className="border-b border-slate-100 hover:bg-slate-50/50">
+                        <td className="px-4 py-3 font-medium text-slate-900">{s.skillName}</td>
+                        <td className="px-4 py-3 text-slate-600">{s.personaName}</td>
+                        <td className="px-4 py-3 text-slate-500">{s.toolsUsed.join(', ')}</td>
+                        <td className="px-4 py-3 text-right text-slate-700">${s.monthlyCost.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right text-slate-600">{s.usageCount}</td>
                         <td className="px-4 py-3 text-center">
                           <button
                             onClick={() => handleToggleEnabled(s.skillId, !s.isEnabled)}
                             className={`px-2 py-1 text-xs font-medium rounded ${
                               s.isEnabled
                                 ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                             }`}
                           >
                             {s.isEnabled ? 'Enabled' : 'Disabled'}
@@ -417,7 +422,7 @@ export default function SkillMarketplace() {
                   </tbody>
                 </table>
                 {governanceSkills.length === 0 && (
-                  <div className="px-4 py-8 text-center text-sm text-gray-500">No skill governance data.</div>
+                  <div className="px-4 py-8 text-center text-sm text-slate-500">No skill governance data.</div>
                 )}
               </div>
             </div>
@@ -426,23 +431,23 @@ export default function SkillMarketplace() {
 
         {/* Right — Execution result panel */}
         {executionResult && (
-          <div className="w-80 border-l border-gray-200 bg-white flex-shrink-0 overflow-y-auto">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900">Execution Result</h3>
+          <div className="w-80 border-l border-slate-200 bg-white flex-shrink-0 overflow-y-auto">
+            <div className="p-4 border-b border-slate-200">
+              <h3 className="text-sm font-semibold text-slate-900">Execution Result</h3>
             </div>
             <div className="p-4 space-y-3">
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-slate-500">
                 Runtime: {executionResult.runtimeSec}s · Cost: ${executionResult.cost.toFixed(2)}
               </div>
               <div>
-                <h4 className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Outputs</h4>
+                <h4 className="text-[11px] font-semibold text-slate-500 uppercase mb-2">Outputs</h4>
                 <ul className="space-y-1">
                   {executionResult.outputs.map((o, i) => (
                     <li key={i} className="flex items-center gap-2 text-xs">
-                      <span className={o.status === 'generated' ? 'text-emerald-500' : 'text-gray-400'}>
+                      <span className={o.status === 'generated' ? 'text-emerald-500' : 'text-slate-400'}>
                         {o.status === 'generated' ? '✓' : '○'}
                       </span>
-                      <span className="text-gray-700">{o.name}</span>
+                      <span className="text-slate-700">{o.name}</span>
                     </li>
                   ))}
                 </ul>

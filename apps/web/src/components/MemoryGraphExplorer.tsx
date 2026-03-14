@@ -304,12 +304,12 @@ export default function MemoryGraphExplorer() {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-gray-50/30">
+    <div className="h-full flex flex-col overflow-hidden bg-slate-50/30">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
+      <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200">
         <div>
-          <h1 className="text-base font-bold text-gray-900">Memory Graph Explorer</h1>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <h1 className="text-base font-bold text-slate-900">Memory Graph Explorer</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             {filteredNodes.length} nodes · {filteredEdges.length} connections · showing skill/agent/tool relationships
           </p>
         </div>
@@ -319,22 +319,22 @@ export default function MemoryGraphExplorer() {
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="Search nodes…"
-            className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-gray-400 w-36"
+            className="text-xs px-3 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 w-36"
           />
           {/* Zoom */}
-          <button onClick={() => setZoom(z => Math.min(3, z * 1.2))} className="px-2 py-1 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">＋</button>
-          <span className="text-xs text-gray-400 w-10 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="px-2 py-1 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">－</button>
+          <button onClick={() => setZoom(z => Math.min(3, z * 1.2))} className="px-2 py-1 text-xs border border-slate-200 rounded-lg hover:bg-slate-50">＋</button>
+          <span className="text-xs text-slate-400 w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="px-2 py-1 text-xs border border-slate-200 rounded-lg hover:bg-slate-50">－</button>
           {/* Reset */}
-          <button onClick={resetSim} className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
+          <button onClick={resetSim} className="px-3 py-1.5 text-xs bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
             ↺ Reset
           </button>
         </div>
       </div>
 
       {/* Type filters */}
-      <div className="flex-shrink-0 flex items-center gap-2 px-6 py-2 bg-white border-b border-gray-100">
-        <span className="text-[11px] text-gray-400 font-medium mr-1">Filter:</span>
+      <div className="flex-shrink-0 flex items-center gap-2 px-6 py-2 bg-white border-b border-slate-100">
+        <span className="text-[11px] text-slate-400 font-medium mr-1">Filter:</span>
         {TYPE_FILTERS.map(t => (
           <button
             key={t}
@@ -342,7 +342,7 @@ export default function MemoryGraphExplorer() {
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${
               visibleTypes.has(t)
                 ? 'border-transparent text-white'
-                : 'border-gray-200 text-gray-400 bg-white'
+                : 'border-slate-200 text-slate-400 bg-white'
             }`}
             style={visibleTypes.has(t) ? { backgroundColor: NODE_COLOR[t].stroke } : {}}
           >
@@ -350,7 +350,7 @@ export default function MemoryGraphExplorer() {
           </button>
         ))}
         {running && (
-          <span className="ml-auto text-[10px] text-blue-500 flex items-center gap-1">
+          <span className="ml-auto text-[11px] text-blue-500 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             Simulating…
           </span>
@@ -440,10 +440,10 @@ export default function MemoryGraphExplorer() {
 
         {/* Detail panel */}
         {selectedNode && (
-          <div className="w-64 flex-shrink-0 border-l border-gray-200 bg-white flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-900 truncate">{selectedNode.label}</h3>
-              <button onClick={() => setSelectedNode(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+          <div className="w-64 flex-shrink-0 border-l border-slate-200 bg-white flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900 truncate">{selectedNode.label}</h3>
+              <button onClick={() => setSelectedNode(null)} className="text-slate-400 hover:text-slate-600 text-sm">✕</button>
             </div>
             <div className="p-4 space-y-3 overflow-y-auto flex-1">
               {/* Node info */}
@@ -456,20 +456,20 @@ export default function MemoryGraphExplorer() {
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-gray-50 rounded-lg p-2.5">
-                  <p className="text-gray-400 text-[10px]">Usage Count</p>
-                  <p className="font-bold text-gray-900 text-base">{selectedNode.weight}</p>
+                <div className="bg-slate-50 rounded-lg p-2.5">
+                  <p className="text-slate-400 text-[11px]">Usage Count</p>
+                  <p className="font-bold text-slate-900 text-base">{selectedNode.weight}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-2.5">
-                  <p className="text-gray-400 text-[10px]">Connections</p>
-                  <p className="font-bold text-gray-900 text-base">{connectedEdges.length}</p>
+                <div className="bg-slate-50 rounded-lg p-2.5">
+                  <p className="text-slate-400 text-[11px]">Connections</p>
+                  <p className="font-bold text-slate-900 text-base">{connectedEdges.length}</p>
                 </div>
               </div>
 
               {/* Connections */}
               {connectedNodes.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Connected nodes</p>
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Connected nodes</p>
                   <div className="space-y-1">
                     {connectedNodes.map(cn => {
                       const edge = connectedEdges.find(e => e.source === cn.id || e.target === cn.id);
@@ -477,16 +477,16 @@ export default function MemoryGraphExplorer() {
                       return (
                         <div
                           key={cn.id}
-                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors text-xs"
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors text-xs"
                           onClick={() => setSelectedNode(cn)}
                         >
                           <span
                             className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{ backgroundColor: colors.stroke }}
                           />
-                          <span className="flex-1 truncate text-gray-800">{cn.label}</span>
+                          <span className="flex-1 truncate text-slate-800">{cn.label}</span>
                           {edge && (
-                            <span className="text-[9px] text-gray-400 flex-shrink-0">{edge.edgeType.replace('_', ' ')}</span>
+                            <span className="text-[11px] text-slate-400 flex-shrink-0">{edge.edgeType.replace('_', ' ')}</span>
                           )}
                         </div>
                       );
@@ -500,17 +500,17 @@ export default function MemoryGraphExplorer() {
       </div>
 
       {/* Legend */}
-      <div className="flex-shrink-0 flex items-center gap-4 px-6 py-2 bg-white border-t border-gray-100">
-        <span className="text-[10px] text-gray-400">Legend:</span>
+      <div className="flex-shrink-0 flex items-center gap-4 px-6 py-2 bg-white border-t border-slate-100">
+        <span className="text-[11px] text-slate-400">Legend:</span>
         {TYPE_FILTERS.map(t => (
           <div key={t} className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: NODE_COLOR[t].stroke }} />
-            <span className="text-[10px] text-gray-500">{TYPE_LABEL[t]}</span>
+            <span className="text-[11px] text-slate-500">{TYPE_LABEL[t]}</span>
           </div>
         ))}
-        <span className="text-[10px] text-gray-400 ml-2">· · ·</span>
-        <span className="text-[10px] text-gray-400">Dashed = used together</span>
-        <span className="text-[10px] text-gray-400 ml-auto">Drag to pan · Scroll to zoom · Click node for details</span>
+        <span className="text-[11px] text-slate-400 ml-2">· · ·</span>
+        <span className="text-[11px] text-slate-400">Dashed = used together</span>
+        <span className="text-[11px] text-slate-400 ml-auto">Drag to pan · Scroll to zoom · Click node for details</span>
       </div>
     </div>
   );

@@ -128,7 +128,7 @@ const STATUS_EXEC: Record<ACPExecution['status'], string> = {
 };
 
 const STATUS_MSG: Record<ACPMessage['status'], string> = {
-  pending: 'text-gray-400',
+  pending: 'text-slate-400',
   in_flight: 'text-blue-500 animate-pulse',
   delivered: 'text-emerald-500',
   failed: 'text-red-500',
@@ -226,10 +226,10 @@ export default function AgentCollaboration() {
   return (
     <div className="h-full flex overflow-hidden">
       {/* Left: execution list */}
-      <aside className="w-64 flex-shrink-0 border-r border-gray-200 flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-          <p className="text-xs font-semibold text-gray-900">ACP Executions</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Agent-to-agent message flows</p>
+      <aside className="w-64 flex-shrink-0 border-r border-slate-200 flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
+          <p className="text-xs font-semibold text-slate-900">ACP Executions</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Agent-to-agent message flows</p>
         </div>
         <div className="flex-1 overflow-y-auto py-1.5 space-y-0.5">
           {executions.map(exec => (
@@ -237,22 +237,22 @@ export default function AgentCollaboration() {
               key={exec.id}
               onClick={() => { setSelectedExec(exec); setSelectedMsg(null); }}
               className={`w-full text-left px-3 py-2.5 rounded-lg mx-1.5 transition-colors ${
-                selectedExec.id === exec.id ? 'bg-gray-100' : 'hover:bg-gray-50'
+                selectedExec.id === exec.id ? 'bg-slate-100' : 'hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center justify-between gap-2 mb-0.5">
-                <p className="text-xs font-medium text-gray-900 truncate">{exec.name}</p>
-                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${STATUS_EXEC[exec.status]}`}>
+                <p className="text-xs font-medium text-slate-900 truncate">{exec.name}</p>
+                <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${STATUS_EXEC[exec.status]}`}>
                   {exec.status}
                 </span>
               </div>
-              <p className="text-[10px] text-gray-400">{exec.persona} · {exec.skill}</p>
+              <p className="text-[11px] text-slate-400">{exec.persona} · {exec.skill}</p>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-gray-300">{relTime(exec.startedAt)}</span>
+                <span className="text-[11px] text-slate-300">{relTime(exec.startedAt)}</span>
                 {exec.duration && (
-                  <span className="text-[10px] text-gray-300">· {exec.duration}</span>
+                  <span className="text-[11px] text-slate-300">· {exec.duration}</span>
                 )}
-                <span className="text-[10px] text-gray-400 ml-auto">{exec.agents.length} agents</span>
+                <span className="text-[11px] text-slate-400 ml-auto">{exec.agents.length} agents</span>
               </div>
             </button>
           ))}
@@ -262,14 +262,14 @@ export default function AgentCollaboration() {
       {/* Main: SVG diagram */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 flex-shrink-0 bg-gray-50/40">
-          <span className="text-xs font-semibold text-gray-700">{selectedExec.name}</span>
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${STATUS_EXEC[selectedExec.status]}`}>
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 flex-shrink-0 bg-slate-50/40">
+          <span className="text-xs font-semibold text-slate-700">{selectedExec.name}</span>
+          <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${STATUS_EXEC[selectedExec.status]}`}>
             {selectedExec.status}
           </span>
-          <div className="ml-auto flex items-center gap-4 text-[11px] text-gray-400">
+          <div className="ml-auto flex items-center gap-4 text-[11px] text-slate-400">
             {Object.entries(MSG_COLOR).map(([type, { badge }]) => (
-              <span key={type} className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${badge}`}>
+              <span key={type} className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${badge}`}>
                 {type.replace('_', ' ')}
               </span>
             ))}
@@ -277,12 +277,12 @@ export default function AgentCollaboration() {
         </div>
 
         {/* SVG Canvas */}
-        <div className="flex-1 overflow-auto flex items-center justify-center bg-gray-50/30 p-4">
+        <div className="flex-1 overflow-auto flex items-center justify-center bg-slate-50/30 p-4">
           <svg
             width={SVG_W}
             height={SVG_H}
             viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-            className="rounded-xl border border-gray-200 bg-white shadow-sm"
+            className="rounded-xl border border-slate-200 bg-white shadow-sm"
           >
             {/* Arrow marker */}
             <defs>
@@ -364,10 +364,10 @@ export default function AgentCollaboration() {
       </div>
 
       {/* Right: message detail */}
-      <aside className="w-64 flex-shrink-0 border-l border-gray-200 flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-          <p className="text-xs font-semibold text-gray-900">Message Detail</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">
+      <aside className="w-64 flex-shrink-0 border-l border-slate-200 flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
+          <p className="text-xs font-semibold text-slate-900">Message Detail</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
             {selectedMsg ? 'Click an arrow to inspect' : 'Select an arrow in the diagram'}
           </p>
         </div>
@@ -376,25 +376,25 @@ export default function AgentCollaboration() {
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {/* Type badge */}
             <div>
-              <p className="text-[10px] text-gray-400 mb-1">Type</p>
-              <span className={`text-[10px] font-semibold px-2 py-1 rounded ${MSG_COLOR[selectedMsg.type].badge}`}>
+              <p className="text-[11px] text-slate-400 mb-1">Type</p>
+              <span className={`text-[11px] font-semibold px-2 py-1 rounded ${MSG_COLOR[selectedMsg.type].badge}`}>
                 {selectedMsg.type.replace(/_/g, ' ')}
               </span>
             </div>
 
             {/* Route */}
             <div>
-              <p className="text-[10px] text-gray-400 mb-1">Route</p>
-              <div className="flex items-center gap-1.5 text-[11px] text-gray-700">
+              <p className="text-[11px] text-slate-400 mb-1">Route</p>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-700">
                 <span className="font-medium">{agentMap[selectedMsg.from]?.name ?? selectedMsg.from}</span>
-                <span className="text-gray-300">→</span>
+                <span className="text-slate-300">→</span>
                 <span className="font-medium">{agentMap[selectedMsg.to]?.name ?? selectedMsg.to}</span>
               </div>
             </div>
 
             {/* Status */}
             <div>
-              <p className="text-[10px] text-gray-400 mb-1">Status</p>
+              <p className="text-[11px] text-slate-400 mb-1">Status</p>
               <span className={`text-[11px] font-semibold ${STATUS_MSG[selectedMsg.status]}`}>
                 {selectedMsg.status.replace('_', ' ')}
               </span>
@@ -402,14 +402,14 @@ export default function AgentCollaboration() {
 
             {/* Timestamp */}
             <div>
-              <p className="text-[10px] text-gray-400 mb-1">Sent</p>
-              <p className="text-[11px] text-gray-700">{relTime(selectedMsg.timestamp)}</p>
+              <p className="text-[11px] text-slate-400 mb-1">Sent</p>
+              <p className="text-[11px] text-slate-700">{relTime(selectedMsg.timestamp)}</p>
             </div>
 
             {/* Payload */}
             <div>
-              <p className="text-[10px] text-gray-400 mb-1">Payload</p>
-              <pre className="text-[10px] bg-gray-50 border border-gray-200 rounded-lg p-2 overflow-x-auto text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-[11px] text-slate-400 mb-1">Payload</p>
+              <pre className="text-[11px] bg-slate-50 border border-slate-200 rounded-lg p-2 overflow-x-auto text-slate-700 whitespace-pre-wrap leading-relaxed">
                 {JSON.stringify(JSON.parse(selectedMsg.payload), null, 2)}
               </pre>
             </div>
@@ -418,29 +418,29 @@ export default function AgentCollaboration() {
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="text-center">
               <p className="text-2xl mb-2">🔗</p>
-              <p className="text-[11px] text-gray-400">Click any arrow in the diagram to inspect the ACP message payload</p>
+              <p className="text-[11px] text-slate-400">Click any arrow in the diagram to inspect the ACP message payload</p>
             </div>
           </div>
         )}
 
         {/* Message list */}
-        <div className="border-t border-gray-100 p-3 flex-shrink-0">
-          <p className="text-[10px] font-semibold text-gray-500 mb-2">ALL MESSAGES ({messages.length})</p>
+        <div className="border-t border-slate-100 p-3 flex-shrink-0">
+          <p className="text-[11px] font-semibold text-slate-500 mb-2">ALL MESSAGES ({messages.length})</p>
           <div className="space-y-1">
             {messages.map(msg => (
               <button
                 key={msg.id}
                 onClick={() => setSelectedMsg(msg)}
-                className={`w-full text-left px-2 py-1.5 rounded-lg text-[10px] transition-colors ${
-                  selectedMsg?.id === msg.id ? 'bg-gray-100' : 'hover:bg-gray-50'
+                className={`w-full text-left px-2 py-1.5 rounded-lg text-[11px] transition-colors ${
+                  selectedMsg?.id === msg.id ? 'bg-slate-100' : 'hover:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className={`text-[9px] font-bold ${STATUS_MSG[msg.status]}`}>●</span>
-                  <span className="text-gray-700 font-medium truncate">{msg.label}</span>
-                  <span className="text-gray-400 ml-auto flex-shrink-0">{relTime(msg.timestamp)}</span>
+                  <span className={`text-[11px] font-bold ${STATUS_MSG[msg.status]}`}>●</span>
+                  <span className="text-slate-700 font-medium truncate">{msg.label}</span>
+                  <span className="text-slate-400 ml-auto flex-shrink-0">{relTime(msg.timestamp)}</span>
                 </div>
-                <p className="text-gray-400 truncate pl-3">
+                <p className="text-slate-400 truncate pl-3">
                   {agentMap[msg.from]?.name} → {agentMap[msg.to]?.name}
                 </p>
               </button>

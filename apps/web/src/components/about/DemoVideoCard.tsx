@@ -32,11 +32,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export function DemoVideoCard({ video }: { video: DemoVideo }) {
     return (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.12] transition-all group">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-200 transition-all group">
             {/* Thumbnail area */}
             <div className="relative h-32 rounded-t-xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] flex items-center justify-center overflow-hidden">
                 <span className="text-4xl group-hover:scale-110 transition-transform">{video.thumbnail}</span>
-                <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 text-[10px] text-white font-mono">
+                <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 text-[11px] text-white font-mono">
                     {video.duration}
                 </div>
                 {/* Play button overlay on hover */}
@@ -50,12 +50,12 @@ export function DemoVideoCard({ video }: { video: DemoVideo }) {
             {/* Content */}
             <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase border ${CATEGORY_COLORS[video.category] ?? 'bg-white/5 text-neutral-400 border-white/10'}`}>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded font-mono uppercase border ${CATEGORY_COLORS[video.category] ?? 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                         {video.category}
                     </span>
                 </div>
-                <h4 className="text-sm font-medium text-white mb-1">{video.title}</h4>
-                <p className="text-xs text-neutral-400 leading-relaxed line-clamp-2">{video.description}</p>
+                <h4 className="text-[14px] font-medium text-slate-900 mb-1">{video.title}</h4>
+                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{video.description}</p>
                 <button className="mt-3 text-xs text-accent hover:text-accent/80 transition-colors font-medium">
                     Watch Demo →
                 </button>

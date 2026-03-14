@@ -61,25 +61,25 @@ export function ExecutionCard({ execution }: { execution: Execution }) {
                         <span className={`text-sm ${statusColors[execution.status]}`}>
                             {statusIcons[execution.status]}
                         </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-neutral-400">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
                             {execution.domain}
                         </span>
                     </div>
-                    <h3 className="text-sm font-medium text-white truncate">{execution.goal}</h3>
+                    <h3 className="text-[14px] font-medium text-slate-900 truncate">{execution.goal}</h3>
                 </div>
 
                 {/* Metrics */}
                 <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right">
-                        <div className="text-xs text-neutral-500">Confidence</div>
+                        <div className="text-xs text-slate-400">Confidence</div>
                         <div className={`text-sm font-mono font-medium ${execution.confidence >= 0.8 ? 'text-success' : execution.confidence >= 0.6 ? 'text-warning' : 'text-danger'
                             }`}>
                             {(execution.confidence * 100).toFixed(0)}%
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="text-xs text-neutral-500">Duration</div>
-                        <div className="text-sm font-mono text-neutral-300">
+                        <div className="text-xs text-slate-400">Duration</div>
+                        <div className="text-sm font-mono text-slate-600">
                             {(execution.durationMs / 1000).toFixed(1)}s
                         </div>
                     </div>
@@ -88,7 +88,7 @@ export function ExecutionCard({ execution }: { execution: Execution }) {
 
             {/* Progress Bar */}
             <div className="mt-3">
-                <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
                     <div
                         className={`h-full rounded-full transition-all duration-500 ${execution.status === 'running'
                             ? 'bg-accent animate-pulse-glow'
@@ -100,10 +100,10 @@ export function ExecutionCard({ execution }: { execution: Execution }) {
                     />
                 </div>
                 <div className="flex justify-between mt-1">
-                    <span className="text-[10px] text-neutral-500">
+                    <span className="text-[11px] text-slate-400">
                         {completedSteps}/{execution.steps.length} steps
                     </span>
-                    <span className="text-[10px] text-neutral-500">{progress}%</span>
+                    <span className="text-[11px] text-slate-400">{progress}%</span>
                 </div>
             </div>
 
@@ -115,19 +115,19 @@ export function ExecutionCard({ execution }: { execution: Execution }) {
                         {execution.steps.map((step, idx) => (
                             <div key={idx} className="flex items-center gap-3 py-1.5">
                                 <span className={`status-dot ${step.status}`} />
-                                <span className={`text-xs flex-1 ${step.status === 'running' ? 'text-white' :
-                                    step.status === 'complete' ? 'text-neutral-300' :
-                                        'text-neutral-500'
+                                <span className={`text-xs flex-1 ${step.status === 'running' ? 'text-blue-600' :
+                                    step.status === 'complete' ? 'text-slate-600' :
+                                        'text-slate-400'
                                     }`}>
                                     {step.name}
                                 </span>
                                 {step.worker && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-neutral-500 font-mono">
+                                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono">
                                         {step.worker}
                                     </span>
                                 )}
                                 {step.durationMs && (
-                                    <span className="text-[10px] text-neutral-500 font-mono w-12 text-right">
+                                    <span className="text-[11px] text-slate-400 font-mono w-12 text-right">
                                         {(step.durationMs / 1000).toFixed(1)}s
                                     </span>
                                 )}
@@ -136,16 +136,16 @@ export function ExecutionCard({ execution }: { execution: Execution }) {
                     </div>
 
                     {/* Trust / Grounding */}
-                    <div className="flex items-center gap-4 pt-2 border-t border-white/[0.06]">
+                    <div className="flex items-center gap-4 pt-2 border-t border-slate-200">
                         <div className="flex items-center gap-1.5">
                             <span className="text-xs">{execution.grounded ? '✅' : '⚠️'}</span>
-                            <span className="text-[10px] text-neutral-400">
+                            <span className="text-[11px] text-slate-500">
                                 Grounded: {(execution.groundingScore * 100).toFixed(0)}%
                             </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <span className="text-xs">📖</span>
-                            <span className="text-[10px] text-neutral-400">
+                            <span className="text-[11px] text-slate-500">
                                 {execution.sources.length} sources
                             </span>
                         </div>
@@ -158,10 +158,10 @@ export function ExecutionCard({ execution }: { execution: Execution }) {
                                 <a
                                     key={idx}
                                     href={src.url}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] transition-colors text-xs text-neutral-400 hover:text-white"
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-xs text-slate-500 hover:text-slate-700"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-mono uppercase">
+                                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-mono uppercase">
                                         {src.type}
                                     </span>
                                     <span>{src.title}</span>

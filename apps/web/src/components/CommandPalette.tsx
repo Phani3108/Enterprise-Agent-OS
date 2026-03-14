@@ -72,12 +72,12 @@ const ACTION_SECTION_MAP: Record<string, string> = {
 };
 
 const TYPE_BADGE: Record<CommandItemType, string> = {
-  nav:     'bg-gray-100 text-gray-500',
+  nav:     'bg-slate-100 text-slate-500',
   skill:   'bg-blue-50 text-blue-600',
   prompt:  'bg-purple-50 text-purple-600',
   tool:    'bg-orange-50 text-orange-600',
   persona: 'bg-emerald-50 text-emerald-600',
-  action:  'bg-gray-900 text-white',
+  action:  'bg-slate-900 text-white',
 };
 
 const TYPE_LABEL: Record<CommandItemType, string> = {
@@ -203,28 +203,28 @@ export default function CommandPalette() {
       onClick={() => setCommandOpen(false)}
     >
       <div
-        className="w-[580px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+        className="w-[580px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100">
-          <span className="text-gray-400 text-base flex-shrink-0">🔍</span>
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100">
+          <span className="text-slate-400 text-base flex-shrink-0">🔍</span>
           <input
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search skills, run workflows, open personas…"
-            className="flex-1 text-sm text-gray-900 placeholder-gray-400 bg-transparent outline-none"
+            className="flex-1 text-sm text-slate-900 placeholder-slate-400 bg-transparent outline-none"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded hover:bg-gray-100"
+              className="text-slate-400 hover:text-slate-600 text-xs px-1.5 py-0.5 rounded hover:bg-slate-100"
             >
               Clear
             </button>
           )}
-          <kbd className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 flex-shrink-0">
+          <kbd className="text-[11px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 flex-shrink-0">
             Esc
           </kbd>
         </div>
@@ -233,8 +233,8 @@ export default function CommandPalette() {
         <div className="max-h-[360px] overflow-y-auto py-1.5">
           {filtered.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <p className="text-sm text-gray-400">No results for "{query}"</p>
-              <p className="text-xs text-gray-300 mt-1">Try searching for a skill, persona, or page</p>
+              <p className="text-sm text-slate-400">No results for "{query}"</p>
+              <p className="text-xs text-slate-300 mt-1">Try searching for a skill, persona, or page</p>
             </div>
           ) : (
             filtered.map((item, idx) => (
@@ -243,17 +243,17 @@ export default function CommandPalette() {
                 onClick={item.action}
                 onMouseEnter={() => setSelectedIdx(idx)}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                  idx === selectedIdx ? 'bg-gray-50' : 'hover:bg-gray-50'
+                  idx === selectedIdx ? 'bg-slate-50' : 'hover:bg-slate-50'
                 }`}
               >
                 <span className="text-base w-6 text-center flex-shrink-0">{item.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 font-medium truncate">{item.label}</p>
+                  <p className="text-sm text-slate-900 font-medium truncate">{item.label}</p>
                   {item.subtitle && (
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{item.subtitle}</p>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">{item.subtitle}</p>
                   )}
                 </div>
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${TYPE_BADGE[item.type]}`}>
+                <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${TYPE_BADGE[item.type]}`}>
                   {TYPE_LABEL[item.type]}
                 </span>
               </button>
@@ -262,20 +262,20 @@ export default function CommandPalette() {
         </div>
 
         {/* Footer hints */}
-        <div className="border-t border-gray-100 px-4 py-2 flex items-center gap-4 bg-gray-50/60">
-          <span className="text-[10px] text-gray-400 flex items-center gap-1">
-            <kbd className="font-mono bg-white border border-gray-200 px-1 py-0.5 rounded text-[9px]">↑↓</kbd>
+        <div className="border-t border-slate-100 px-4 py-2 flex items-center gap-4 bg-slate-50/60">
+          <span className="text-[11px] text-slate-400 flex items-center gap-1">
+            <kbd className="font-mono bg-white border border-slate-200 px-1 py-0.5 rounded text-[11px]">↑↓</kbd>
             navigate
           </span>
-          <span className="text-[10px] text-gray-400 flex items-center gap-1">
-            <kbd className="font-mono bg-white border border-gray-200 px-1 py-0.5 rounded text-[9px]">↵</kbd>
+          <span className="text-[11px] text-slate-400 flex items-center gap-1">
+            <kbd className="font-mono bg-white border border-slate-200 px-1 py-0.5 rounded text-[11px]">↵</kbd>
             open
           </span>
-          <span className="text-[10px] text-gray-400 flex items-center gap-1">
-            <kbd className="font-mono bg-white border border-gray-200 px-1 py-0.5 rounded text-[9px]">Esc</kbd>
+          <span className="text-[11px] text-slate-400 flex items-center gap-1">
+            <kbd className="font-mono bg-white border border-slate-200 px-1 py-0.5 rounded text-[11px]">Esc</kbd>
             close
           </span>
-          <span className="text-[10px] text-gray-400 ml-auto">
+          <span className="text-[11px] text-slate-400 ml-auto">
             {filtered.length} result{filtered.length !== 1 ? 's' : ''}
           </span>
         </div>

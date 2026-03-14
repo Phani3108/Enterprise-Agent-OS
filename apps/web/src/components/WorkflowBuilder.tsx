@@ -37,8 +37,8 @@ const DEMO_EDGES: WorkflowEdge[] = [
 ];
 
 const NODE_STYLES: Record<WorkflowNode['type'], { bg: string; border: string; text: string; icon: string }> = {
-  start:    { bg: 'bg-gray-800',      border: 'border-gray-600',      text: 'text-white',       icon: '▶' },
-  end:      { bg: 'bg-gray-800',      border: 'border-gray-600',      text: 'text-white',       icon: '⏹' },
+  start:    { bg: 'bg-slate-800',      border: 'border-slate-600',      text: 'text-white',       icon: '▶' },
+  end:      { bg: 'bg-slate-800',      border: 'border-slate-600',      text: 'text-white',       icon: '⏹' },
   agent:    { bg: 'bg-blue-50',       border: 'border-blue-300',      text: 'text-blue-900',    icon: '◉' },
   worker:   { bg: 'bg-emerald-50',    border: 'border-emerald-300',   text: 'text-emerald-900', icon: '⚙' },
   tool:     { bg: 'bg-amber-50',      border: 'border-amber-300',     text: 'text-amber-900',   icon: '⬡' },
@@ -63,7 +63,7 @@ const WORKFLOW_TEMPLATES = [
 const STATUS_BADGE: Record<string, string> = {
   active:   'bg-emerald-100 text-emerald-700 border-emerald-200',
   draft:    'bg-amber-100 text-amber-700 border-amber-200',
-  inactive: 'bg-gray-100 text-gray-600 border-gray-200',
+  inactive: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
 const PERSONA_COLOR: Record<string, string> = {
@@ -76,35 +76,35 @@ const PERSONA_COLOR: Record<string, string> = {
 
 export function WorkflowBuilder() {
   return (
-    <div className="p-6 bg-gray-50 min-h-full space-y-5">
+    <div className="p-6 bg-slate-50 min-h-full space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Workflow Builder</h2>
-          <p className="text-sm text-gray-600 font-medium mt-0.5">Design and orchestrate multi-agent automation pipelines</p>
+          <h2 className="text-xl font-bold text-slate-900">Workflow Builder</h2>
+          <p className="text-sm text-slate-600 font-medium mt-0.5">Design and orchestrate multi-agent automation pipelines</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors shadow-sm">
+        <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm">
           <span>+</span> New Workflow
         </button>
       </div>
 
       {/* Active workflow canvas */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold text-gray-900">Campaign Launch Workflow</h3>
+            <h3 className="text-sm font-bold text-slate-900">Campaign Launch Workflow</h3>
             <span className="flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> Running
             </span>
           </div>
           <div className="flex gap-2">
-            <button className="text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors">Edit</button>
-            <button className="text-xs font-semibold text-white bg-gray-900 hover:bg-gray-800 px-3 py-1.5 rounded-lg transition-colors">Run</button>
+            <button className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">Edit</button>
+            <button className="text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors">Run</button>
           </div>
         </div>
 
         {/* SVG Canvas */}
-        <div className="relative w-full h-72 bg-gray-50 overflow-hidden">
+        <div className="relative w-full h-72 bg-slate-50 overflow-hidden">
           <svg className="absolute inset-0 w-full h-full">
             <defs>
               <pattern id="wf-grid" width="28" height="28" patternUnits="userSpaceOnUse">
@@ -156,7 +156,7 @@ export function WorkflowBuilder() {
                   <span className={`text-[11px] font-bold whitespace-nowrap ${s.text}`}>{node.label}</span>
                 </div>
                 {node.skill && (
-                  <div className="text-[9px] text-gray-500 font-mono mt-0.5 truncate max-w-[100px]">{node.skill}</div>
+                  <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate max-w-[100px]">{node.skill}</div>
                 )}
               </div>
             );
@@ -165,30 +165,30 @@ export function WorkflowBuilder() {
       </div>
 
       {/* Workflow templates list */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div className="px-5 py-3.5 border-b border-gray-100">
-          <h3 className="text-sm font-bold text-gray-900">All Workflows</h3>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="px-5 py-3.5 border-b border-slate-100">
+          <h3 className="text-sm font-bold text-slate-900">All Workflows</h3>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-slate-100">
           {WORKFLOW_TEMPLATES.map(wf => (
-            <div key={wf.name} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
+            <div key={wf.name} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">⚡</div>
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">⚡</div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900">{wf.name}</p>
+                  <p className="text-sm font-bold text-slate-900">{wf.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${PERSONA_COLOR[wf.persona] ?? 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${PERSONA_COLOR[wf.persona] ?? 'bg-slate-100 text-slate-600'}`}>
                       {wf.persona}
                     </span>
-                    <span className="text-[11px] text-gray-600 font-medium">{wf.nodes} nodes</span>
+                    <span className="text-[11px] text-slate-600 font-medium">{wf.nodes} nodes</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${STATUS_BADGE[wf.status]}`}>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${STATUS_BADGE[wf.status]}`}>
                   {wf.status}
                 </span>
-                <button className="text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors">
+                <button className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">
                   Open
                 </button>
               </div>

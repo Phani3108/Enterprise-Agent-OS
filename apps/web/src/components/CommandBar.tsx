@@ -61,22 +61,22 @@ export default function CommandBar() {
     return (
         <div className="relative px-6 py-3">
             {/* Command input */}
-            <div className="glass-surface flex items-center gap-3 px-4 py-3 rounded-xl cursor-text"
+            <div className="bg-white border border-slate-200 rounded-xl flex items-center gap-3 px-4 py-3 rounded-xl cursor-text"
                 onClick={() => { setIsOpen(true); inputRef.current?.focus(); }}>
-                <span className="text-accent-primary text-lg">⚡</span>
+                <span className="text-blue-600 text-lg">⚡</span>
                 <input
                     ref={inputRef}
-                    className="flex-1 bg-transparent border-none outline-none text-white placeholder-neutral-500"
+                    className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
                     placeholder="Ask EOS anything... (⌘K)"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     onFocus={() => setIsOpen(true)}
                     onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
                 />
-                {loading && <div className="animate-spin w-4 h-4 border-2 border-accent-primary border-t-transparent rounded-full" />}
+                {loading && <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full" />}
                 {!loading && query && (
                     <button onClick={handleSubmit}
-                        className="px-3 py-1 bg-accent-primary/20 text-accent-primary rounded-lg text-sm hover:bg-accent-primary/30">
+                        className="px-3 py-1 bg-blue-600/20 text-blue-600 rounded-lg text-sm hover:bg-blue-600/30">
                         Run ↵
                     </button>
                 )}
@@ -84,15 +84,15 @@ export default function CommandBar() {
 
             {/* Suggestions dropdown */}
             {isOpen && !loading && !lastResult && (
-                <div className="absolute left-6 right-6 top-full mt-1 glass-surface rounded-xl border border-white/10 shadow-2xl z-50 overflow-hidden">
-                    <div className="p-2 text-xs text-neutral-500 border-b border-white/5 px-4">Suggestions</div>
+                <div className="absolute left-6 right-6 top-full mt-1 bg-white border border-slate-200 rounded-xl border border-slate-200 shadow-2xl z-50 overflow-hidden">
+                    <div className="p-2 text-xs text-slate-400 border-b border-slate-200 px-4">Suggestions</div>
                     {suggestions.filter(s => !query || s.text.toLowerCase().includes(query.toLowerCase())).map((s, i) => (
                         <button key={i}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-left transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-left transition-colors"
                             onClick={() => { setQuery(s.text); inputRef.current?.focus(); }}>
                             <span>{s.icon}</span>
-                            <span className="flex-1 text-sm text-neutral-200">{s.text}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${domainColors[s.domain] ?? 'bg-white/10'}`}>{s.domain}</span>
+                            <span className="flex-1 text-sm text-slate-700">{s.text}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${domainColors[s.domain] ?? 'bg-slate-100'}`}>{s.domain}</span>
                         </button>
                     ))}
                 </div>
@@ -100,42 +100,42 @@ export default function CommandBar() {
 
             {/* Error */}
             {error && (
-                <div className="absolute left-6 right-6 top-full mt-1 glass-surface rounded-xl border border-red-500/30 p-4 z-50">
+                <div className="absolute left-6 right-6 top-full mt-1 bg-white border border-slate-200 rounded-xl border border-red-500/30 p-4 z-50">
                     <div className="flex items-center gap-2 text-red-400 text-sm">
                         <span>⚠️</span>
                         <span>{error}</span>
-                        <span className="text-xs text-neutral-500 ml-2">Is the Gateway running on localhost:3000?</span>
+                        <span className="text-xs text-slate-400 ml-2">Is the Gateway running on localhost:3000?</span>
                     </div>
                 </div>
             )}
 
             {/* Result card */}
             {lastResult && (
-                <div className="absolute left-6 right-6 top-full mt-1 glass-surface rounded-xl border border-accent-primary/20 shadow-2xl z-50 max-h-[60vh] overflow-y-auto">
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <div className="absolute left-6 right-6 top-full mt-1 bg-white border border-slate-200 rounded-xl border border-blue-600/20 shadow-2xl z-50 max-h-[60vh] overflow-y-auto">
+                    <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <span className="text-emerald-400">✓</span>
                             <span className="text-sm font-medium">{lastResult.intent.skill}</span>
-                            <span className="text-xs text-neutral-500">{lastResult.durationMs}ms</span>
+                            <span className="text-xs text-slate-400">{lastResult.durationMs}ms</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100">
                                 Confidence: {Math.round(lastResult.confidence * 100)}%
                             </span>
-                            <button onClick={() => { setLastResult(null); setIsOpen(false); }} className="text-neutral-500 hover:text-white">✕</button>
+                            <button onClick={() => { setLastResult(null); setIsOpen(false); }} className="text-slate-400 hover:text-slate-700">✕</button>
                         </div>
                     </div>
                     <div className="p-4">
-                        <pre className="text-xs text-neutral-300 whitespace-pre-wrap font-mono leading-relaxed">
+                        <pre className="text-xs text-slate-600 whitespace-pre-wrap font-mono leading-relaxed">
                             {JSON.stringify(lastResult.result, null, 2)}
                         </pre>
                     </div>
                     {lastResult.sources.length > 0 && (
-                        <div className="p-4 border-t border-white/5">
-                            <div className="text-xs text-neutral-500 mb-2">Sources</div>
+                        <div className="p-4 border-t border-slate-200">
+                            <div className="text-xs text-slate-400 mb-2">Sources</div>
                             <div className="flex flex-wrap gap-2">
                                 {lastResult.sources.map((s, i) => (
-                                    <span key={i} className="text-xs px-2 py-1 rounded-lg bg-white/5 text-neutral-300">
+                                    <span key={i} className="text-xs px-2 py-1 rounded-lg bg-slate-50 text-slate-600">
                                         📄 {s.title}
                                     </span>
                                 ))}

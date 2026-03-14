@@ -14,7 +14,6 @@ import {
   useConnectionsStore,
 } from '../../store/connections-store';
 import { ConnectorCard } from './ConnectorCard';
-import { ConnectorModal } from './ConnectorModal';
 import { useEAOSStore } from '../../store/eaos-store';
 
 const SECTION_TO_CATEGORY: Record<string, ConnectorCategory | 'all'> = {
@@ -35,7 +34,7 @@ const CATEGORIES: Array<ConnectorCategory | 'all'> = [
 export function ConnectionsHub() {
   const { connections, activeCategory, setActiveCategory, getConnectedCount } = useConnectionsStore();
   const activeSection = useEAOSStore(s => s.activeSection);
-  const [selectedConnector, setSelectedConnector] = useState<ConnectorDef | null>(null);
+  const setActiveSection = useEAOSStore(s => s.setActiveSection);
   const [search, setSearch] = useState('');
 
   // Sync sidebar nav item → category filter
@@ -65,20 +64,20 @@ export function ConnectionsHub() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-5">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-sm font-semibold text-gray-900">Connections</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Connect tools to unlock live execution across all skills and workflows.</p>
+            <h1 className="page-title">Connections</h1>
+            <p className="page-subtitle">Connect your tools to unlock live execution. Skills run in sandbox mode until tools are connected.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-xs font-semibold text-gray-900">{connectedCount} / {totalCount} connected</div>
-              <div className="text-[10px] text-gray-400">{coveragePct}% coverage</div>
+              <div className="text-sm font-semibold text-slate-900 tabular-nums">{connectedCount} / {totalCount}</div>
+              <div className="text-[12px] text-slate-400">connected</div>
             </div>
-            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                 style={{ width: `${coveragePct}%` }}
@@ -89,7 +88,7 @@ export function ConnectionsHub() {
 
         {/* Search */}
         <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -97,14 +96,14 @@ export function ConnectionsHub() {
             placeholder="Search connectors by name or capability…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-8 pr-4 py-2 text-xs border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-white"
+            className="input pl-9"
           />
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Category sidebar */}
-        <div className="flex-shrink-0 w-48 bg-white border-r border-gray-200 overflow-y-auto py-3">
+        <div className="flex-shrink-0 w-52 bg-white border-r border-slate-200 overflow-y-auto py-3 px-2">
           {CATEGORIES.map(cat => {
             const meta = cat === 'all' ? null : CATEGORY_META[cat];
             const count = cat === 'all'
@@ -118,16 +117,16 @@ export function ConnectionsHub() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors ${
                   activeCategory === cat
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 <span className="text-base leading-none">{meta?.icon ?? '🔌'}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{meta?.label ?? 'All Connectors'}</div>
-                  <div className="text-[10px] text-gray-400">{connCount}/{count} connected</div>
+                  <div className="text-[13px] font-medium truncate">{meta?.label ?? 'All Connectors'}</div>
+                  <div className="text-[12px] text-slate-400">{connCount}/{count}</div>
                 </div>
               </button>
             );
@@ -135,14 +134,13 @@ export function ConnectionsHub() {
         </div>
 
         {/* Main content */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-              <div className="text-2xl mb-2">🔍</div>
-              <div className="text-sm">No connectors match your search</div>
+            <div className="empty-state">
+              <div className="empty-state-icon">🔍</div>
+              <p className="empty-state-text">No connectors match your search</p>
             </div>
           ) : activeCategory === 'all' ? (
-            // Grouped view for "all"
             <div className="space-y-8">
               {(Object.keys(grouped) as ConnectorCategory[]).map(cat => {
                 const items = grouped[cat] ?? [];
@@ -151,9 +149,9 @@ export function ConnectionsHub() {
                 return (
                   <div key={cat}>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-base">{meta.icon}</span>
-                      <h2 className="text-xs font-semibold text-gray-700">{meta.label}</h2>
-                      <span className="text-[10px] text-gray-400">— {meta.description}</span>
+                      <span className="text-lg">{meta.icon}</span>
+                      <h2 className="text-sm font-semibold text-slate-800">{meta.label}</h2>
+                      <span className="text-[13px] text-slate-400">— {meta.description}</span>
                     </div>
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                       {items.map(conn => (
@@ -161,7 +159,7 @@ export function ConnectionsHub() {
                           key={conn.id}
                           connector={conn}
                           state={connections[conn.id] ?? { connectorId: conn.id, status: 'not-connected' }}
-                          onClick={() => setSelectedConnector(conn)}
+                          onClick={() => setActiveSection(`connector-detail-${conn.id}`)}
                         />
                       ))}
                     </div>
@@ -170,13 +168,12 @@ export function ConnectionsHub() {
               })}
             </div>
           ) : (
-            // Single category view
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">{CATEGORY_META[activeCategory as ConnectorCategory]?.icon}</span>
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">{CATEGORY_META[activeCategory as ConnectorCategory]?.label}</h2>
-                  <p className="text-xs text-gray-500">{CATEGORY_META[activeCategory as ConnectorCategory]?.description}</p>
+                  <h2 className="text-base font-semibold text-slate-900">{CATEGORY_META[activeCategory as ConnectorCategory]?.label}</h2>
+                  <p className="text-[13px] text-slate-500">{CATEGORY_META[activeCategory as ConnectorCategory]?.description}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
@@ -185,7 +182,7 @@ export function ConnectionsHub() {
                     key={conn.id}
                     connector={conn}
                     state={connections[conn.id] ?? { connectorId: conn.id, status: 'not-connected' }}
-                    onClick={() => setSelectedConnector(conn)}
+                    onClick={() => setActiveSection(`connector-detail-${conn.id}`)}
                   />
                 ))}
               </div>
@@ -194,22 +191,22 @@ export function ConnectionsHub() {
 
           {/* Setup prompt if few connections */}
           {connectedCount <= 1 && (
-            <div className="mt-8 rounded-xl border border-dashed border-gray-300 p-6 text-center">
-              <div className="text-2xl mb-2">🔌</div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Connect your tools to unlock live execution</h3>
-              <p className="text-xs text-gray-500 mb-3 max-w-sm mx-auto">
-                Skills and workflows run in Sandbox mode until you connect real tools. Connect your AI model, version control, and CRM to start executing live.
+            <div className="mt-8 card p-6 text-center border-dashed">
+              <svg className="w-8 h-8 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+              <h3 className="text-sm font-semibold text-slate-700 mb-1">Connect your tools to unlock live execution</h3>
+              <p className="text-[13px] text-slate-500 mb-4 max-w-md mx-auto">
+                Skills and workflows run in Sandbox mode until you connect real tools. Start with AI models and dev tools.
               </p>
               <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => setActiveCategory('ai-models')}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+                  className="btn btn-primary"
                 >
                   Start with AI Models
                 </button>
                 <button
                   onClick={() => setActiveCategory('dev-tools')}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="btn btn-secondary"
                 >
                   Connect Dev Tools
                 </button>
@@ -218,15 +215,6 @@ export function ConnectionsHub() {
           )}
         </div>
       </div>
-
-      {/* Connector modal */}
-      {selectedConnector && (
-        <ConnectorModal
-          connector={selectedConnector}
-          currentState={connections[selectedConnector.id] ?? { connectorId: selectedConnector.id, status: 'not-connected' }}
-          onClose={() => setSelectedConnector(null)}
-        />
-      )}
     </div>
   );
 }

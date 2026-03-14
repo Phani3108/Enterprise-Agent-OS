@@ -8,10 +8,10 @@ import { useState } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
 
 const NAV_LABELS: Record<string, string> = {
-  home:                   'Command Center',
-  'ws-marketing':         'Marketing Workspace',
-  'ws-engineering':       'Engineering Workspace',
-  'ws-product':           'Product Workspace',
+  home:                   'Home',
+  'ws-marketing':         'Marketing',
+  'ws-engineering':       'Engineering',
+  'ws-product':           'Product',
   'conn-ai-models':       'AI Models',
   'conn-storage':         'Storage & Docs',
   'conn-design':          'Design Tools',
@@ -20,9 +20,9 @@ const NAV_LABELS: Record<string, string> = {
   'conn-cms':             'CMS & Publishing',
   'conn-messaging':       'Messaging',
   'conn-data':            'Data & Infra',
-  'library-skills':       'Skills Library',
+  'library-skills':       'Skills',
   'library-workflows':    'Workflows',
-  'library-prompts':      'Prompt Library',
+  'library-prompts':      'Prompts',
   'library-templates':    'Templates',
   'library-agents':       'Agents',
   'ops-integrations':     'Tool Registry',
@@ -33,11 +33,10 @@ const NAV_LABELS: Record<string, string> = {
   'community-discussions':'Discussions',
   'community-blogs':      'Blogs',
   'admin-governance':     'Governance',
-  'admin-usage':          'Usage & Monitoring',
+  'admin-usage':          'Usage',
   'admin-settings':       'Settings',
 };
 
-// Breadcrumb group label
 const GROUP_LABELS: Record<string, string> = {
   home:            '',
   'ws-marketing':  'Workspaces',  'ws-engineering': 'Workspaces',  'ws-product': 'Workspaces',
@@ -77,47 +76,50 @@ export function TopBar() {
   const group    = GROUP_LABELS[activeSection] ?? '';
 
   return (
-    <header className="flex items-center justify-between px-5 h-12 border-b border-gray-200 bg-white flex-shrink-0 z-10">
+    <header className="flex items-center justify-between px-5 h-[52px] border-b border-slate-200 bg-white flex-shrink-0 z-10">
       {/* Left: breadcrumb */}
-      <div className="flex items-center gap-1.5 text-xs text-gray-500 min-w-0">
-        <span className="text-gray-400">AgentOS</span>
-        {group && <><span className="text-gray-300">/</span><span className="text-gray-400">{group}</span></>}
-        <span className="text-gray-300">/</span>
-        <span className="text-gray-900 font-semibold truncate">{title}</span>
+      <div className="flex items-center gap-1.5 text-[13px] text-slate-500 min-w-0">
+        <button onClick={() => setActiveSection('home')} className="text-slate-400 hover:text-slate-600 transition-colors">AgentOS</button>
+        {group && <><span className="text-slate-300">/</span><span className="text-slate-400">{group}</span></>}
+        <span className="text-slate-300">/</span>
+        <span className="text-slate-900 font-medium truncate">{title}</span>
       </div>
 
       {/* Center: command trigger */}
       <button
         onClick={() => setCommandOpen(true)}
-        className="flex items-center gap-3 px-3.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs text-gray-400 hover:border-gray-300 hover:bg-white transition-all w-64 group"
+        className="flex items-center gap-3 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[13px] text-slate-400 hover:border-slate-300 hover:bg-white transition-all w-72 group"
         data-tour="command-palette"
       >
-        <span>🔍</span>
-        <span className="flex-1 text-left">Search skills, run workflows…</span>
-        <kbd className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">⌘K</kbd>
+        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <span className="flex-1 text-left">Search or ask anything…</span>
+        <kbd className="text-[11px] font-mono bg-white text-slate-400 px-1.5 py-0.5 rounded border border-slate-200">⌘K</kbd>
       </button>
 
       {/* Right: actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {/* Create */}
         <div className="relative">
           <button
             onClick={() => { setShowCreate(v => !v); setShowNotifications(false); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[13px] font-medium hover:bg-blue-700 transition-colors"
           >
-            <span>＋</span><span>Create</span>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            <span>Create</span>
           </button>
           {showCreate && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowCreate(false)} />
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[180px] z-50">
+              <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[200px] z-50">
                 {CREATE_ITEMS.map(item => (
                   <button
                     key={item.section}
                     onClick={() => { setActiveSection(item.section); setShowCreate(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                   >
-                    <span>{item.icon}</span><span>{item.label}</span>
+                    <span className="text-base">{item.icon}</span><span>{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -129,11 +131,13 @@ export function TopBar() {
         <div className="relative">
           <button
             onClick={() => { setShowNotifications(v => !v); setShowCreate(false); }}
-            className="relative p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+            className="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
           >
-            <span className="text-sm">🔔</span>
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
             {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">
                 {unread > 9 ? '9+' : unread}
               </span>
             )}
@@ -141,18 +145,18 @@ export function TopBar() {
           {showNotifications && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg w-72 z-50">
-                <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-900">Notifications</span>
-                  {unread > 0 && <span className="text-[10px] text-gray-400">{unread} unread</span>}
+              <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg w-80 z-50">
+                <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                  <span className="text-[13px] font-semibold text-slate-900">Notifications</span>
+                  {unread > 0 && <span className="text-[11px] text-slate-400">{unread} unread</span>}
                 </div>
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-72 overflow-y-auto">
                   {notifications.length === 0
-                    ? <p className="text-xs text-gray-400 text-center py-6">No notifications</p>
+                    ? <p className="text-[13px] text-slate-400 text-center py-8">No notifications</p>
                     : notifications.slice(0, 8).map(n => (
-                      <div key={n.id} className={`px-4 py-2.5 border-b border-gray-50 last:border-0 ${!n.read ? 'bg-blue-50/40' : ''}`}>
-                        <div className="flex items-start gap-2">
-                          <span className={`text-xs mt-0.5 flex-shrink-0 ${
+                      <div key={n.id} className={`px-4 py-3 border-b border-slate-50 last:border-0 ${!n.read ? 'bg-blue-50/40' : ''}`}>
+                        <div className="flex items-start gap-2.5">
+                          <span className={`text-[13px] mt-0.5 flex-shrink-0 ${
                             n.type === 'success' ? 'text-emerald-500' :
                             n.type === 'error' ? 'text-red-500' :
                             n.type === 'warning' ? 'text-amber-500' : 'text-blue-500'
@@ -160,8 +164,8 @@ export function TopBar() {
                             {n.type === 'success' ? '✓' : n.type === 'error' ? '✗' : n.type === 'warning' ? '⚠' : 'ℹ'}
                           </span>
                           <div className="min-w-0">
-                            <p className="text-xs font-medium text-gray-900 truncate">{n.title}</p>
-                            <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{n.message}</p>
+                            <p className="text-[13px] font-medium text-slate-900 truncate">{n.title}</p>
+                            <p className="text-[12px] text-slate-500 mt-0.5 line-clamp-1">{n.message}</p>
                           </div>
                         </div>
                       </div>
@@ -175,15 +179,17 @@ export function TopBar() {
 
         {/* Right panel toggle */}
         {LIVE_EXECUTION_SECTIONS.includes(activeSection) && (
-          <button onClick={toggleRightPanel} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
-            <span className="text-sm">⊟</span>
+          <button onClick={toggleRightPanel} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all">
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
           </button>
         )}
 
         {/* User */}
         <button
           onClick={() => setActiveSection('admin-settings')}
-          className="w-7 h-7 rounded-full bg-gray-900 text-white text-xs font-semibold flex items-center justify-center hover:bg-gray-700 transition-colors"
+          className="w-8 h-8 rounded-full bg-blue-600 text-white text-[13px] font-medium flex items-center justify-center hover:bg-blue-700 transition-colors ml-1"
         >P</button>
       </div>
     </header>

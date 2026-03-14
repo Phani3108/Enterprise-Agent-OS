@@ -16,7 +16,7 @@ import { DemoVideoCard, DEMO_VIDEOS } from './about/DemoVideoCard';
 function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
     return (
         <section className="mb-10">
-            <h2 className="flex items-center gap-3 text-lg font-bold text-gray-900 mb-4">
+            <h2 className="flex items-center gap-3 text-lg font-bold text-slate-900 mb-4">
                 <span className="text-xl">{icon}</span>
                 {title}
             </h2>
@@ -28,10 +28,10 @@ function Section({ title, icon, children }: { title: string; icon: string; child
 // ── Concept card ──
 function ConceptCard({ icon, title, description }: { icon: string; title: string; description: string }) {
     return (
-        <div className="p-4 rounded-xl bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all">
+        <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
             <div className="text-2xl mb-3">{icon}</div>
-            <h4 className="text-sm font-bold text-gray-900 mb-1">{title}</h4>
-            <p className="text-xs text-gray-600 leading-relaxed">{description}</p>
+            <h4 className="text-sm font-bold text-slate-900 mb-1">{title}</h4>
+            <p className="text-xs text-slate-600 leading-relaxed">{description}</p>
         </div>
     );
 }
@@ -49,21 +49,21 @@ function IOExample({ title, icon, input, output, inputLabel, outputLabel }: {
     };
 
     return (
-        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2 bg-gray-50">
+        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2 bg-slate-50">
                 <span className="text-lg">{icon}</span>
-                <span className="text-sm font-bold text-gray-900">{title}</span>
+                <span className="text-sm font-bold text-slate-900">{title}</span>
             </div>
-            <div className="grid grid-cols-2 divide-x divide-gray-200">
+            <div className="grid grid-cols-2 divide-x divide-slate-200">
                 <div className="p-4">
-                    <div className="text-[10px] uppercase tracking-wider text-accent/80 font-semibold mb-2">
+                    <div className="text-[11px] uppercase tracking-wider text-accent/80 font-semibold mb-2">
                         {inputLabel ?? 'Input'}
                     </div>
                     <div className="flex items-start gap-2">
-                        <p className="text-xs text-gray-700 font-mono leading-relaxed flex-1">{input}</p>
+                        <p className="text-xs text-slate-700 font-mono leading-relaxed flex-1">{input}</p>
                         <button
                             onClick={copyInput}
-                            className="text-[10px] text-gray-500 hover:text-gray-900 transition-colors shrink-0"
+                            className="text-[11px] text-slate-500 hover:text-slate-900 transition-colors shrink-0"
                             title="Copy to clipboard"
                         >
                             {copied ? '✓' : '📋'}
@@ -71,10 +71,10 @@ function IOExample({ title, icon, input, output, inputLabel, outputLabel }: {
                     </div>
                 </div>
                 <div className="p-4">
-                    <div className="text-[10px] uppercase tracking-wider text-emerald-600 font-semibold mb-2">
+                    <div className="text-[11px] uppercase tracking-wider text-emerald-600 font-semibold mb-2">
                         {outputLabel ?? 'Output'}
                     </div>
-                    <p className="text-xs text-gray-700 leading-relaxed">{output}</p>
+                    <p className="text-xs text-slate-700 leading-relaxed">{output}</p>
                 </div>
             </div>
         </div>
@@ -84,11 +84,11 @@ function IOExample({ title, icon, input, output, inputLabel, outputLabel }: {
 // ── Feature matrix row ──
 function FeatureRow({ feature, when, input, output }: { feature: string; when: string; input: string; output: string }) {
     return (
-        <tr className="border-b border-gray-100 hover:bg-gray-50">
-            <td className="py-3 px-4 text-sm font-bold text-gray-900">{feature}</td>
-            <td className="py-3 px-4 text-xs text-gray-600">{when}</td>
-            <td className="py-3 px-4 text-xs text-gray-700 font-mono">{input}</td>
-            <td className="py-3 px-4 text-xs text-gray-600">{output}</td>
+        <tr className="border-b border-slate-100 hover:bg-slate-50">
+            <td className="py-3 px-4 text-sm font-bold text-slate-900">{feature}</td>
+            <td className="py-3 px-4 text-xs text-slate-600">{when}</td>
+            <td className="py-3 px-4 text-xs text-slate-700 font-mono">{input}</td>
+            <td className="py-3 px-4 text-xs text-slate-600">{output}</td>
         </tr>
     );
 }
@@ -97,13 +97,13 @@ function FeatureRow({ feature, when, input, output }: { feature: string; when: s
 function FAQItem({ q, a }: { q: string; a: string }) {
     const [open, setOpen] = useState(false);
     return (
-        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-            <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors">
-                <span className="text-sm font-bold text-gray-900">{q}</span>
-                <span className="text-gray-500 text-xs">{open ? '▲' : '▼'}</span>
+        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+            <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors">
+                <span className="text-sm font-bold text-slate-900">{q}</span>
+                <span className="text-slate-500 text-xs">{open ? '▲' : '▼'}</span>
             </button>
             {open && (
-                <div className="px-4 pb-4 text-sm text-gray-700 font-medium leading-relaxed border-t border-gray-100">
+                <div className="px-4 pb-4 text-sm text-slate-700 font-medium leading-relaxed border-t border-slate-100">
                     {a}
                 </div>
             )}
@@ -117,25 +117,25 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 export default function AboutPage() {
     return (
-        <div className="p-6 max-w-4xl mx-auto overflow-y-auto bg-gray-50 min-h-full">
+        <div className="p-6 max-w-4xl mx-auto overflow-y-auto bg-slate-50 min-h-full">
             {/* Hero */}
             <div className="text-center mb-12 pt-4">
                 <div className="w-16 h-16 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-[0_0_40px_rgba(99,102,241,0.15)]">
                     ⚡
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">Enterprise Operating System</h1>
-                <p className="text-gray-600 text-sm max-w-lg mx-auto leading-relaxed">
+                <h1 className="text-3xl font-bold text-slate-900 mb-3">Enterprise Operating System</h1>
+                <p className="text-slate-600 text-sm max-w-lg mx-auto leading-relaxed">
                     An AI-powered platform that connects internal knowledge, automates workflows, and accelerates every team — Engineering, Marketing, Product, and Leadership.
                 </p>
             </div>
 
             {/* ── What EOS Is ── */}
             <Section title="What EOS Is" icon="💡">
-                <div className="rounded-xl bg-white border border-gray-200 p-5 shadow-sm">
-                    <p className="text-sm text-gray-700 font-medium leading-relaxed mb-3">
+                <div className="rounded-xl bg-white border border-slate-200 p-5 shadow-sm">
+                    <p className="text-sm text-slate-700 font-medium leading-relaxed mb-3">
                         EOS is an internal AI operating layer that sits on top of your company&apos;s existing systems — Confluence, GitHub, Jira, Slack, CRM, analytics tools — and makes them accessible through a single natural language interface.
                     </p>
-                    <p className="text-sm text-gray-700 font-medium leading-relaxed">
+                    <p className="text-sm text-slate-700 font-medium leading-relaxed">
                         Instead of switching between 12 tools, you ask EOS one question and it orchestrates the right agents, skills, and connectors to deliver a structured, grounded answer with source attribution.
                     </p>
                 </div>
@@ -150,10 +150,10 @@ export default function AboutPage() {
                         { icon: '🔄', title: 'Repetitive Work', desc: 'Meeting summaries, PR reviews, campaign planning — EOS automates the repeateable parts.' },
                         { icon: '🧠', title: 'Institutional Memory', desc: 'Tribal knowledge leaves when people do. EOS preserves and surfaces organizational knowledge.' },
                     ].map(item => (
-                        <div key={item.title} className="p-4 rounded-xl bg-white border border-gray-200 shadow-sm">
+                        <div key={item.title} className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
                             <span className="text-lg">{item.icon}</span>
-                            <h4 className="text-sm font-bold text-gray-900 mt-2 mb-1">{item.title}</h4>
-                            <p className="text-xs text-gray-600 leading-relaxed">{item.desc}</p>
+                            <h4 className="text-sm font-bold text-slate-900 mt-2 mb-1">{item.title}</h4>
+                            <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
                         </div>
                     ))}
                 </div>
@@ -204,14 +204,14 @@ export default function AboutPage() {
 
             {/* ── When to Use What ── */}
             <Section title="When to Use What" icon="🗺️">
-                <div className="rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
+                <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-gray-200 bg-gray-50">
-                                <th className="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-gray-600 font-semibold">Feature</th>
-                                <th className="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-gray-600 font-semibold">When to Use</th>
-                                <th className="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-gray-600 font-semibold">Example Input</th>
-                                <th className="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-gray-600 font-semibold">Output Shape</th>
+                            <tr className="border-b border-slate-200 bg-slate-50">
+                                <th className="py-3 px-4 text-left text-[11px] uppercase tracking-wider text-slate-600 font-semibold">Feature</th>
+                                <th className="py-3 px-4 text-left text-[11px] uppercase tracking-wider text-slate-600 font-semibold">When to Use</th>
+                                <th className="py-3 px-4 text-left text-[11px] uppercase tracking-wider text-slate-600 font-semibold">Example Input</th>
+                                <th className="py-3 px-4 text-left text-[11px] uppercase tracking-wider text-slate-600 font-semibold">Output Shape</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -245,10 +245,10 @@ export default function AboutPage() {
                         { icon: '📝', title: 'Audit Trail', desc: 'Immutable log of every query, execution, and approval. Full attribution chain.' },
                         { icon: '✅', title: 'Grounding', desc: 'Every response includes a grounding score — how well the answer is supported by actual sources vs. model inference.' },
                     ].map(item => (
-                        <div key={item.title} className="p-4 rounded-xl bg-white border border-gray-200 shadow-sm">
+                        <div key={item.title} className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
                             <span className="text-lg">{item.icon}</span>
-                            <h4 className="text-sm font-bold text-gray-900 mt-2 mb-1">{item.title}</h4>
-                            <p className="text-xs text-gray-600 leading-relaxed">{item.desc}</p>
+                            <h4 className="text-sm font-bold text-slate-900 mt-2 mb-1">{item.title}</h4>
+                            <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
                         </div>
                     ))}
                 </div>
@@ -268,8 +268,8 @@ export default function AboutPage() {
             </Section>
 
             {/* Footer */}
-            <div className="text-center py-8 border-t border-gray-200 mt-8">
-                <p className="text-xs text-gray-600">
+            <div className="text-center py-8 border-t border-slate-200 mt-8">
+                <p className="text-xs text-slate-600">
                     EOS v0.1.0 — Built with Next.js, TypeScript, and 🧠
                 </p>
             </div>

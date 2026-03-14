@@ -221,7 +221,7 @@ function StatusBadge({ status }: { status: JobStatus }) {
     paused: 'bg-amber-50 text-amber-600',
     failed: 'bg-red-50 text-red-600',
     completed: 'bg-blue-50 text-blue-600',
-    pending: 'bg-gray-100 text-gray-500',
+    pending: 'bg-slate-100 text-slate-500',
   };
   const dots = {
     active: '● ',
@@ -231,7 +231,7 @@ function StatusBadge({ status }: { status: JobStatus }) {
     pending: '○ ',
   };
   return (
-    <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${config[status]}`}>
+    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${config[status]}`}>
       {dots[status]}{status}
     </span>
   );
@@ -242,11 +242,11 @@ function ScheduleTypeBadge({ type }: { type: ScheduleType }) {
     cron: 'bg-purple-50 text-purple-600',
     interval: 'bg-blue-50 text-blue-600',
     event: 'bg-orange-50 text-orange-600',
-    'one-time': 'bg-gray-100 text-gray-600',
+    'one-time': 'bg-slate-100 text-slate-600',
   };
   const icons = { cron: '⏰', interval: '🔄', event: '⚡', 'one-time': '🎯' };
   return (
-    <span className={`text-[9px] px-2 py-0.5 rounded-full ${config[type]}`}>
+    <span className={`text-[11px] px-2 py-0.5 rounded-full ${config[type]}`}>
       {icons[type]} {type}
     </span>
   );
@@ -265,10 +265,10 @@ function JobDetail({ job, onClose, onToggle, onRun }: {
   const successRate = job.runCount > 0 ? Math.round((job.successCount / job.runCount) * 100) : 100;
 
   return (
-    <div className="w-96 flex-shrink-0 border-l border-gray-100 flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <h3 className="text-xs font-semibold text-gray-800 truncate">{job.name}</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 ml-2 flex-shrink-0">×</button>
+    <div className="w-96 flex-shrink-0 border-l border-slate-100 flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <h3 className="text-xs font-semibold text-slate-800 truncate">{job.name}</h3>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 ml-2 flex-shrink-0">×</button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -279,14 +279,14 @@ function JobDetail({ job, onClose, onToggle, onRun }: {
           <div className="ml-auto flex gap-1.5">
             <button
               onClick={onRun}
-              className="text-[10px] px-2.5 py-1 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="text-[11px] px-2.5 py-1 bg-slate-900 text-white rounded-lg hover:bg-slate-700 transition-colors"
               data-testid={`run-job-${job.id}`}
             >
               ▶ Run Now
             </button>
             <button
               onClick={onToggle}
-              className={`text-[10px] px-2.5 py-1 rounded-lg transition-colors border ${
+              className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors border ${
                 job.status === 'active'
                   ? 'border-amber-200 text-amber-600 hover:bg-amber-50'
                   : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
@@ -298,26 +298,26 @@ function JobDetail({ job, onClose, onToggle, onRun }: {
         </div>
 
         {/* Schedule Info */}
-        <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Schedule</div>
+        <div className="bg-slate-50 rounded-xl p-3 space-y-2">
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Schedule</div>
           {job.scheduleType === 'cron' && (
-            <div className="font-mono text-xs text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2">
+            <div className="font-mono text-xs text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2">
               {job.cronExpression}
             </div>
           )}
           {job.scheduleType === 'event' && (
-            <div className="text-xs text-gray-700">Trigger: <strong>{job.eventTrigger}</strong></div>
+            <div className="text-xs text-slate-700">Trigger: <strong>{job.eventTrigger}</strong></div>
           )}
           {job.scheduleType === 'interval' && (
-            <div className="text-xs text-gray-700">Every {formatDuration(job.intervalMs ?? 0)}</div>
+            <div className="text-xs text-slate-700">Every {formatDuration(job.intervalMs ?? 0)}</div>
           )}
           {job.scheduleType === 'one-time' && (
-            <div className="text-xs text-gray-700">
+            <div className="text-xs text-slate-700">
               At {job.oneTimeAt ? new Date(job.oneTimeAt).toLocaleString() : '—'}
             </div>
           )}
           {job.nextRun && (
-            <div className="text-[10px] text-gray-400">Next run: {futureTime(job.nextRun)}</div>
+            <div className="text-[11px] text-slate-400">Next run: {futureTime(job.nextRun)}</div>
           )}
         </div>
 
@@ -329,16 +329,16 @@ function JobDetail({ job, onClose, onToggle, onRun }: {
             { label: 'Successes', value: String(job.successCount) },
             { label: 'Failures', value: String(job.failureCount) },
           ].map((s) => (
-            <div key={s.label} className="bg-gray-50 rounded-xl p-3">
-              <div className="text-[10px] text-gray-400">{s.label}</div>
-              <div className="text-sm font-semibold text-gray-800 mt-0.5">{s.value}</div>
+            <div key={s.label} className="bg-slate-50 rounded-xl p-3">
+              <div className="text-[11px] text-slate-400">{s.label}</div>
+              <div className="text-sm font-semibold text-slate-800 mt-0.5">{s.value}</div>
             </div>
           ))}
         </div>
 
         {/* Config */}
         <div className="space-y-2">
-          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Configuration</div>
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Configuration</div>
           {[
             { label: 'Skill', value: job.skillName },
             { label: 'Timeout', value: `${job.timeout}s` },
@@ -346,8 +346,8 @@ function JobDetail({ job, onClose, onToggle, onRun }: {
             { label: 'Created', value: new Date(job.createdAt).toLocaleDateString() },
           ].map((row) => (
             <div key={row.label} className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">{row.label}</span>
-              <span className="text-gray-700 font-medium">{row.value}</span>
+              <span className="text-slate-400">{row.label}</span>
+              <span className="text-slate-700 font-medium">{row.value}</span>
             </div>
           ))}
         </div>
@@ -356,16 +356,16 @@ function JobDetail({ job, onClose, onToggle, onRun }: {
         {job.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {job.tags.map((t) => (
-              <span key={t} className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">#{t}</span>
+              <span key={t} className="text-[11px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full">#{t}</span>
             ))}
           </div>
         )}
 
         {/* Logs */}
         <div>
-          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Recent Runs</div>
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Recent Runs</div>
           {job.logs.length === 0 ? (
-            <p className="text-xs text-gray-400">No runs yet</p>
+            <p className="text-xs text-slate-400">No runs yet</p>
           ) : (
             <div className="space-y-2">
               {job.logs.map((log) => (
@@ -381,13 +381,13 @@ function JobDetail({ job, onClose, onToggle, onRun }: {
                     }`}>
                       {log.status === 'success' ? '✓' : log.status === 'failed' ? '✗' : '●'} {log.status}
                     </span>
-                    <span className="text-[10px] text-gray-400">{relativeTime(log.startedAt)}</span>
+                    <span className="text-[11px] text-slate-400">{relativeTime(log.startedAt)}</span>
                   </div>
                   {log.durationMs && (
-                    <div className="text-[10px] text-gray-500 mb-1">{formatDuration(log.durationMs)}</div>
+                    <div className="text-[11px] text-slate-500 mb-1">{formatDuration(log.durationMs)}</div>
                   )}
-                  {log.output && <div className="text-[10px] text-gray-600 line-clamp-2">{log.output}</div>}
-                  {log.error && <div className="text-[10px] text-red-600 font-mono">{log.error}</div>}
+                  {log.output && <div className="text-[11px] text-slate-600 line-clamp-2">{log.output}</div>}
+                  {log.error && <div className="text-[11px] text-red-600 font-mono">{log.error}</div>}
                 </div>
               ))}
             </div>
@@ -439,35 +439,35 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-[540px] mx-4 flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">New Scheduled Job</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-900">New Scheduled Job</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg">×</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Job Name *</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Job Name *</label>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Daily Sprint Digest"
-                className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400"
+                className="w-full text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400"
                 data-testid="job-name-input" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Skill *</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Skill *</label>
               <input value={skillName} onChange={(e) => setSkillName(e.target.value)} placeholder="Sprint Digest Generator"
-                className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                className="w-full text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400" />
             </div>
           </div>
 
           {/* Schedule Type */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-2 block">Schedule Type</label>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">Schedule Type</label>
             <div className="grid grid-cols-4 gap-2">
               {(['cron', 'interval', 'event', 'one-time'] as ScheduleType[]).map((t) => (
                 <button key={t}
                   onClick={() => setScheduleType(t)}
                   className={`py-2 text-xs rounded-xl border transition-colors capitalize ${
-                    scheduleType === t ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    scheduleType === t ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600 hover:border-slate-400'
                   }`}
                 >
                   {t === 'cron' ? '⏰' : t === 'interval' ? '🔄' : t === 'event' ? '⚡' : '🎯'} {t}
@@ -479,14 +479,14 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
           {/* Schedule Config */}
           {scheduleType === 'cron' && (
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Cron Expression</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Cron Expression</label>
               <input value={cron} onChange={(e) => setCron(e.target.value)}
-                className="w-full text-sm font-mono px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400 mb-2"
+                className="w-full text-sm font-mono px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400 mb-2"
                 data-testid="cron-input" />
               <div className="flex flex-wrap gap-1">
                 {CRON_PRESETS.map((p) => (
                   <button key={p.value} onClick={() => setCron(p.value)}
-                    className="text-[10px] px-2 py-1 border border-gray-200 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors">
+                    className="text-[11px] px-2 py-1 border border-slate-200 rounded-lg text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-colors">
                     {p.label}
                   </button>
                 ))}
@@ -496,12 +496,12 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
 
           {scheduleType === 'interval' && (
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Interval</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Interval</label>
               <div className="flex gap-2">
                 <input type="number" value={intervalVal} onChange={(e) => setIntervalVal(e.target.value)}
-                  className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                  className="flex-1 text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400" />
                 <select value={intervalUnit} onChange={(e) => setIntervalUnit(e.target.value as 'minutes' | 'hours')}
-                  className="text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none bg-white">
+                  className="text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none bg-white">
                   <option value="minutes">Minutes</option>
                   <option value="hours">Hours</option>
                 </select>
@@ -511,9 +511,9 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
 
           {scheduleType === 'event' && (
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Event Trigger</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Event Trigger</label>
               <select value={eventTrigger} onChange={(e) => setEventTrigger(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none bg-white">
+                className="w-full text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none bg-white">
                 {EVENT_TRIGGERS.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
@@ -523,35 +523,35 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
 
           {scheduleType === 'one-time' && (
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Run At</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Run At</label>
               <input type="datetime-local" value={oneTimeAt} onChange={(e) => setOneTimeAt(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                className="w-full text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400" />
             </div>
           )}
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Timeout (sec)</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Timeout (sec)</label>
               <input type="number" value={timeout} onChange={(e) => setTimeout_(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                className="w-full text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Retries</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Retries</label>
               <input type="number" value={retries} onChange={(e) => setRetries(e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                className="w-full text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Tags</label>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Tags</label>
               <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="tag1, tag2"
-                className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                className="w-full text-sm px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-slate-400" />
             </div>
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="text-xs px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50">Cancel</button>
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+          <button onClick={onClose} className="text-xs px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50">Cancel</button>
           <button onClick={handleSave} disabled={!name.trim() || !skillName.trim()}
-            className="text-xs px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 disabled:opacity-40 transition-colors"
+            className="text-xs px-5 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 disabled:opacity-40 transition-colors"
             data-testid="save-job-btn">
             Create Job
           </button>
@@ -674,14 +674,14 @@ export function ExecutionScheduler() {
   return (
     <div className="h-full flex flex-col bg-white overflow-hidden" data-testid="execution-scheduler">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 flex-shrink-0">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100 flex-shrink-0">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Execution Scheduler</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Cron jobs, intervals, and event-driven triggers</p>
+          <h2 className="text-sm font-semibold text-slate-900">Execution Scheduler</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Cron jobs, intervals, and event-driven triggers</p>
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="text-xs px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 transition-colors"
+          className="text-xs px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition-colors"
           data-testid="new-job-btn"
         >
           + New Job
@@ -689,27 +689,27 @@ export function ExecutionScheduler() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-px bg-gray-100 border-b border-gray-100 flex-shrink-0">
+      <div className="grid grid-cols-4 gap-px bg-slate-100 border-b border-slate-100 flex-shrink-0">
         {[
-          { label: 'Total', value: stats.total, color: 'text-gray-700' },
+          { label: 'Total', value: stats.total, color: 'text-slate-700' },
           { label: 'Active', value: stats.active, color: 'text-emerald-600' },
           { label: 'Paused', value: stats.paused, color: 'text-amber-600' },
           { label: 'Failed', value: stats.failed, color: 'text-red-600' },
         ].map((s) => (
           <div key={s.label} className="bg-white px-5 py-3">
             <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-[10px] text-gray-400">{s.label}</div>
+            <div className="text-[11px] text-slate-400">{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filter bar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 flex-shrink-0">
         <div className="flex items-center gap-1">
           {(['all', 'active', 'paused', 'failed', 'pending'] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`text-[10px] px-2.5 py-1 rounded-lg capitalize transition-colors ${
-                filter === f ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+              className={`text-[11px] px-2.5 py-1 rounded-lg capitalize transition-colors ${
+                filter === f ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
               }`}
               data-testid={`filter-${f}`}>
               {f}
@@ -718,7 +718,7 @@ export function ExecutionScheduler() {
         </div>
         <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Search jobs…"
-          className="ml-auto text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none focus:border-gray-400 w-48"
+          className="ml-auto text-xs px-3 py-1.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 w-48"
           data-testid="job-search" />
       </div>
 
@@ -726,10 +726,10 @@ export function ExecutionScheduler() {
         {/* Job List */}
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
               <div className="text-4xl">⏰</div>
               <p className="text-sm">No scheduled jobs</p>
-              <button onClick={() => setShowNew(true)} className="text-xs px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700">
+              <button onClick={() => setShowNew(true)} className="text-xs px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-700">
                 Create first job
               </button>
             </div>
@@ -745,8 +745,8 @@ export function ExecutionScheduler() {
                     onClick={() => setSelectedJob(job)}
                     className={`flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all cursor-pointer ${
                       selectedJob?.id === job.id
-                        ? 'border-gray-300 bg-gray-50'
-                        : 'border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50/50'
+                        ? 'border-slate-300 bg-slate-50'
+                        : 'border-slate-100 hover:border-slate-200 bg-white hover:bg-slate-50/50'
                     }`}
                     data-testid={`job-row-${job.id}`}
                   >
@@ -755,17 +755,17 @@ export function ExecutionScheduler() {
                       isRunning ? 'bg-blue-500 animate-pulse' :
                       job.status === 'active' ? 'bg-emerald-400' :
                       job.status === 'paused' ? 'bg-amber-400' :
-                      job.status === 'failed' ? 'bg-red-400' : 'bg-gray-300'
+                      job.status === 'failed' ? 'bg-red-400' : 'bg-slate-300'
                     }`} />
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-gray-800 truncate">{job.name}</span>
+                        <span className="text-xs font-medium text-slate-800 truncate">{job.name}</span>
                         <ScheduleTypeBadge type={job.scheduleType} />
-                        {isRunning && <span className="text-[9px] text-blue-500 animate-pulse">running…</span>}
+                        {isRunning && <span className="text-[11px] text-blue-500 animate-pulse">running…</span>}
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                      <div className="flex items-center gap-3 text-[11px] text-slate-400">
                         <span>{job.skillName}</span>
                         {job.scheduleType === 'cron' && <span className="font-mono">{job.cronExpression}</span>}
                         {job.scheduleType === 'event' && <span>{job.eventTrigger}</span>}
@@ -774,9 +774,9 @@ export function ExecutionScheduler() {
                     </div>
 
                     {/* Metrics */}
-                    <div className="flex items-center gap-4 text-[10px] text-gray-400 flex-shrink-0">
+                    <div className="flex items-center gap-4 text-[11px] text-slate-400 flex-shrink-0">
                       <div className="text-right">
-                        <div className="font-mono text-gray-600">{job.runCount}</div>
+                        <div className="font-mono text-slate-600">{job.runCount}</div>
                         <div>runs</div>
                       </div>
                       <div className="text-right">
@@ -787,7 +787,7 @@ export function ExecutionScheduler() {
                       </div>
                       {job.lastRun && (
                         <div className="text-right">
-                          <div className="text-gray-500">{relativeTime(job.lastRun)}</div>
+                          <div className="text-slate-500">{relativeTime(job.lastRun)}</div>
                           <div>last run</div>
                         </div>
                       )}
@@ -798,21 +798,21 @@ export function ExecutionScheduler() {
                       <button
                         onClick={() => handleRunNow(job.id)}
                         disabled={isRunning}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 transition-colors"
                         title="Run now"
                       >
                         {isRunning ? <span className="animate-spin text-xs">↻</span> : '▶'}
                       </button>
                       <button
                         onClick={() => handleToggle(job.id)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                         title={job.status === 'active' ? 'Pause' : 'Resume'}
                       >
                         {job.status === 'active' ? '⏸' : '▶'}
                       </button>
                       <button
                         onClick={() => handleDelete(job.id)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                         title="Delete"
                       >
                         🗑

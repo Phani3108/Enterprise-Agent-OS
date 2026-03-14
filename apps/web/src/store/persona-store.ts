@@ -12,17 +12,9 @@ import { create } from 'zustand';
 // Types
 // ---------------------------------------------------------------------------
 
-export type EngineeringSection =
-  | 'command-center'
-  | 'skills'
-  | 'timeline'
-  | 'integrations';
+export type EngineeringSection = 'skills' | 'outputs' | 'programs' | 'memory';
 
-export type ProductSection =
-  | 'command-center'
-  | 'skills'
-  | 'timeline'
-  | 'integrations';
+export type ProductSection = 'skills' | 'outputs' | 'programs' | 'memory';
 
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'approval_required';
 
@@ -71,7 +63,7 @@ interface EngineeringState {
 }
 
 export const useEngineeringStore = create<EngineeringState>((set) => ({
-  activeSection: 'command-center',
+  activeSection: 'skills',
   setActiveSection: (section) => set({ activeSection: section }),
 
   selectedSkillId: null,
@@ -127,7 +119,7 @@ interface ProductState {
 }
 
 export const useProductStore = create<ProductState>((set) => ({
-  activeSection: 'command-center',
+  activeSection: 'skills',
   setActiveSection: (section) => set({ activeSection: section }),
 
   selectedSkillId: null,

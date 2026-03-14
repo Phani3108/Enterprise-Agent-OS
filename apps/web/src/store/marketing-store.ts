@@ -11,26 +11,7 @@ import { create } from 'zustand';
 // Types
 // ---------------------------------------------------------------------------
 
-export type MarketingSection =
-  | 'command-center'
-  | 'campaigns'
-  | 'content-studio'
-  | 'creative-studio'
-  | 'research-hub'
-  | 'analytics-hub'
-  | 'website-seo'
-  | 'events'
-  | 'sales-enablement'
-  | 'skills'
-  | 'workflows'
-  | 'prompts'
-  | 'integrations'
-  | 'timeline'
-  | 'assets'
-  | 'approvals'
-  | 'pipeline'
-  | 'community'
-  | 'projects';
+export type MarketingSection = 'skills' | 'outputs' | 'programs' | 'memory';
 
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'approval_required';
 
@@ -98,7 +79,7 @@ interface MarketingState {
 // ---------------------------------------------------------------------------
 
 export const useMarketingStore = create<MarketingState>((set) => ({
-  activeSection: 'command-center',
+  activeSection: 'skills',
   setActiveSection: (section) => set({ activeSection: section }),
 
   activeExecution: null,

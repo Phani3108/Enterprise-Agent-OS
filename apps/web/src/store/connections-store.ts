@@ -457,6 +457,100 @@ export const CONNECTOR_CATALOG: ConnectorDef[] = [
     sandboxAvailable: true,
     personas: ['marketing'],
   },
+  // Marketing-specific connectors
+  {
+    id: 'google-ads',
+    name: 'Google Ads',
+    description: 'Search, display, and video ad campaigns via Google Ads API.',
+    category: 'crm-ads',
+    authType: 'oauth',
+    icon: 'G',
+    color: 'bg-blue-500',
+    capabilities: ['ads.create', 'ads.manage', 'ads.report'],
+    requiredFields: [
+      { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'OAuth token', required: true },
+      { key: 'customerId', label: 'Customer ID', type: 'text', placeholder: '123-456-7890', required: true },
+    ],
+    sandboxAvailable: true,
+    personas: ['marketing'],
+  },
+  {
+    id: 'meta-ads',
+    name: 'Meta Ads',
+    description: 'Facebook & Instagram ad campaigns, audiences, and reporting.',
+    category: 'crm-ads',
+    authType: 'oauth',
+    icon: 'M',
+    color: 'bg-blue-600',
+    capabilities: ['ads.create', 'ads.manage', 'ads.report'],
+    requiredFields: [
+      { key: 'accessToken', label: 'Access Token', type: 'password', placeholder: 'OAuth token', required: true },
+      { key: 'adAccountId', label: 'Ad Account ID', type: 'text', placeholder: 'act_123456', required: true },
+    ],
+    sandboxAvailable: true,
+    personas: ['marketing'],
+  },
+  {
+    id: 'wordpress',
+    name: 'WordPress',
+    description: 'Publish and manage posts, pages, and media on WordPress sites.',
+    category: 'cms',
+    authType: 'api-key',
+    icon: 'W',
+    color: 'bg-blue-700',
+    capabilities: ['content.publish', 'content.manage', 'media.upload'],
+    requiredFields: [
+      { key: 'siteUrl', label: 'Site URL', type: 'text', placeholder: 'https://yoursite.com', required: true },
+      { key: 'apiKey', label: 'Application Password', type: 'password', placeholder: 'xxxx xxxx xxxx', required: true },
+    ],
+    sandboxAvailable: false,
+    personas: ['marketing'],
+  },
+  {
+    id: 'ahrefs',
+    name: 'Ahrefs',
+    description: 'Backlink analysis, keyword research, and SEO auditing.',
+    category: 'data',
+    authType: 'api-key',
+    icon: 'Ah',
+    color: 'bg-orange-600',
+    capabilities: ['seo.backlinks', 'seo.keywords', 'seo.audit'],
+    requiredFields: [
+      { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'Your Ahrefs API key', required: true },
+    ],
+    sandboxAvailable: false,
+    personas: ['marketing'],
+  },
+  {
+    id: 'semrush',
+    name: 'Semrush',
+    description: 'Competitive analysis, keyword tracking, and content optimization.',
+    category: 'data',
+    authType: 'api-key',
+    icon: 'S',
+    color: 'bg-orange-500',
+    capabilities: ['seo.keywords', 'seo.competitive', 'content.optimize'],
+    requiredFields: [
+      { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'Your Semrush API key', required: true },
+    ],
+    sandboxAvailable: false,
+    personas: ['marketing'],
+  },
+  {
+    id: 'dall-e',
+    name: 'DALL-E',
+    description: 'AI image generation for marketing creatives and illustrations.',
+    category: 'ai-models',
+    authType: 'api-key',
+    icon: 'D',
+    color: 'bg-green-500',
+    capabilities: ['image.generate', 'image.edit'],
+    requiredFields: [
+      { key: 'apiKey', label: 'OpenAI API Key', type: 'password', placeholder: 'sk-...', required: true },
+    ],
+    sandboxAvailable: true,
+    personas: ['marketing', 'product'],
+  },
 ];
 
 export const CATEGORY_META: Record<ConnectorCategory, { label: string; icon: string; description: string }> = {
@@ -481,9 +575,50 @@ interface ConnectionsState {
   setConnectionStatus: (connectorId: string, state: Partial<ConnectorState>) => void;
   getStatus: (connectorId: string) => ConnectionStatus;
   getConnectedCount: () => number;
+  getConnectedIds: () => string[];
+  /** Check if a tool is connected by connector ID OR display name (e.g. 'anthropic' or 'Claude') */
+  isToolConnected: (toolNameOrId: string) => boolean;
 }
 
-const DEFAULT_CONNECTED = new Set(['anthropic']); // Only Claude pre-connected by default
+// Build a lookup from display-name → connector-id (e.g. 'Claude' → 'anthropic', 'GitHub' → 'github')
+const NAME_TO_ID: Record<string, string> = {};
+CONNECTOR_CATALOG.forEach(c => {
+  NAME_TO_ID[c.id.toLowerCase()] = c.id;
+  NAME_TO_ID[c.name.toLowerCase()] = c.id;
+  // Also map common short names
+  const short = c.name.replace(/\s+(AI|Ads)?$/i, '').toLowerCase();
+  if (short !== c.name.toLowerCase()) NAME_TO_ID[short] = c.id;
+});
+// Manual aliases for common tool references in skill definitions
+NAME_TO_ID['claude'] = 'anthropic';
+NAME_TO_ID['anthropic claude'] = 'anthropic';
+NAME_TO_ID['linkedin ads'] = 'linkedin-ads';
+NAME_TO_ID['linkedin'] = 'linkedin-ads';
+NAME_TO_ID['google drive'] = 'google-drive';
+NAME_TO_ID['gdrive'] = 'google-drive';
+NAME_TO_ID['google analytics'] = 'google-analytics';
+NAME_TO_ID['google analytics 4'] = 'google-analytics';
+NAME_TO_ID['ms teams'] = 'ms-teams';
+NAME_TO_ID['microsoft teams'] = 'ms-teams';
+NAME_TO_ID['teams'] = 'ms-teams';
+NAME_TO_ID['perplexity'] = 'perplexity';
+NAME_TO_ID['perplexity ai'] = 'perplexity';
+NAME_TO_ID['ga4'] = 'google-analytics';
+NAME_TO_ID['google ads'] = 'google-ads';
+NAME_TO_ID['meta ads'] = 'meta-ads';
+NAME_TO_ID['facebook ads'] = 'meta-ads';
+NAME_TO_ID['dall-e'] = 'dall-e';
+NAME_TO_ID['dalle'] = 'dall-e';
+NAME_TO_ID['ahrefs'] = 'ahrefs';
+NAME_TO_ID['semrush'] = 'semrush';
+NAME_TO_ID['wordpress'] = 'wordpress';
+
+/** Resolve a tool name or ID to the canonical connector ID */
+export function resolveConnectorId(toolNameOrId: string): string | undefined {
+  return NAME_TO_ID[toolNameOrId.toLowerCase()];
+}
+
+const DEFAULT_CONNECTED = new Set<string>([]); // Nothing pre-connected — user must connect tools
 
 export const useConnectionsStore = create<ConnectionsState>((set, get) => ({
   connections: Object.fromEntries(
@@ -515,5 +650,22 @@ export const useConnectionsStore = create<ConnectionsState>((set, get) => ({
 
   getConnectedCount: () => {
     return Object.values(get().connections).filter(c => c.status === 'connected' || c.status === 'sandbox').length;
+  },
+
+  getConnectedIds: () => {
+    return Object.entries(get().connections)
+      .filter(([, c]) => c.status === 'connected' || c.status === 'sandbox')
+      .map(([id]) => id);
+  },
+
+  isToolConnected: (toolNameOrId: string) => {
+    // Try direct ID match first
+    const direct = get().connections[toolNameOrId];
+    if (direct) return direct.status === 'connected' || direct.status === 'sandbox';
+    // Try name → ID resolution
+    const resolved = resolveConnectorId(toolNameOrId);
+    if (!resolved) return false;
+    const conn = get().connections[resolved];
+    return conn ? (conn.status === 'connected' || conn.status === 'sandbox') : false;
   },
 }));

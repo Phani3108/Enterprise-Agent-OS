@@ -6,7 +6,8 @@
  */
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { getPrompts, type PromptEntry } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,7 +44,8 @@ export interface PersonaWorkflowFormProps {
   tools: SkillToolRef[];           // tool strip (required + optional)
   accentClass?: string;            // Tailwind bg class for Run button, e.g. 'bg-slate-900'
   accentHoverClass?: string;       // hover variant
-  onExecute: (inputs: Record<string, string>, simulate: boolean) => void;
+  persona?: 'engineering' | 'product' | 'marketing';
+  onExecute: (inputs: Record<string, string>, simulate: boolean, customPrompt?: string, modelId?: string) => void;
   onCancel: () => void;
   executing: boolean;
 }
@@ -295,7 +297,7 @@ function FileField({
         <span className="text-xs text-slate-400">
           {files.length > 0 ? `${files.length} file(s) selected` : 'Click to upload or drag & drop'}
         </span>
-        <span className="text-[10px] text-slate-300 mt-0.5">{field.accept ?? 'Any file type'}</span>
+        <span className="text-[11px] text-slate-300 mt-0.5">{field.accept ?? 'Any file type'}</span>
         <input
           type="file"
           multiple={field.multiple}
@@ -344,7 +346,7 @@ function RunModeSelector({ mode, onChange }: { mode: RunMode; onChange: (m: RunM
         >
           <span className="text-base leading-none">{m.icon}</span>
           <span className="text-xs font-semibold">{m.label}</span>
-          <span className={`text-[10px] ${mode === m.id ? 'text-slate-300' : 'text-slate-400'}`}>{m.desc}</span>
+          <span className={`text-[11px] ${mode === m.id ? 'text-slate-300' : 'text-slate-400'}`}>{m.desc}</span>
         </button>
       ))}
     </div>
@@ -359,7 +361,7 @@ function ToolStrip({ tools }: { tools: SkillToolRef[] }) {
   if (tools.length === 0) return null;
   return (
     <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Required Tools</p>
+      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Required Tools</p>
       <div className="flex flex-wrap gap-2">
         {tools.map((tool) => (
           <div
@@ -478,6 +480,85 @@ function FieldRenderer({
 }
 
 // ---------------------------------------------------------------------------
+// LLM Model selector
+// ---------------------------------------------------------------------------
+
+const LLM_MODELS = [
+  { id: 'claude-sonnet-4-6-20251001', label: 'Claude Sonnet 4.6', provider: 'Anthropic', icon: '🟣' },
+  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', provider: 'Anthropic', icon: '🟣' },
+  { id: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', provider: 'Anthropic', icon: '🟣' },
+  { id: 'claude-opus-4-20250514', label: 'Claude Opus 4', provider: 'Anthropic', icon: '🟣' },
+];
+
+function ModelSelector({ modelId, onChange }: { modelId: string; onChange: (id: string) => void }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-slate-700 mb-1.5">AI Model</p>
+      <select
+        value={modelId}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
+      >
+        {LLM_MODELS.map((m) => (
+          <option key={m.id} value={m.id}>{m.icon} {m.label} ({m.provider})</option>
+        ))}
+      </select>
+      <p className="text-[11px] text-slate-400 mt-1">Select which AI model powers this skill execution</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Prompt selector
+// ---------------------------------------------------------------------------
+
+function PromptSelector({
+  prompts,
+  loading,
+  selectedId,
+  onSelect,
+}: {
+  prompts: PromptEntry[];
+  loading: boolean;
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  if (loading) {
+    return (
+      <div>
+        <p className="text-xs font-semibold text-slate-700 mb-1.5">Prompt Template</p>
+        <div className="px-3 py-2 text-sm text-slate-400 border border-slate-200 rounded-lg">Loading prompts…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-slate-700 mb-1.5">Prompt Template <span className="text-slate-400 font-normal">(optional)</span></p>
+      <select
+        value={selectedId}
+        onChange={(e) => onSelect(e.target.value)}
+        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
+      >
+        <option value="">No prompt — use default</option>
+        {prompts.map((p) => (
+          <option key={p.id} value={p.id}>📝 {p.title}</option>
+        ))}
+      </select>
+      {selectedId && (
+        <div className="mt-2 p-2.5 border border-violet-200 bg-violet-50/50 rounded-lg">
+          <p className="text-[11px] font-medium text-violet-600 mb-1">Prompt Preview</p>
+          <p className="text-xs text-slate-600 whitespace-pre-wrap line-clamp-4">
+            {prompts.find((p) => p.id === selectedId)?.content ?? ''}
+          </p>
+        </div>
+      )}
+      <p className="text-[11px] text-slate-400 mt-1">Pick a prompt from the library to inject into the AI execution</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main form component
 // ---------------------------------------------------------------------------
 
@@ -486,6 +567,7 @@ export function PersonaWorkflowForm({
   tools,
   accentClass = 'bg-slate-900',
   accentHoverClass = 'hover:bg-slate-800',
+  persona,
   onExecute,
   onCancel,
   executing,
@@ -493,6 +575,32 @@ export function PersonaWorkflowForm({
   const [values, setValues] = useState<FormValues>({});
   const [runMode, setRunMode] = useState<RunMode>('live');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState(LLM_MODELS[0]!.id);
+  const [selectedPromptId, setSelectedPromptId] = useState('');
+  const [prompts, setPrompts] = useState<PromptEntry[]>([]);
+  const [promptsLoading, setPromptsLoading] = useState(true);
+
+  // Fetch prompts on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getPrompts(persona ? { category: persona } : undefined);
+        if (!cancelled) {
+          setPrompts(data.prompts ?? []);
+        }
+      } catch {
+        // Fallback: try without filter
+        try {
+          const data = await getPrompts();
+          if (!cancelled) setPrompts(data.prompts ?? []);
+        } catch { /* API unreachable — prompts empty */ }
+      } finally {
+        if (!cancelled) setPromptsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [persona]);
 
   const basicFields = fields.filter((f) => f.section === 'basic');
   const advancedFields = fields.filter((f) => f.section === 'advanced');
@@ -515,7 +623,10 @@ export function PersonaWorkflowForm({
     }
 
     const serialized = serializeValues(values);
-    onExecute(serialized, runMode === 'sandbox');
+    const promptContent = selectedPromptId
+      ? prompts.find((p) => p.id === selectedPromptId)?.content
+      : undefined;
+    onExecute(serialized, runMode === 'sandbox', promptContent, selectedModelId);
   };
 
   return (
@@ -543,7 +654,7 @@ export function PersonaWorkflowForm({
             onClick={() => setShowAdvanced(!showAdvanced)}
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 font-medium transition-colors"
           >
-            <span className="text-[10px]">{showAdvanced ? '▼' : '▶'}</span>
+            <span className="text-[11px]">{showAdvanced ? '▼' : '▶'}</span>
             {showAdvanced ? 'Hide advanced options' : `Show advanced options (${advancedFields.length})`}
           </button>
 
@@ -561,6 +672,17 @@ export function PersonaWorkflowForm({
           )}
         </div>
       )}
+
+      {/* Prompt template selector */}
+      <PromptSelector
+        prompts={prompts}
+        loading={promptsLoading}
+        selectedId={selectedPromptId}
+        onSelect={setSelectedPromptId}
+      />
+
+      {/* AI Model selector */}
+      <ModelSelector modelId={selectedModelId} onChange={setSelectedModelId} />
 
       {/* Run mode */}
       <div>

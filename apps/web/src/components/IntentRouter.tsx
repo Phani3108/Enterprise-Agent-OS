@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { runMarketplaceSkill, type MarketplaceSkill } from '../lib/api';
+import { useEAOSStore } from '../store/eaos-store';
 
 const GATEWAY = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
 
@@ -77,10 +78,13 @@ export default function IntentRouter({
     return () => clearTimeout(t);
   }, [query, routeIntent]);
 
+  const setActiveExecutionId = useEAOSStore((s) => s.setActiveExecutionId);
+
   const handleRun = async (skill: MarketplaceSkill) => {
     setExecuting(true);
+    setActiveExecutionId(`skill-${skill.id}`);
     try {
-      const res = await runMarketplaceSkill(skill.id);
+      await runMarketplaceSkill(skill.id);
       onRunSkill?.(skill);
       setResult(null);
       setQuery('');
@@ -88,6 +92,7 @@ export default function IntentRouter({
       // show error in future
     } finally {
       setExecuting(false);
+      setActiveExecutionId(null);
     }
   };
 
@@ -99,15 +104,15 @@ export default function IntentRouter({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-transparent"
         />
         {loading && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">Detecting...</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400">Detecting...</span>
         )}
       </div>
 
       {result && (
-        <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
+        <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm">
           <div className="flex items-start gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
@@ -117,22 +122,22 @@ export default function IntentRouter({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">{result.personaName}</span>
-                <span className="text-xs text-gray-400">→</span>
-                <span className="text-sm font-semibold text-gray-900">{result.skill.name}</span>
-                <span className="text-[10px] text-gray-400">{(result.confidence * 100).toFixed(0)}% match</span>
+                <span className="text-xs text-slate-500">{result.personaName}</span>
+                <span className="text-xs text-slate-400">→</span>
+                <span className="text-sm font-semibold text-slate-900">{result.skill.name}</span>
+                <span className="text-[11px] text-slate-400">{(result.confidence * 100).toFixed(0)}% match</span>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">{result.skill.description}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{result.skill.description}</p>
               <div className="flex items-center gap-2 mt-2">
                 <button
                   onClick={() => handleRun(result.skill)}
                   disabled={executing}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
                 >
                   {executing ? 'Running...' : 'Run Skill'}
                 </button>
                 {result.suggestedAlternatives.length > 0 && (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[11px] text-slate-400">
                     Or: {result.suggestedAlternatives.map((s) => s.name).join(', ')}
                   </span>
                 )}
@@ -144,12 +149,12 @@ export default function IntentRouter({
 
       {!query.trim() && suggestions.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <span className="text-[10px] text-gray-400 self-center">Try:</span>
+          <span className="text-[11px] text-slate-400 self-center">Try:</span>
           {suggestions.slice(0, 5).map((s) => (
             <button
               key={s.id}
               onClick={() => setQuery(s.name)}
-              className="px-2 py-1 rounded-lg text-[10px] border border-gray-200 text-gray-600 hover:bg-gray-50"
+              className="px-2 py-1 rounded-lg text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50"
             >
               {s.name}
             </button>

@@ -9,25 +9,10 @@
 import { useMarketingStore, type MarketingSection } from '../../store/marketing-store';
 
 const SECTIONS: { id: MarketingSection; label: string; icon: string; short?: string }[] = [
-  { id: 'command-center', label: 'Command Center', icon: '⌘', short: 'Command' },
-  { id: 'campaigns', label: 'Campaigns', icon: '📡', short: 'Campaigns' },
-  { id: 'content-studio', label: 'Content Studio', icon: '✍️', short: 'Content' },
-  { id: 'creative-studio', label: 'Creative Studio', icon: '🎨', short: 'Creative' },
-  { id: 'research-hub', label: 'Research Hub', icon: '🔍', short: 'Research' },
-  { id: 'analytics-hub', label: 'Analytics Hub', icon: '📊', short: 'Analytics' },
-  { id: 'website-seo', label: 'Website / SEO', icon: '🔗', short: 'SEO' },
-  { id: 'events', label: 'Events', icon: '🎪', short: 'Events' },
-  { id: 'sales-enablement', label: 'Sales Enablement', icon: '⚔️', short: 'Sales' },
-  { id: 'workflows', label: 'Workflows', icon: '⚡', short: 'Workflows' },
-  { id: 'skills', label: 'Skills', icon: '🔧', short: 'Skills' },
-  { id: 'prompts', label: 'Prompt Library', icon: '✨', short: 'Prompts' },
-  { id: 'integrations', label: 'Integrations', icon: '🔌', short: 'Tools' },
-  { id: 'timeline', label: 'Execution Timeline', icon: '📋', short: 'Timeline' },
-  { id: 'pipeline', label: 'Campaign Pipeline', icon: '🔄', short: 'Pipeline' },
-  { id: 'projects', label: 'Projects & Graph', icon: '📊', short: 'Projects' },
-  { id: 'community', label: 'Community', icon: '👥', short: 'Community' },
-  { id: 'assets', label: 'Assets', icon: '📁', short: 'Assets' },
-  { id: 'approvals', label: 'Approvals', icon: '✅', short: 'Approvals' },
+  { id: 'skills',   label: 'Skills',   icon: '⚡', short: 'Skills' },
+  { id: 'outputs',  label: 'Outputs',  icon: '📦', short: 'Outputs' },
+  { id: 'programs', label: 'Programs', icon: '📋', short: 'Programs' },
+  { id: 'memory',   label: 'Memory',   icon: '🧠', short: 'Memory' },
 ];
 
 export function MarketingModuleLayout({ children }: { children: React.ReactNode }) {
