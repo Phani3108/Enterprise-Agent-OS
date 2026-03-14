@@ -16,40 +16,15 @@ https://github.com/user-attachments/assets/agentos-simulation-demo.mp4
 
 ## Screenshots
 
-### Command Center
-Mission control — live agent stats, recent executions, activity feed, platform health, and quick-action shortcuts.
+### Platform Overview
+**Command Center** — Mission control with live agent stats, recent executions, activity feed, and platform health. **Personas** — Browse AI personas (Marketing, Engineering, Product) scoped by domain. **Agents** — Monitor 12+ autonomous workers with status, model, token usage, and success rates. **Workflow Builder** — Design multi-step DAG workflows chaining agents, skills, and tools with conditional branching.
 
-![Command Center](docs/screenshots/01-home-command-center.png)
+![Platform Overview](docs/screenshots/01-home-command-center.png)
 
-### Personas
-Browse AI personas (Marketing, Engineering, Product) and their associated skills, tools, and agents. Each persona scopes the platform to its domain.
+### Connections, Prompts & Observability
+**Connections & Tools** — Manage integrations (HubSpot, Jira, GitHub, Slack, Salesforce) with auth types, capability mapping, and usage stats. **Prompt Library** — Fork, pin, and upvote curated AI prompts filtered by persona and category. **Observability** — Live execution traces with token usage, cost, latency, and confidence metrics per execution.
 
-![Personas](docs/screenshots/02-personas.png)
-
-### Agents
-Monitor all autonomous AI agents across personas — status, model, token usage, last action, and success rates.
-
-![Agents](docs/screenshots/05-agents.png)
-
-### Workflow Builder
-Design multi-step DAG workflows chaining agents, skills, and tools. Visual canvas with node connections and conditional branching.
-
-![Workflow Builder](docs/screenshots/06-workflows.png)
-
-### Connections & Tools Registry
-Manage external tool integrations (HubSpot, Jira, GitHub, Slack, Salesforce, etc.) with auth types, capability mapping, latency, and usage statistics.
-
-![Tools Registry](docs/screenshots/07-tools-registry.png)
-
-### Prompt Library
-Browse, fork, pin, and upvote curated AI prompts. Filter by persona, category, or tags. Submit recommendations and vote on community suggestions.
-
-![Prompt Library](docs/screenshots/08-prompt-library.png)
-
-### Observability
-Live execution traces — every LLM call, tool invocation, and step. Token usage, cost, latency, and confidence metrics per execution.
-
-![Observability](docs/screenshots/14-observability.png)
+![Connections & Integrations](docs/screenshots/07-tools-registry.png)
 
 ---
 
@@ -59,36 +34,18 @@ Each persona hub provides a unified workspace with **Skills → Outputs → Prog
 
 ### Engineering Hub
 
+10 skills across Code Review, Testing, Incident Response, and Documentation. Adaptive skill forms with file upload, severity selectors, and conditional fields. Generated outputs include reviews, test suites, and RCA drafts — with simulation mode for zero-cost dry runs.
+
 <table>
 <tr>
 <td width="50%">
-
-**Skills** — 10 engineering skills across Code Review, Testing, Incident Response, and Documentation.
 
 ![Engineering Skills](docs/screenshots/engineering-01-skills.png)
 
 </td>
 <td width="50%">
 
-**Outputs** — Generated reviews, test suites, docs, and RCA drafts with export actions and quality metrics.
-
 ![Engineering Outputs](docs/screenshots/engineering-02-outputs.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**Skill Form** — Adaptive inputs, file upload, severity selectors, conditional fields, and tool indicators.
-
-![Engineering Skill Form](docs/screenshots/engineering-05-skill-form.png)
-
-</td>
-<td width="50%">
-
-**Simulation** — Dry-run execution without real tool connections. Full pipeline, zero cost, no side effects.
-
-![Engineering Simulation](docs/screenshots/engineering-06-simulation-mode.png)
 
 </td>
 </tr>
@@ -96,36 +53,18 @@ Each persona hub provides a unified workspace with **Skills → Outputs → Prog
 
 ### Product Hub
 
+PRD Generator, Jira Epic Writer, User Story Builder, Roadmap Planner, and more. Tags for success metrics and constraints, toggle Jira push and Confluence drafts. Outputs include PRDs, user stories, and roadmaps — with simulation mode for mock generation without API calls.
+
 <table>
 <tr>
 <td width="50%">
-
-**Skills** — PRD Generator, Jira Epic Writer, User Story Builder, Roadmap Planner, and more.
 
 ![Product Skills](docs/screenshots/product-01-skills.png)
 
 </td>
 <td width="50%">
 
-**Outputs** — Generated PRDs, user stories, roadmaps, and release notes with Jira/Confluence push.
-
 ![Product Outputs](docs/screenshots/product-02-outputs.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**Skill Form** — Tags for success metrics and constraints. Toggle Jira push and Confluence drafts.
-
-![Product Skill Form](docs/screenshots/product-05-skill-form.png)
-
-</td>
-<td width="50%">
-
-**Simulation** — Generate mock PRDs, user stories, and roadmaps without API calls.
-
-![Product Simulation](docs/screenshots/product-06-simulation-mode.png)
 
 </td>
 </tr>
@@ -133,36 +72,18 @@ Each persona hub provides a unified workspace with **Skills → Outputs → Prog
 
 ### Marketing Hub
 
+30 workflows across Campaign, Content, Creative, Event, Research, and Analytics. Audience targeting, channel selection, budget allocation, and content parameters. Outputs include campaign assets, analytics reports, and creative briefs — with simulation mode for safe mock generation.
+
 <table>
 <tr>
 <td width="50%">
-
-**Skills** — 30 marketing workflows across Campaign, Content, Creative, Event, Research, and Analytics.
 
 ![Marketing Skills](docs/screenshots/marketing-01-skills.png)
 
 </td>
 <td width="50%">
 
-**Outputs** — Campaign assets, content drafts, analytics reports, and creative briefs with export.
-
 ![Marketing Outputs](docs/screenshots/marketing-02-outputs.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**Skill Form** — Audience targeting, channel selection, budget allocation, and content parameters.
-
-![Marketing Skill Form](docs/screenshots/marketing-05-skill-form.png)
-
-</td>
-<td width="50%">
-
-**Simulation** — Simulate campaigns — mock assets, analytics, and performance projections safely.
-
-![Marketing Simulation](docs/screenshots/marketing-06-simulation-mode.png)
 
 </td>
 </tr>
