@@ -16,8 +16,8 @@ https://github.com/user-attachments/assets/agentos-simulation-demo.mp4
 
 ## Screenshots
 
-### Command Center (Home)
-Mission control dashboard — live agent stats, recent executions, agent activity feed, platform health, and quick-action shortcuts. The OS home screen.
+### Command Center
+Mission control — live agent stats, recent executions, activity feed, platform health, and quick-action shortcuts.
 
 ![Command Center](docs/screenshots/01-home-command-center.png)
 
@@ -26,13 +26,36 @@ Browse AI personas (Marketing, Engineering, Product) and their associated skills
 
 ![Personas](docs/screenshots/02-personas.png)
 
+### Agents
+Monitor all autonomous AI agents across personas — status, model, token usage, last action, and success rates.
+
+![Agents](docs/screenshots/05-agents.png)
+
+### Workflow Builder
+Design multi-step DAG workflows chaining agents, skills, and tools. Visual canvas with node connections and conditional branching.
+
+![Workflow Builder](docs/screenshots/06-workflows.png)
+
+### Connections & Tools Registry
+Manage external tool integrations (HubSpot, Jira, GitHub, Slack, Salesforce, etc.) with auth types, capability mapping, latency, and usage statistics.
+
+![Tools Registry](docs/screenshots/07-tools-registry.png)
+
+### Prompt Library
+Browse, fork, pin, and upvote curated AI prompts. Filter by persona, category, or tags. Submit recommendations and vote on community suggestions.
+
+![Prompt Library](docs/screenshots/08-prompt-library.png)
+
+### Observability
+Live execution traces — every LLM call, tool invocation, and step. Token usage, cost, latency, and confidence metrics per execution.
+
+![Observability](docs/screenshots/14-observability.png)
+
 ---
 
-## Persona Hubs — Carousel
+## Persona Hubs
 
-Each persona hub provides a unified workspace with **Skills → Outputs → Programs → Memory** tabs, a skill form with simulation mode, and a full execution pipeline.
-
----
+Each persona hub provides a unified workspace with **Skills → Outputs → Programs → Memory** tabs, a skill configuration form with simulation mode, and a full execution pipeline.
 
 ### Engineering Hub
 
@@ -40,16 +63,14 @@ Each persona hub provides a unified workspace with **Skills → Outputs → Prog
 <tr>
 <td width="50%">
 
-**1. Skills Dashboard**
-Browse 10 engineering skills across Code Review, Testing, Incident Response, and Documentation clusters.
+**Skills** — 10 engineering skills across Code Review, Testing, Incident Response, and Documentation.
 
 ![Engineering Skills](docs/screenshots/engineering-01-skills.png)
 
 </td>
 <td width="50%">
 
-**2. Execution Outputs**
-Review generated outputs — PRDs, reviews, test suites, docs — with export actions and quality metrics.
+**Outputs** — Generated reviews, test suites, docs, and RCA drafts with export actions and quality metrics.
 
 ![Engineering Outputs](docs/screenshots/engineering-02-outputs.png)
 
@@ -58,34 +79,14 @@ Review generated outputs — PRDs, reviews, test suites, docs — with export ac
 <tr>
 <td width="50%">
 
-**3. Program Management**
-Track engineering programs across sprints — backlog items, milestones, team velocity, and deliverables.
-
-![Engineering Programs](docs/screenshots/engineering-03-programs.png)
-
-</td>
-<td width="50%">
-
-**4. Memory Graph**
-Agent memory — past executions, learned patterns, context retention, and knowledge persistence.
-
-![Engineering Memory](docs/screenshots/engineering-04-memory.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**5. Skill Configuration Form**
-Smart adaptive forms — file upload, severity selectors, conditional fields, and required tool indicators.
+**Skill Form** — Adaptive inputs, file upload, severity selectors, conditional fields, and tool indicators.
 
 ![Engineering Skill Form](docs/screenshots/engineering-05-skill-form.png)
 
 </td>
 <td width="50%">
 
-**6. Simulation Mode**
-Toggle simulation mode to run skills without real tool connections — safe dry-run for testing workflows.
+**Simulation** — Dry-run execution without real tool connections. Full pipeline, zero cost, no side effects.
 
 ![Engineering Simulation](docs/screenshots/engineering-06-simulation-mode.png)
 
@@ -93,24 +94,20 @@ Toggle simulation mode to run skills without real tool connections — safe dry-
 </tr>
 </table>
 
----
-
 ### Product Hub
 
 <table>
 <tr>
 <td width="50%">
 
-**1. Skills Dashboard**
-10 product skills — PRD Generator, Jira Epic Writer, User Story Builder, Roadmap Planner, and more.
+**Skills** — PRD Generator, Jira Epic Writer, User Story Builder, Roadmap Planner, and more.
 
 ![Product Skills](docs/screenshots/product-01-skills.png)
 
 </td>
 <td width="50%">
 
-**2. Execution Outputs**
-Generated PRDs, user stories, roadmaps, and release notes — with Jira and Confluence push integration.
+**Outputs** — Generated PRDs, user stories, roadmaps, and release notes with Jira/Confluence push.
 
 ![Product Outputs](docs/screenshots/product-02-outputs.png)
 
@@ -119,34 +116,14 @@ Generated PRDs, user stories, roadmaps, and release notes — with Jira and Conf
 <tr>
 <td width="50%">
 
-**3. Program Management**
-Product programs with milestone tracking, stakeholder updates, and cross-functional delivery timelines.
-
-![Product Programs](docs/screenshots/product-03-programs.png)
-
-</td>
-<td width="50%">
-
-**4. Memory Graph**
-Product context memory — past decisions, research insights, and customer feedback patterns.
-
-![Product Memory](docs/screenshots/product-04-memory.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**5. Skill Configuration Form**
-Tags input for success metrics, constraints, and stakeholders. Toggle Jira push and Confluence drafts.
+**Skill Form** — Tags for success metrics and constraints. Toggle Jira push and Confluence drafts.
 
 ![Product Skill Form](docs/screenshots/product-05-skill-form.png)
 
 </td>
 <td width="50%">
 
-**6. Simulation Mode**
-Dry-run product skills — generate mock PRDs, user stories, and roadmaps without API calls.
+**Simulation** — Generate mock PRDs, user stories, and roadmaps without API calls.
 
 ![Product Simulation](docs/screenshots/product-06-simulation-mode.png)
 
@@ -154,24 +131,20 @@ Dry-run product skills — generate mock PRDs, user stories, and roadmaps withou
 </tr>
 </table>
 
----
-
 ### Marketing Hub
 
 <table>
 <tr>
 <td width="50%">
 
-**1. Skills Dashboard**
-30 marketing workflows across Campaign, Content, Creative, Event, Research, Analytics, and Sales clusters.
+**Skills** — 30 marketing workflows across Campaign, Content, Creative, Event, Research, and Analytics.
 
 ![Marketing Skills](docs/screenshots/marketing-01-skills.png)
 
 </td>
 <td width="50%">
 
-**2. Execution Outputs**
-Campaign assets, content drafts, analytics reports, and creative briefs — with export and sharing.
+**Outputs** — Campaign assets, content drafts, analytics reports, and creative briefs with export.
 
 ![Marketing Outputs](docs/screenshots/marketing-02-outputs.png)
 
@@ -180,34 +153,14 @@ Campaign assets, content drafts, analytics reports, and creative briefs — with
 <tr>
 <td width="50%">
 
-**3. Program Management**
-Marketing programs with campaign timelines, budget tracking, ROI metrics, and team assignments.
-
-![Marketing Programs](docs/screenshots/marketing-03-programs.png)
-
-</td>
-<td width="50%">
-
-**4. Memory Graph**
-Campaign memory — audience insights, brand voice patterns, performance history, and learned optimizations.
-
-![Marketing Memory](docs/screenshots/marketing-04-memory.png)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**5. Skill Configuration Form**
-Campaign builder with audience targeting, channel selection, budget allocation, and content parameters.
+**Skill Form** — Audience targeting, channel selection, budget allocation, and content parameters.
 
 ![Marketing Skill Form](docs/screenshots/marketing-05-skill-form.png)
 
 </td>
 <td width="50%">
 
-**6. Simulation Mode**
-Simulate marketing campaigns — generate mock assets, analytics, and performance projections safely.
+**Simulation** — Simulate campaigns — mock assets, analytics, and performance projections safely.
 
 ![Marketing Simulation](docs/screenshots/marketing-06-simulation-mode.png)
 
@@ -219,125 +172,100 @@ Simulate marketing campaigns — generate mock assets, analytics, and performanc
 
 ## Simulation Platform
 
-The simulation platform enables **risk-free testing** of any skill or workflow across all personas. Enable simulation mode to run the full execution pipeline — agent orchestration, tool calls, and output generation — without connecting real tools or making live API calls.
+Run any skill or workflow in **simulation mode** — full agent orchestration, tool calls, and output generation without connecting real tools or making live API calls.
 
 <table>
 <tr>
 <td width="33%">
 
-**Engineering Simulation**
+**Engineering** — Configure → Execute → Output
 
-![Sim Eng Configure](docs/screenshots/simulation-engineering-02-configure.png)
-![Sim Eng Running](docs/screenshots/simulation-engineering-04-running.png)
-![Sim Eng Complete](docs/screenshots/simulation-engineering-05-completed.png)
+![Sim Engineering](docs/screenshots/simulation-engineering-04-running.png)
 
 </td>
 <td width="33%">
 
-**Product Simulation**
+**Product** — Configure → Execute → Output
 
-![Sim Prod Configure](docs/screenshots/simulation-product-02-configure.png)
-![Sim Prod Running](docs/screenshots/simulation-product-03-running.png)
-![Sim Prod Complete](docs/screenshots/simulation-product-04-completed.png)
+![Sim Product](docs/screenshots/simulation-product-03-running.png)
 
 </td>
 <td width="33%">
 
-**Marketing Simulation**
+**Marketing** — Configure → Execute → Output
 
-![Sim Mkt Configure](docs/screenshots/simulation-marketing-02-configure.png)
-![Sim Mkt Running](docs/screenshots/simulation-marketing-03-running.png)
-![Sim Mkt Complete](docs/screenshots/simulation-marketing-04-completed.png)
+![Sim Marketing](docs/screenshots/simulation-marketing-03-running.png)
 
 </td>
 </tr>
 </table>
 
-**Simulation features:**
-- **Dry-run mode** — No real tool calls or API requests
-- **Full pipeline** — All agents, steps, and checkpoints execute as normal
-- **Mock outputs** — Realistic synthetic output generation
-- **Cost-free** — Zero token usage or external API costs
-- **Safe testing** — No side effects on production data
-
 ---
 
-## Core Platform Screenshots
+## Platform Operations
 
-### Skill Marketplace
-Discover, search, and install skills across personas. Filter by category, status, and visibility. Browse community-contributed and platform skills with ratings and usage stats.
+<table>
+<tr>
+<td width="25%">
 
-![Skill Marketplace](docs/screenshots/03-skill-marketplace.png)
+**Skill Marketplace** — Discover, search, and install skills. Filter by category, status, ratings.
 
-### Skill Builder
-Create and version skills with a structured editor — define input/output schemas, required tools, content steps, and publish to the marketplace.
+![Marketplace](docs/screenshots/03-skill-marketplace.png)
 
-![Skill Builder](docs/screenshots/04-skill-builder.png)
+</td>
+<td width="25%">
 
-### Agents
-View all autonomous AI agents across personas. Monitor status, model, token usage, last action, and success rates. Launch or inspect any agent directly.
+**Knowledge Explorer** — Search Confluence, GitHub, Jira with source attribution and relevance scoring.
 
-![Agents](docs/screenshots/05-agents.png)
+![Knowledge](docs/screenshots/09-knowledge-explorer.png)
 
-### Workflow Builder
-Design multi-step DAG workflows chaining agents, skills, and tools. Visual canvas with node connections and conditional branching.
+</td>
+<td width="25%">
 
-![Workflow Builder](docs/screenshots/06-workflows.png)
-
-### Tools Registry
-Manage external tool integrations (HubSpot, Jira, GitHub, Slack, Salesforce, etc.) with auth types, capability mapping, latency, and usage statistics.
-
-![Tools Registry](docs/screenshots/07-tools-registry.png)
-
-### Prompt Library
-Browse, fork, pin, and upvote curated AI prompts. Filter by persona, category, or tags. Submit prompt recommendations and vote on community suggestions.
-
-![Prompt Library](docs/screenshots/08-prompt-library.png)
-
-### Knowledge Explorer
-Search across internal knowledge sources — Confluence, GitHub, Jira — with source attribution and semantic relevance scoring.
-
-![Knowledge Explorer](docs/screenshots/09-knowledge-explorer.png)
-
-### Control Plane
-Platform-wide monitoring with metric sparklines, agent runtime table, skill router decisions, live execution logs, system alerts, and service health indicators.
+**Control Plane** — Metric sparklines, agent runtime, skill router decisions, live logs, service health.
 
 ![Control Plane](docs/screenshots/10-control-plane.png)
 
-### Memory Graph
-SVG force-directed graph of skill/agent/tool/workflow relationships. Pan, zoom, filter by node type, search, and click any node for connection details and usage stats.
+</td>
+<td width="25%">
+
+**Memory Graph** — Force-directed graph of skill/agent/tool relationships. Filter, search, inspect.
 
 ![Memory Graph](docs/screenshots/11-memory-graph.png)
 
-### Agent Collaboration (ACP)
-Agent-to-agent message flow visualization. SVG diagram with animated in-flight messages, edge labels by message type (delegation, handoff, approval), and JSON payload inspector.
+</td>
+</tr>
+<tr>
+<td width="25%">
 
-![Agent Collaboration](docs/screenshots/12-agent-collaboration.png)
+**Agent Collaboration** — Agent-to-agent message flows with animated messages, edge labels, and payloads.
 
-### Governance Dashboard
-Corp IT oversight — tool license tracking, cost attribution by persona, access & permission management, audit log, and compliance checklist with pass/fail/warning status.
+![Agent Collab](docs/screenshots/12-agent-collaboration.png)
+
+</td>
+<td width="25%">
+
+**Governance** — License tracking, cost attribution, access management, audit log, compliance checks.
 
 ![Governance](docs/screenshots/13-governance.png)
 
-### Observability
-Live execution traces — every LLM call, tool invocation, and step. Filter by status, persona, or agent. Token usage, cost, latency, and confidence metrics per execution.
+</td>
+<td width="25%">
 
-![Observability](docs/screenshots/14-observability.png)
-
-### AI Learning Hub
-Curated AI courses, a 5-day agent development roadmap, and direct links to Anthropic, Google, OpenAI, and other platform providers. Track organizational AI adoption with engagement stats.
+**AI Learning Hub** — Curated courses, 5-day roadmap, platform providers, and adoption metrics.
 
 ![Learning Hub](docs/screenshots/15-learning-hub.png)
 
-### Execution Scheduler
-Schedule cron jobs and event-triggered automations. Define triggers, target skills/workflows, retry policies, and view execution history with status tracking.
+</td>
+<td width="25%">
+
+**Scheduler** — Cron jobs, event triggers, retry policies, and execution history with status tracking.
 
 ![Scheduler](docs/screenshots/16-scheduler.png)
 
-### Settings
-Configure profile, notification preferences, API keys, appearance, and platform defaults. Manage connected tools and session tokens.
-
-![Settings](docs/screenshots/17-settings.png)
+</td>
+</tr>
+</table>
 
 ---
 
