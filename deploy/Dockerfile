@@ -41,4 +41,5 @@ USER eaos
 
 EXPOSE 3000 3001 3002 3004 3005 3006 3007
 
-CMD ["node", "services/${SERVICE}/dist/index.js"]
+# Use shell form so SERVICE env var is expanded at runtime
+CMD node services/${SERVICE_NAME}/dist/index.js

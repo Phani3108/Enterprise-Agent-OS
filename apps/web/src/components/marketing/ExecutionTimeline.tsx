@@ -68,9 +68,17 @@ function StepRow({
           </div>
 
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className="text-[11px] text-slate-500">{step.agent} Agent</span>
+            <span className="text-[11px] text-slate-500">
+              {step.agentCallSign ? `${step.agentCallSign}` : step.agent}
+              {step.agentRank && <span className="text-slate-400"> · {step.agentRank}</span>}
+            </span>
             {step.tool && (
               <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{step.tool}</span>
+            )}
+            {step.qualityScore !== undefined && (
+              <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${step.qualityScore >= 7 ? 'bg-emerald-50 text-emerald-700' : step.qualityScore >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>
+                Q: {step.qualityScore}/10
+              </span>
             )}
             {step.startedAt && step.completedAt && (
               <span className="text-[11px] text-slate-400">

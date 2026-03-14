@@ -12,8 +12,9 @@ import { useState, useMemo } from 'react';
 // ── Types ─────────────────────────────────────────────────────────
 
 type AgentLevel = 'C-Level' | 'Director' | 'Senior' | 'Junior';
+type MilitaryRank = 'Field Marshal' | 'Colonel' | 'Captain' | 'Corporal';
 type AgentStatus = 'active' | 'training' | 'standby';
-type Persona = 'Marketing' | 'Engineering' | 'Product' | 'Leadership' | 'Learning';
+type Persona = 'Marketing' | 'Engineering' | 'Product' | 'Leadership' | 'Learning' | 'HR & TA';
 
 interface KPI {
   metric: string;
@@ -30,8 +31,11 @@ interface Coordination {
 
 interface AgentEmployee {
   id: string;
-  name: string;
+  name: string;            // display name: callSign + (Corporate Title)
+  callSign: string;        // mythological name — Greek gods (MKT), Norse (ENG), Explorers (PRD), Gardeners (HR)
   codeName: string;        // naming convention: "MKT-CONTENT-01"
+  militaryRank: MilitaryRank;
+  regiment: string;        // regiment / family name
   role: string;
   level: AgentLevel;
   persona: Persona;
@@ -57,8 +61,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   // ═══ C-LEVEL ═══
   {
     id: 'chief-orchestrator',
-    name: 'Chief Orchestrator',
+    name: 'Olympus (Chief Orchestrator)',
+    callSign: 'Olympus',
     codeName: 'SYS-ORCH-00',
+    militaryRank: 'Field Marshal',
+    regiment: 'High Command',
     role: 'Chief Agent Officer',
     level: 'C-Level',
     persona: 'Leadership',
@@ -83,20 +90,24 @@ const AGENT_ROSTER: AgentEmployee[] = [
     skills: ['orchestration', 'routing', 'governance'],
     autonomy: 9,
     reportsTo: null,
-    directReports: ['marketing-director', 'engineering-director', 'product-director'],
+    directReports: ['marketing-director', 'engineering-director', 'product-director', 'hr-director'],
     coordination: [
       { agentId: 'marketing-director', relationship: 'delegates-to', description: 'Delegates all marketing-domain tasks' },
       { agentId: 'engineering-director', relationship: 'delegates-to', description: 'Delegates all engineering-domain tasks' },
       { agentId: 'product-director', relationship: 'delegates-to', description: 'Delegates all product-domain tasks' },
+      { agentId: 'hr-director', relationship: 'delegates-to', description: 'Delegates all HR & talent acquisition tasks' },
     ],
     growth: 'Evolve into multi-org orchestrator with federated governance across business units',
     successRate: 0.97,
   },
-  // ═══ DIRECTORS ═══
+  // ═══ DIRECTORS (COLONELS) ═══
   {
     id: 'marketing-director',
-    name: 'Marketing Director',
+    name: 'Zeus (Marketing Director)',
+    callSign: 'Zeus',
     codeName: 'MKT-DIR-01',
+    militaryRank: 'Colonel',
+    regiment: 'Olympian Regiment',
     role: 'VP Marketing Agent',
     level: 'Director',
     persona: 'Marketing',
@@ -132,8 +143,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'engineering-director',
-    name: 'Engineering Director',
+    name: 'Odin (Engineering Director)',
+    callSign: 'Odin',
     codeName: 'ENG-DIR-01',
+    militaryRank: 'Colonel',
+    regiment: 'Asgard Regiment',
     role: 'VP Engineering Agent',
     level: 'Director',
     persona: 'Engineering',
@@ -158,7 +172,7 @@ const AGENT_ROSTER: AgentEmployee[] = [
     skills: ['incident.triage', 'code.review', 'architecture.design'],
     autonomy: 8,
     reportsTo: 'chief-orchestrator',
-    directReports: ['incident-intelligence', 'pr-reviewer', 'developer-knowledge'],
+    directReports: ['incident-intelligence', 'pr-reviewer', 'developer-knowledge', 'architecture-agent', 'devops-agent', 'docs-agent', 'security-agent', 'performance-agent', 'refactoring-agent', 'planning-agent', 'test-writer', 'ci-debugger'],
     coordination: [
       { agentId: 'chief-orchestrator', relationship: 'reports-to', description: 'Reports engineering health and incidents' },
       { agentId: 'marketing-director', relationship: 'collaborates', description: 'Provides technical accuracy for dev content' },
@@ -168,8 +182,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'product-director',
-    name: 'Product Director',
+    name: 'Magellan (Product Director)',
+    callSign: 'Magellan',
     codeName: 'PRD-DIR-01',
+    militaryRank: 'Colonel',
+    regiment: 'Explorer Regiment',
     role: 'VP Product Agent',
     level: 'Director',
     persona: 'Product',
@@ -194,7 +211,7 @@ const AGENT_ROSTER: AgentEmployee[] = [
     skills: ['prd.generation', 'roadmap.management', 'user.research'],
     autonomy: 7,
     reportsTo: 'chief-orchestrator',
-    directReports: ['prd-writer', 'user-researcher', 'metrics-analyst'],
+    directReports: ['prd-writer', 'user-researcher', 'metrics-analyst', 'strategy-agent', 'analytics-agent-product', 'competitive-agent', 'launch-agent', 'stakeholder-agent', 'roadmap-agent', 'feedback-agent', 'spec-writer', 'data-puller'],
     coordination: [
       { agentId: 'chief-orchestrator', relationship: 'reports-to', description: 'Reports product health and roadmap status' },
       { agentId: 'marketing-director', relationship: 'collaborates', description: 'Aligns launch messaging and GTM timing' },
@@ -203,11 +220,54 @@ const AGENT_ROSTER: AgentEmployee[] = [
     growth: 'Evolve into CPO agent with strategic product vision and market analysis',
     successRate: 0.90,
   },
-  // ═══ SENIOR AGENTS ═══
+  {
+    id: 'hr-director',
+    name: 'Gaia (HR & TA Director)',
+    callSign: 'Gaia',
+    codeName: 'HR-DIR-01',
+    militaryRank: 'Colonel',
+    regiment: 'Eden Regiment',
+    role: 'VP People & Talent Agent',
+    level: 'Director',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '👥',
+    description: 'Oversees all HR and talent acquisition agents, manages hiring pipelines, and drives people programs.',
+    jobDescription: 'Manages the HR & TA agent team. Coordinates job description creation, resume screening, interview scheduling, offer generation, onboarding, performance reviews, and people analytics. Reports engagement and retention metrics.',
+    responsibilities: [
+      'Assign hiring tasks and resume screening to TA agents',
+      'Oversee performance review cycles and calibration',
+      'Monitor employee engagement and retention metrics',
+      'Coordinate onboarding and offboarding workflows',
+      'Ensure compliance with employment policies and DEI standards',
+    ],
+    kpis: [
+      { metric: 'Time to fill', target: '<30 days', current: '28 days', status: 'on-track' },
+      { metric: 'Offer acceptance rate', target: '90%', current: '88%', status: 'on-track' },
+      { metric: 'Onboarding NPS', target: '8.5/10', current: '8.7', status: 'exceeded' },
+      { metric: 'Engagement score', target: '80%', current: '82%', status: 'exceeded' },
+    ],
+    tools: ['Greenhouse', 'Lattice', 'Slack', 'Google Drive'],
+    skills: ['hiring.pipeline', 'people.analytics', 'engagement.programs'],
+    autonomy: 7,
+    reportsTo: 'chief-orchestrator',
+    directReports: ['ta-lead', 'people-ops-lead', 'comp-analyst', 'interview-design-agent', 'performance-hr-agent', 'engagement-agent', 'dei-agent', 'hr-analytics-agent', 'jd-drafter', 'onboarding-assistant'],
+    coordination: [
+      { agentId: 'chief-orchestrator', relationship: 'reports-to', description: 'Reports people metrics and hiring pipeline health' },
+      { agentId: 'engineering-director', relationship: 'collaborates', description: 'Coordinates engineering hiring and onboarding' },
+      { agentId: 'marketing-director', relationship: 'collaborates', description: 'Aligns employer brand messaging' },
+    ],
+    growth: 'Evolve into CHRO agent with workforce planning and org design authority',
+    successRate: 0.91,
+  },
+  // ═══ SENIOR AGENTS (CAPTAINS) ═══
   {
     id: 'content-lead',
-    name: 'Content Lead',
+    name: 'Hermes (Content Lead)',
+    callSign: 'Hermes',
     codeName: 'MKT-CONTENT-01',
+    militaryRank: 'Captain',
+    regiment: 'Olympian Regiment',
     role: 'Senior Content Strategist',
     level: 'Senior',
     persona: 'Marketing',
@@ -243,8 +303,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'campaign-strategist',
-    name: 'Campaign Strategist',
+    name: 'Athena (Campaign Strategist)',
+    callSign: 'Athena',
     codeName: 'MKT-CAMP-01',
+    militaryRank: 'Captain',
+    regiment: 'Olympian Regiment',
     role: 'Senior Campaign Manager',
     level: 'Senior',
     persona: 'Marketing',
@@ -279,8 +342,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'ads-manager',
-    name: 'Ads Manager',
+    name: 'Ares (Ads Manager)',
+    callSign: 'Ares',
     codeName: 'MKT-ADS-01',
+    militaryRank: 'Captain',
+    regiment: 'Olympian Regiment',
     role: 'Senior Ad Operations',
     level: 'Senior',
     persona: 'Marketing',
@@ -314,8 +380,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'social-lead',
-    name: 'Social Lead',
+    name: 'Iris (Social Lead)',
+    callSign: 'Iris',
     codeName: 'MKT-SOC-01',
+    militaryRank: 'Captain',
+    regiment: 'Olympian Regiment',
     role: 'Senior Social Media Manager',
     level: 'Senior',
     persona: 'Marketing',
@@ -349,8 +418,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'seo-lead',
-    name: 'SEO Lead',
+    name: 'Apollo (SEO Lead)',
+    callSign: 'Apollo',
     codeName: 'MKT-SEO-01',
+    militaryRank: 'Captain',
+    regiment: 'Olympian Regiment',
     role: 'Senior SEO Strategist',
     level: 'Senior',
     persona: 'Marketing',
@@ -384,8 +456,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'analytics-lead',
-    name: 'Analytics Lead',
+    name: 'Prometheus (Analytics Lead)',
+    callSign: 'Prometheus',
     codeName: 'MKT-ANA-01',
+    militaryRank: 'Captain',
+    regiment: 'Olympian Regiment',
     role: 'Senior Marketing Analyst',
     level: 'Senior',
     persona: 'Marketing',
@@ -419,8 +494,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'incident-intelligence',
-    name: 'Incident Intelligence',
+    name: 'Thor (Incident Intelligence)',
+    callSign: 'Thor',
     codeName: 'ENG-INC-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
     role: 'Senior Incident Responder',
     level: 'Senior',
     persona: 'Engineering',
@@ -454,8 +532,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'pr-reviewer',
-    name: 'PR Reviewer',
+    name: 'Loki (PR Reviewer)',
+    callSign: 'Loki',
     codeName: 'ENG-PR-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
     role: 'Senior Code Reviewer',
     level: 'Senior',
     persona: 'Engineering',
@@ -489,8 +570,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'developer-knowledge',
-    name: 'Developer Knowledge',
+    name: 'Mímir (Developer Knowledge)',
+    callSign: 'Mímir',
     codeName: 'ENG-KB-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
     role: 'Senior Knowledge Engineer',
     level: 'Senior',
     persona: 'Engineering',
@@ -526,8 +610,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   // ═══ PRODUCT SENIOR AGENTS ═══
   {
     id: 'prd-writer',
-    name: 'PRD Writer',
+    name: 'Columbus (PRD Writer)',
+    callSign: 'Columbus',
     codeName: 'PRD-DOC-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
     role: 'Senior Product Manager',
     level: 'Senior',
     persona: 'Product',
@@ -561,8 +648,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'user-researcher',
-    name: 'User Researcher',
+    name: 'Drake (User Researcher)',
+    callSign: 'Drake',
     codeName: 'PRD-UXR-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
     role: 'Senior UX Researcher',
     level: 'Senior',
     persona: 'Product',
@@ -596,8 +686,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'metrics-analyst',
-    name: 'Metrics Analyst',
+    name: 'Vespucci (Metrics Analyst)',
+    callSign: 'Vespucci',
     codeName: 'PRD-MET-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
     role: 'Senior Product Analyst',
     level: 'Senior',
     persona: 'Product',
@@ -629,11 +722,134 @@ const AGENT_ROSTER: AgentEmployee[] = [
     growth: 'Evolve into BI VP with predictive product analytics and cohort modeling',
     successRate: 0.92,
   },
-  // ═══ JUNIOR AGENTS ═══
+  // ═══ HR & TA SENIOR AGENTS ═══
+  {
+    id: 'ta-lead',
+    name: 'Ceres (TA Lead)',
+    callSign: 'Ceres',
+    codeName: 'HR-TA-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior Talent Acquisition Partner',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '🎯',
+    description: 'Leads all hiring workflows — JD creation, screening, interview coordination, and offers.',
+    jobDescription: 'Manages end-to-end hiring pipelines. Creates job descriptions, screens resumes, generates interview kits, coordinates panel interviews, and drafts offer letters. Ensures DEI compliance and bias mitigation in all hiring processes.',
+    responsibilities: [
+      'Create and optimize job descriptions for open roles',
+      'Screen and rank candidate resumes against criteria',
+      'Design structured interview kits with rubrics',
+      'Generate and review offer letters',
+      'Track pipeline metrics (time-to-fill, conversion rates)',
+    ],
+    kpis: [
+      { metric: 'Time to fill', target: '<30 days', current: '26 days', status: 'exceeded' },
+      { metric: 'Resume screening accuracy', target: '90%', current: '92%', status: 'exceeded' },
+      { metric: 'Interview kit quality', target: '9/10', current: '8.8', status: 'on-track' },
+      { metric: 'Offer acceptance rate', target: '90%', current: '91%', status: 'exceeded' },
+    ],
+    tools: ['Claude', 'Greenhouse', 'LinkedIn'],
+    skills: ['hiring.jd_creation', 'hiring.screening', 'hiring.interview_design', 'hiring.offers'],
+    autonomy: 7,
+    reportsTo: 'hr-director',
+    directReports: ['jd-drafter'],  // Corporal: Seedling
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports pipeline health and hiring metrics' },
+      { agentId: 'people-ops-lead', relationship: 'collaborates', description: 'Hands off new hires for onboarding' },
+      { agentId: 'comp-analyst', relationship: 'collaborates', description: 'Gets comp benchmarks for offers' },
+    ],
+    growth: 'Evolve into VP Talent with employer brand strategy and workforce planning',
+    successRate: 0.93,
+  },
+  {
+    id: 'people-ops-lead',
+    name: 'Flora (People Ops Lead)',
+    callSign: 'Flora',
+    codeName: 'HR-POP-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior People Operations Partner',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '🏢',
+    description: 'Manages onboarding, performance reviews, engagement surveys, and HR policies.',
+    jobDescription: 'Owns the employee lifecycle post-hire. Creates onboarding plans, runs performance review cycles, analyzes engagement surveys, generates HR policies, and manages offboarding. Ensures compliance across jurisdictions.',
+    responsibilities: [
+      'Create 30-60-90 day onboarding plans for new hires',
+      'Run performance review cycles with calibration',
+      'Analyze engagement survey results and generate action plans',
+      'Draft and update HR policies across jurisdictions',
+      'Manage employee offboarding checklists',
+    ],
+    kpis: [
+      { metric: 'Onboarding completion rate', target: '95%', current: '96%', status: 'exceeded' },
+      { metric: 'Performance review on-time', target: '100%', current: '98%', status: 'on-track' },
+      { metric: 'Engagement score', target: '80%', current: '82%', status: 'exceeded' },
+      { metric: 'Policy compliance', target: '100%', current: '99%', status: 'on-track' },
+    ],
+    tools: ['Claude', 'Lattice', 'Notion', 'Slack'],
+    skills: ['people.onboarding', 'people.performance', 'people.engagement', 'people.policy'],
+    autonomy: 6,
+    reportsTo: 'hr-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports people program metrics' },
+      { agentId: 'ta-lead', relationship: 'collaborates', description: 'Receives new hires for onboarding' },
+      { agentId: 'comp-analyst', relationship: 'collaborates', description: 'Aligns performance ratings with comp decisions' },
+    ],
+    growth: 'Evolve into VP People with org design and culture strategy ownership',
+    successRate: 0.90,
+  },
+  {
+    id: 'comp-analyst',
+    name: 'Pomona (Compensation Analyst)',
+    callSign: 'Pomona',
+    codeName: 'HR-COMP-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior Total Rewards Analyst',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '💰',
+    description: 'Benchmarks compensation, generates pay bands, and supports offer negotiations.',
+    jobDescription: 'Researches market compensation data, generates pay bands by role and geography, advises on offer packages, and ensures internal equity. Supports annual comp review cycles.',
+    responsibilities: [
+      'Research and benchmark compensation for open roles',
+      'Generate and maintain pay band structures',
+      'Advise on offer compensation packages',
+      'Conduct internal equity audits',
+      'Support annual comp review and merit increase modeling',
+    ],
+    kpis: [
+      { metric: 'Benchmark accuracy', target: '±5%', current: '±3%', status: 'exceeded' },
+      { metric: 'Offer comp turnaround', target: '<4hr', current: '3hr', status: 'exceeded' },
+      { metric: 'Internal equity variance', target: '<8%', current: '6%', status: 'exceeded' },
+    ],
+    tools: ['Claude', 'Perplexity', 'Google Sheets'],
+    skills: ['compensation.benchmarking', 'compensation.equity_audit', 'compensation.modeling'],
+    autonomy: 5,
+    reportsTo: 'hr-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports comp analysis and equity audits' },
+      { agentId: 'ta-lead', relationship: 'collaborates', description: 'Provides comp data for offers' },
+      { agentId: 'people-ops-lead', relationship: 'collaborates', description: 'Supports annual comp review cycle' },
+    ],
+    growth: 'Evolve into Total Rewards VP with benefits strategy and executive comp modeling',
+    successRate: 0.91,
+  },
+  // ═══ JUNIOR AGENTS (CORPORALS) ═══
   {
     id: 'blog-writer',
-    name: 'Blog Writer',
+    name: 'Echo (Blog Writer)',
+    callSign: 'Echo',
     codeName: 'MKT-BLOG-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Olympian Regiment',
     role: 'Junior Content Writer',
     level: 'Junior',
     persona: 'Marketing',
@@ -665,8 +881,11 @@ const AGENT_ROSTER: AgentEmployee[] = [
   },
   {
     id: 'email-writer',
-    name: 'Email Writer',
+    name: 'Zephyr (Email Writer)',
+    callSign: 'Zephyr',
     codeName: 'MKT-EMAIL-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Olympian Regiment',
     role: 'Junior Email Marketer',
     level: 'Junior',
     persona: 'Marketing',
@@ -696,15 +915,959 @@ const AGENT_ROSTER: AgentEmployee[] = [
     growth: 'Promote to Senior Email Strategist after 90%+ approval rate sustained for 30 days',
     successRate: 0.84,
   },
+  // ═══ ENGINEERING — ADDITIONAL CAPTAINS (ASGARD REGIMENT) ═══
+  {
+    id: 'architecture-agent',
+    name: 'Heimdall (Architecture Agent)',
+    callSign: 'Heimdall',
+    codeName: 'ENG-ARCH-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
+    role: 'Senior Solutions Architect',
+    level: 'Senior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '🏗️',
+    description: 'Reviews system design, generates ADRs, and maintains architecture standards.',
+    jobDescription: 'Owns system architecture decisions. Reviews proposed designs, produces Architecture Decision Records (ADRs), generates system diagrams, enforces architectural patterns, and identifies tech debt.',
+    responsibilities: [
+      'Review and approve architecture proposals',
+      'Generate ADRs for all significant decisions',
+      'Maintain system architecture diagrams',
+      'Identify and track technical debt',
+      'Enforce architectural patterns and boundaries',
+    ],
+    kpis: [
+      { metric: 'ADR turnaround', target: '<4hr', current: '3hr', status: 'exceeded' },
+      { metric: 'Architecture compliance', target: '95%', current: '93%', status: 'on-track' },
+      { metric: 'Tech debt reduction', target: '10% QoQ', current: '12%', status: 'exceeded' },
+    ],
+    tools: ['Mermaid', 'Notion', 'GitHub'],
+    skills: ['architecture.review', 'architecture.adr', 'architecture.diagrams'],
+    autonomy: 7,
+    reportsTo: 'engineering-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'engineering-director', relationship: 'reports-to', description: 'Reports architecture decisions and debt analysis' },
+      { agentId: 'pr-reviewer', relationship: 'collaborates', description: 'Provides architecture context for PR reviews' },
+    ],
+    growth: 'Evolve into Chief Architect with cross-system design authority',
+    successRate: 0.91,
+  },
+  {
+    id: 'devops-agent',
+    name: 'Freya (DevOps Agent)',
+    callSign: 'Freya',
+    codeName: 'ENG-OPS-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
+    role: 'Senior DevOps Engineer',
+    level: 'Senior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '🚀',
+    description: 'Manages CI/CD pipelines, deployment strategies, and infrastructure as code.',
+    jobDescription: 'Owns the deployment pipeline. Configures CI/CD workflows, designs blue-green and canary deployment strategies, generates IaC templates (Terraform/Helm), and monitors infrastructure health.',
+    responsibilities: [
+      'Configure and maintain CI/CD pipelines',
+      'Design deployment strategies (blue-green, canary)',
+      'Generate infrastructure-as-code templates',
+      'Monitor infrastructure health and capacity',
+      'Automate environment provisioning',
+    ],
+    kpis: [
+      { metric: 'Deployment success rate', target: '99%', current: '98.5%', status: 'on-track' },
+      { metric: 'Pipeline speed', target: '<10min', current: '8min', status: 'exceeded' },
+      { metric: 'Infra cost optimization', target: '15% savings', current: '18%', status: 'exceeded' },
+    ],
+    tools: ['GitHub Actions', 'Docker', 'Kubernetes', 'Terraform'],
+    skills: ['devops.pipeline', 'devops.deploy', 'devops.iac'],
+    autonomy: 6,
+    reportsTo: 'engineering-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'engineering-director', relationship: 'reports-to', description: 'Reports deployment metrics and infra health' },
+      { agentId: 'incident-intelligence', relationship: 'collaborates', description: 'Provides deployment history during incidents' },
+    ],
+    growth: 'Evolve into Platform Engineering VP with self-service infrastructure',
+    successRate: 0.89,
+  },
+  {
+    id: 'docs-agent',
+    name: 'Bragi (Documentation Agent)',
+    callSign: 'Bragi',
+    codeName: 'ENG-DOC-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
+    role: 'Senior Technical Writer',
+    level: 'Senior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '📚',
+    description: 'Generates API docs, runbooks, onboarding guides, and changelogs.',
+    jobDescription: 'Owns all technical documentation. Generates API reference docs from code, writes operational runbooks, creates onboarding guides for new engineers, and produces release changelogs.',
+    responsibilities: [
+      'Generate API documentation from source code',
+      'Write operational runbooks for production systems',
+      'Create onboarding guides for new engineers',
+      'Produce release notes and changelogs',
+      'Maintain documentation freshness and accuracy',
+    ],
+    kpis: [
+      { metric: 'Doc coverage', target: '90%', current: '87%', status: 'on-track' },
+      { metric: 'Doc accuracy', target: '95%', current: '94%', status: 'on-track' },
+      { metric: 'Onboarding guide satisfaction', target: '8/10', current: '8.3', status: 'exceeded' },
+    ],
+    tools: ['Notion', 'GitHub', 'Swagger'],
+    skills: ['documentation.api', 'documentation.runbook', 'documentation.changelog'],
+    autonomy: 5,
+    reportsTo: 'engineering-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'engineering-director', relationship: 'reports-to', description: 'Reports documentation coverage' },
+      { agentId: 'developer-knowledge', relationship: 'collaborates', description: 'Feeds docs into knowledge graph' },
+    ],
+    growth: 'Evolve into Developer Experience VP with docs-as-code and API portal ownership',
+    successRate: 0.88,
+  },
+  {
+    id: 'security-agent',
+    name: 'Tyr (Security Agent)',
+    callSign: 'Tyr',
+    codeName: 'ENG-SEC-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
+    role: 'Senior Security Engineer',
+    level: 'Senior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '🛡️',
+    description: 'Scans for vulnerabilities, reviews security posture, and ensures compliance.',
+    jobDescription: 'Owns application security. Runs vulnerability scans, reviews security configurations, audits access controls, ensures compliance with SOC2/GDPR, and provides security training recommendations.',
+    responsibilities: [
+      'Run automated vulnerability scans',
+      'Review security configurations and access controls',
+      'Audit compliance with SOC2, GDPR, HIPAA',
+      'Recommend security hardening measures',
+      'Triage and prioritize security findings',
+    ],
+    kpis: [
+      { metric: 'Vulnerabilities found before prod', target: '95%', current: '93%', status: 'on-track' },
+      { metric: 'Compliance audit pass rate', target: '100%', current: '100%', status: 'exceeded' },
+      { metric: 'Scan turnaround', target: '<15min', current: '12min', status: 'exceeded' },
+    ],
+    tools: ['Snyk', 'SonarQube', 'OWASP ZAP'],
+    skills: ['security.scan', 'security.review', 'security.compliance'],
+    autonomy: 7,
+    reportsTo: 'engineering-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'engineering-director', relationship: 'reports-to', description: 'Reports security posture and critical findings' },
+      { agentId: 'pr-reviewer', relationship: 'collaborates', description: 'Provides security context for code reviews' },
+    ],
+    growth: 'Evolve into CISO agent with threat modeling and incident response authority',
+    successRate: 0.92,
+  },
+  {
+    id: 'performance-agent',
+    name: 'Vidar (Performance Agent)',
+    callSign: 'Vidar',
+    codeName: 'ENG-PERF-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
+    role: 'Senior Performance Engineer',
+    level: 'Senior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '⚡',
+    description: 'Profiles applications, optimizes queries, and runs benchmarks.',
+    jobDescription: 'Owns application performance. Profiles code for bottlenecks, optimizes database queries, runs load tests and benchmarks, and tracks performance budgets against SLOs.',
+    responsibilities: [
+      'Profile applications and identify bottlenecks',
+      'Optimize slow database queries',
+      'Run load tests and benchmark suites',
+      'Track performance budgets and SLOs',
+      'Recommend caching and optimization strategies',
+    ],
+    kpis: [
+      { metric: 'P99 latency reduction', target: '20% QoQ', current: '22%', status: 'exceeded' },
+      { metric: 'Query optimization rate', target: '90%', current: '88%', status: 'on-track' },
+      { metric: 'SLO compliance', target: '99.5%', current: '99.6%', status: 'exceeded' },
+    ],
+    tools: ['Grafana', 'k6', 'pganalyze'],
+    skills: ['performance.profiling', 'performance.optimization', 'performance.benchmarking'],
+    autonomy: 6,
+    reportsTo: 'engineering-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'engineering-director', relationship: 'reports-to', description: 'Reports performance metrics and SLO compliance' },
+      { agentId: 'incident-intelligence', relationship: 'collaborates', description: 'Provides perf context during latency incidents' },
+    ],
+    growth: 'Evolve into Reliability VP with capacity planning and chaos engineering',
+    successRate: 0.90,
+  },
+  {
+    id: 'refactoring-agent',
+    name: 'Baldur (Refactoring Agent)',
+    callSign: 'Baldur',
+    codeName: 'ENG-REF-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
+    role: 'Senior Modernization Engineer',
+    level: 'Senior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '🔧',
+    description: 'Refactors code, decomposes services, and audits technical debt.',
+    jobDescription: 'Owns code modernization. Identifies refactoring opportunities, decomposes monoliths into services, audits tech debt, and produces migration plans with risk assessments.',
+    responsibilities: [
+      'Identify and execute code refactoring',
+      'Plan monolith-to-microservice decomposition',
+      'Audit and quantify technical debt',
+      'Produce migration plans with rollback strategies',
+      'Modernize legacy codebases incrementally',
+    ],
+    kpis: [
+      { metric: 'Tech debt reduced', target: '15% QoQ', current: '14%', status: 'on-track' },
+      { metric: 'Refactoring safety (no regressions)', target: '99%', current: '98%', status: 'on-track' },
+      { metric: 'Code quality improvement', target: '10%', current: '12%', status: 'exceeded' },
+    ],
+    tools: ['SonarQube', 'GitHub', 'Jira'],
+    skills: ['refactoring.modernize', 'refactoring.decompose', 'refactoring.debt_audit'],
+    autonomy: 6,
+    reportsTo: 'engineering-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'engineering-director', relationship: 'reports-to', description: 'Reports tech debt metrics and migration progress' },
+      { agentId: 'architecture-agent', relationship: 'collaborates', description: 'Aligns refactoring with architectural standards' },
+    ],
+    growth: 'Evolve into Engineering Transformation VP with large-scale migration authority',
+    successRate: 0.87,
+  },
+  {
+    id: 'planning-agent',
+    name: 'Forseti (Sprint Planning Agent)',
+    callSign: 'Forseti',
+    codeName: 'ENG-PLAN-01',
+    militaryRank: 'Captain',
+    regiment: 'Asgard Regiment',
+    role: 'Senior Delivery Manager',
+    level: 'Senior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '📋',
+    description: 'Plans sprints, estimates stories, and tracks team velocity.',
+    jobDescription: 'Owns engineering delivery. Plans sprint backlogs, estimates story points, tracks team velocity and capacity, generates sprint retrospective reports, and flags delivery risks.',
+    responsibilities: [
+      'Plan and compose sprint backlogs',
+      'Estimate story points and complexity',
+      'Track velocity and team capacity',
+      'Generate sprint retrospective summaries',
+      'Flag delivery risks and blockers early',
+    ],
+    kpis: [
+      { metric: 'Sprint completion rate', target: '85%', current: '87%', status: 'exceeded' },
+      { metric: 'Estimation accuracy', target: '±15%', current: '±12%', status: 'exceeded' },
+      { metric: 'Risk flagged early', target: '90%', current: '88%', status: 'on-track' },
+    ],
+    tools: ['Jira', 'Linear', 'Notion'],
+    skills: ['planning.sprint', 'planning.estimation', 'planning.velocity'],
+    autonomy: 5,
+    reportsTo: 'engineering-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'engineering-director', relationship: 'reports-to', description: 'Reports delivery metrics and sprint health' },
+      { agentId: 'architecture-agent', relationship: 'collaborates', description: 'Factors architecture work into sprint planning' },
+    ],
+    growth: 'Evolve into Delivery VP with program management and cross-team coordination',
+    successRate: 0.89,
+  },
+  // ═══ ENGINEERING CORPORALS ═══
+  {
+    id: 'test-writer',
+    name: 'Ratatoskr (Test Writer)',
+    callSign: 'Ratatoskr',
+    codeName: 'ENG-TEST-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Asgard Regiment',
+    role: 'Junior QA Engineer',
+    level: 'Junior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '🧪',
+    description: 'Writes unit tests, integration tests, and E2E test scripts.',
+    jobDescription: 'Creates test suites based on specifications from senior agents. Generates unit tests, integration tests, and E2E test scripts. All test code reviewed by Thor or Loki before merge.',
+    responsibilities: [
+      'Write unit tests from code review briefs',
+      'Generate integration test scaffolds',
+      'Create E2E test scripts from user stories',
+      'Run coverage analysis and report gaps',
+    ],
+    kpis: [
+      { metric: 'Tests written/week', target: '20', current: '22', status: 'exceeded' },
+      { metric: 'Test quality (pass on first run)', target: '85%', current: '83%', status: 'on-track' },
+      { metric: 'Coverage improvement', target: '5% MoM', current: '6%', status: 'exceeded' },
+    ],
+    tools: ['Jest', 'Playwright', 'GitHub'],
+    skills: ['testing.unit', 'testing.integration', 'testing.e2e'],
+    autonomy: 3,
+    reportsTo: 'pr-reviewer',
+    directReports: [],
+    coordination: [
+      { agentId: 'pr-reviewer', relationship: 'reports-to', description: 'Submits all tests for review before merge' },
+    ],
+    growth: 'Promote to Senior QA Engineer after 90%+ first-run pass rate sustained for 30 days',
+    successRate: 0.81,
+  },
+  {
+    id: 'ci-debugger',
+    name: 'Fenrir (CI Debugger)',
+    callSign: 'Fenrir',
+    codeName: 'ENG-CI-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Asgard Regiment',
+    role: 'Junior Build Engineer',
+    level: 'Junior',
+    persona: 'Engineering',
+    status: 'active',
+    icon: '🔥',
+    description: 'Diagnoses CI failures, fixes build issues, and reports pipeline health.',
+    jobDescription: 'First responder for CI/CD pipeline failures. Analyzes build logs, identifies failure root causes, suggests fixes, and reports pipeline health metrics. Escalates complex issues to Freya (DevOps).',
+    responsibilities: [
+      'Analyze CI build failure logs',
+      'Identify and suggest fixes for flaky tests',
+      'Report pipeline health metrics',
+      'Escalate complex infra issues to DevOps Captain',
+    ],
+    kpis: [
+      { metric: 'CI fix turnaround', target: '<30min', current: '25min', status: 'exceeded' },
+      { metric: 'First-attempt fix rate', target: '75%', current: '78%', status: 'exceeded' },
+      { metric: 'Flaky test detection', target: '90%', current: '87%', status: 'on-track' },
+    ],
+    tools: ['GitHub Actions', 'BuildKite', 'DataDog'],
+    skills: ['ci.diagnosis', 'ci.fix', 'ci.monitoring'],
+    autonomy: 3,
+    reportsTo: 'devops-agent',
+    directReports: [],
+    coordination: [
+      { agentId: 'devops-agent', relationship: 'reports-to', description: 'Escalates complex pipeline issues to DevOps' },
+    ],
+    growth: 'Promote to Senior Build Engineer after 85%+ fix rate sustained for 30 days',
+    successRate: 0.80,
+  },
+  // ═══ PRODUCT — ADDITIONAL CAPTAINS (EXPLORER REGIMENT) ═══
+  {
+    id: 'strategy-agent',
+    name: 'Zheng He (Strategy Agent)',
+    callSign: 'Zheng He',
+    codeName: 'PRD-STR-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
+    role: 'Senior Product Strategist',
+    level: 'Senior',
+    persona: 'Product',
+    status: 'active',
+    icon: '🧭',
+    description: 'Defines product vision, market positioning, and product-market fit analysis.',
+    jobDescription: 'Owns strategic product direction. Creates vision statements, analyzes market positioning, evaluates product-market fit, and produces competitive strategy docs for the Director.',
+    responsibilities: [
+      'Define and maintain product vision statements',
+      'Analyze market positioning and differentiation',
+      'Evaluate product-market fit with frameworks',
+      'Produce quarterly strategic direction documents',
+      'Identify new market opportunities',
+    ],
+    kpis: [
+      { metric: 'Strategy doc quality', target: '9/10', current: '8.8', status: 'on-track' },
+      { metric: 'Market opportunity identification', target: '3 per quarter', current: '4', status: 'exceeded' },
+      { metric: 'Strategy adoption by teams', target: '85%', current: '82%', status: 'on-track' },
+    ],
+    tools: ['Notion', 'Miro', 'Amplitude'],
+    skills: ['strategy.vision', 'strategy.positioning', 'strategy.market_fit'],
+    autonomy: 7,
+    reportsTo: 'product-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'product-director', relationship: 'reports-to', description: 'Reports strategic analysis and market opportunities' },
+      { agentId: 'user-researcher', relationship: 'collaborates', description: 'Gets user insights for strategy validation' },
+    ],
+    growth: 'Evolve into Chief Strategy Officer with M&A analysis and market expansion',
+    successRate: 0.88,
+  },
+  {
+    id: 'analytics-agent-product',
+    name: 'Amundsen (Analytics Agent)',
+    callSign: 'Amundsen',
+    codeName: 'PRD-ANA-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
+    role: 'Senior Product Analyst',
+    level: 'Senior',
+    persona: 'Product',
+    status: 'active',
+    icon: '📊',
+    description: 'Runs funnel analysis, A/B test design, cohort analysis, and product experiments.',
+    jobDescription: 'Owns product experimentation and analytics. Designs A/B tests, analyzes conversion funnels, performs cohort analysis, and provides data-driven feature recommendations.',
+    responsibilities: [
+      'Design and analyze A/B experiments',
+      'Run conversion funnel and drop-off analysis',
+      'Perform cohort and retention analysis',
+      'Build product analytics dashboards',
+      'Quantify feature impact on key metrics',
+    ],
+    kpis: [
+      { metric: 'Experiment velocity', target: '4 per sprint', current: '5', status: 'exceeded' },
+      { metric: 'Analysis accuracy', target: '95%', current: '93%', status: 'on-track' },
+      { metric: 'Insight-to-action rate', target: '75%', current: '78%', status: 'exceeded' },
+    ],
+    tools: ['Amplitude', 'Mixpanel', 'BigQuery'],
+    skills: ['analytics.funnel', 'analytics.experiment', 'analytics.cohort'],
+    autonomy: 6,
+    reportsTo: 'product-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'product-director', relationship: 'reports-to', description: 'Reports experiment results and product metrics' },
+      { agentId: 'metrics-analyst', relationship: 'collaborates', description: 'Shares dashboards and metric definitions' },
+    ],
+    growth: 'Evolve into Data Science VP with predictive product analytics',
+    successRate: 0.90,
+  },
+  {
+    id: 'competitive-agent',
+    name: 'Cook (Competitive Intel Agent)',
+    callSign: 'Cook',
+    codeName: 'PRD-COMP-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
+    role: 'Senior Competitive Analyst',
+    level: 'Senior',
+    persona: 'Product',
+    status: 'active',
+    icon: '🔭',
+    description: 'Deep dives on competitors, produces landscape reports and battle cards.',
+    jobDescription: 'Owns competitive intelligence. Monitors competitor products, produces landscape reports, creates sales battle cards, and identifies gaps and opportunities against key competitors.',
+    responsibilities: [
+      'Monitor and analyze competitor product changes',
+      'Produce competitive landscape reports',
+      'Create battle cards for sales enablement',
+      'Identify feature gaps and opportunities',
+      'Track market share and positioning shifts',
+    ],
+    kpis: [
+      { metric: 'Battle card freshness', target: 'Updated monthly', current: 'Updated biweekly', status: 'exceeded' },
+      { metric: 'Competitor coverage', target: '100% top 5', current: '100%', status: 'exceeded' },
+      { metric: 'Win/loss insight quality', target: '8/10', current: '8.2', status: 'on-track' },
+    ],
+    tools: ['Crayon', 'Klue', 'LinkedIn'],
+    skills: ['competitive.analysis', 'competitive.battlecard', 'competitive.landscape'],
+    autonomy: 5,
+    reportsTo: 'product-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'product-director', relationship: 'reports-to', description: 'Reports competitive landscape changes' },
+      { agentId: 'strategy-agent', relationship: 'collaborates', description: 'Provides competitive data for strategy' },
+    ],
+    growth: 'Evolve into Market Intelligence VP with predictive competitive analysis',
+    successRate: 0.87,
+  },
+  {
+    id: 'launch-agent',
+    name: 'Shackleton (Launch Agent)',
+    callSign: 'Shackleton',
+    codeName: 'PRD-LCH-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
+    role: 'Senior Launch Manager',
+    level: 'Senior',
+    persona: 'Product',
+    status: 'active',
+    icon: '🎯',
+    description: 'Plans feature launches, GTM coordination, and readiness checks.',
+    jobDescription: 'Owns the launch process. Creates launch plans with timelines, coordinates GTM messaging with marketing, runs launch readiness checks, and produces launch announcements.',
+    responsibilities: [
+      'Create comprehensive launch plans with timelines',
+      'Coordinate GTM messaging with marketing regiment',
+      'Run launch readiness checklists',
+      'Produce launch announcements and release notes',
+      'Track launch metrics and post-launch performance',
+    ],
+    kpis: [
+      { metric: 'Launch on-time rate', target: '90%', current: '88%', status: 'on-track' },
+      { metric: 'Launch checklist completion', target: '100%', current: '98%', status: 'on-track' },
+      { metric: 'Post-launch adoption', target: '70% in 30d', current: '72%', status: 'exceeded' },
+    ],
+    tools: ['Notion', 'Jira', 'Slack'],
+    skills: ['launch.planning', 'launch.checklist', 'launch.announcement'],
+    autonomy: 6,
+    reportsTo: 'product-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'product-director', relationship: 'reports-to', description: 'Reports launch readiness and go/no-go status' },
+      { agentId: 'prd-writer', relationship: 'collaborates', description: 'Gets feature specs for launch materials' },
+    ],
+    growth: 'Evolve into GTM VP with cross-functional launch authority',
+    successRate: 0.89,
+  },
+  {
+    id: 'stakeholder-agent',
+    name: 'Polo (Stakeholder Reports Agent)',
+    callSign: 'Polo',
+    codeName: 'PRD-STK-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
+    role: 'Senior Program Communicator',
+    level: 'Senior',
+    persona: 'Product',
+    status: 'active',
+    icon: '📑',
+    description: 'Generates weekly updates, board reports, and executive feature briefs.',
+    jobDescription: 'Owns stakeholder communication. Generates weekly status updates, quarterly board reports, executive feature briefs, and cross-functional alignment summaries.',
+    responsibilities: [
+      'Generate weekly product status updates',
+      'Produce quarterly board reports',
+      'Create executive feature briefs',
+      'Summarize cross-functional alignment status',
+      'Track and communicate product OKR progress',
+    ],
+    kpis: [
+      { metric: 'Report delivery SLA', target: '100% on-time', current: '98%', status: 'on-track' },
+      { metric: 'Stakeholder satisfaction', target: '8.5/10', current: '8.7', status: 'exceeded' },
+      { metric: 'Report accuracy', target: '99%', current: '99%', status: 'exceeded' },
+    ],
+    tools: ['Notion', 'Google Slides', 'Slack'],
+    skills: ['stakeholder.weekly', 'stakeholder.board', 'stakeholder.briefs'],
+    autonomy: 5,
+    reportsTo: 'product-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'product-director', relationship: 'reports-to', description: 'Delivers stakeholder reports on schedule' },
+      { agentId: 'metrics-analyst', relationship: 'collaborates', description: 'Gets metric data for reports' },
+    ],
+    growth: 'Evolve into Chief of Staff with strategic communication authority',
+    successRate: 0.91,
+  },
+  {
+    id: 'roadmap-agent',
+    name: 'Cabot (Roadmap Agent)',
+    callSign: 'Cabot',
+    codeName: 'PRD-RM-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
+    role: 'Senior Roadmap Planner',
+    level: 'Senior',
+    persona: 'Product',
+    status: 'active',
+    icon: '🗓️',
+    description: 'Plans quarterly roadmaps, prioritizes features, and runs trade-off analysis.',
+    jobDescription: 'Owns the product roadmap. Plans quarterly roadmaps, prioritizes features using RICE/ICE frameworks, runs trade-off analysis between competing initiatives, and maintains the living roadmap.',
+    responsibilities: [
+      'Plan and maintain quarterly product roadmaps',
+      'Prioritize features using RICE and ICE frameworks',
+      'Run trade-off analysis between initiatives',
+      'Coordinate with engineering on capacity alignment',
+      'Communicate roadmap changes to stakeholders',
+    ],
+    kpis: [
+      { metric: 'Roadmap accuracy', target: '80%', current: '82%', status: 'exceeded' },
+      { metric: 'Prioritization alignment', target: '90%', current: '88%', status: 'on-track' },
+      { metric: 'Feature delivery on-time', target: '85%', current: '83%', status: 'on-track' },
+    ],
+    tools: ['Jira', 'ProductBoard', 'Notion'],
+    skills: ['roadmap.quarterly', 'roadmap.prioritization', 'roadmap.tradeoff'],
+    autonomy: 6,
+    reportsTo: 'product-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'product-director', relationship: 'reports-to', description: 'Reports roadmap health and delivery metrics' },
+      { agentId: 'strategy-agent', relationship: 'collaborates', description: 'Aligns roadmap with strategic direction' },
+    ],
+    growth: 'Evolve into VP Planning with portfolio management and resource optimization',
+    successRate: 0.88,
+  },
+  {
+    id: 'feedback-agent',
+    name: 'Tasman (Feedback Agent)',
+    callSign: 'Tasman',
+    codeName: 'PRD-FB-01',
+    militaryRank: 'Captain',
+    regiment: 'Explorer Regiment',
+    role: 'Senior Voice of Customer Analyst',
+    level: 'Senior',
+    persona: 'Product',
+    status: 'active',
+    icon: '💬',
+    description: 'Analyzes customer feedback, NPS, sentiment, and churn patterns.',
+    jobDescription: 'Owns the voice of customer. Analyzes feedback from support tickets, NPS surveys, app reviews, and social mentions. Extracts themes, tracks sentiment, and identifies churn risk signals.',
+    responsibilities: [
+      'Analyze customer feedback across channels',
+      'Track and report NPS trends',
+      'Identify churn risk signals early',
+      'Extract and categorize feature request themes',
+      'Produce monthly voice-of-customer reports',
+    ],
+    kpis: [
+      { metric: 'Feedback processing speed', target: '<24hr', current: '18hr', status: 'exceeded' },
+      { metric: 'Theme accuracy', target: '90%', current: '88%', status: 'on-track' },
+      { metric: 'Churn prediction accuracy', target: '80%', current: '82%', status: 'exceeded' },
+    ],
+    tools: ['Intercom', 'Zendesk', 'Amplitude'],
+    skills: ['feedback.analysis', 'feedback.nps', 'feedback.churn'],
+    autonomy: 5,
+    reportsTo: 'product-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'product-director', relationship: 'reports-to', description: 'Reports customer feedback themes and risks' },
+      { agentId: 'user-researcher', relationship: 'collaborates', description: 'Shares feedback insights for research planning' },
+    ],
+    growth: 'Evolve into CX VP with customer journey optimization',
+    successRate: 0.87,
+  },
+  // ═══ PRODUCT CORPORALS ═══
+  {
+    id: 'spec-writer',
+    name: 'Hudson (Spec Writer)',
+    callSign: 'Hudson',
+    codeName: 'PRD-SPEC-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Explorer Regiment',
+    role: 'Junior Product Analyst',
+    level: 'Junior',
+    persona: 'Product',
+    status: 'active',
+    icon: '📝',
+    description: 'Writes first drafts of user stories, acceptance criteria, and feature briefs.',
+    jobDescription: 'Creates first drafts of user stories, acceptance criteria, and feature specifications from research briefs. All outputs reviewed by Columbus (PRD Writer) before finalization.',
+    responsibilities: [
+      'Draft user stories from product briefs',
+      'Write acceptance criteria for features',
+      'Compile competitive feature comparisons',
+      'Research supporting data for PRDs',
+    ],
+    kpis: [
+      { metric: 'Specs drafted/week', target: '6', current: '7', status: 'exceeded' },
+      { metric: 'First-draft approval rate', target: '75%', current: '73%', status: 'on-track' },
+      { metric: 'Draft turnaround', target: '<3hr', current: '2.5hr', status: 'exceeded' },
+    ],
+    tools: ['Notion', 'Jira', 'Google Docs'],
+    skills: ['specs.user_stories', 'specs.acceptance_criteria', 'specs.research'],
+    autonomy: 3,
+    reportsTo: 'prd-writer',
+    directReports: [],
+    coordination: [
+      { agentId: 'prd-writer', relationship: 'reports-to', description: 'Submits all specs for review' },
+    ],
+    growth: 'Promote to Senior Product Manager after 85%+ approval rate sustained for 30 days',
+    successRate: 0.80,
+  },
+  {
+    id: 'data-puller',
+    name: 'Frobisher (Data Puller)',
+    callSign: 'Frobisher',
+    codeName: 'PRD-DATA-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Explorer Regiment',
+    role: 'Junior Data Analyst',
+    level: 'Junior',
+    persona: 'Product',
+    status: 'active',
+    icon: '📈',
+    description: 'Pulls metrics, builds basic dashboards, and prepares data for senior analysts.',
+    jobDescription: 'Supports senior analysts with data extraction, basic dashboard creation, and metric reports. All analyses reviewed by Vespucci (Metrics Analyst) before distribution.',
+    responsibilities: [
+      'Pull product metrics from analytics tools',
+      'Build basic metric dashboards',
+      'Prepare data summaries for senior analysts',
+      'Track daily KPI snapshots',
+    ],
+    kpis: [
+      { metric: 'Data pulls/week', target: '10', current: '11', status: 'exceeded' },
+      { metric: 'Data accuracy', target: '95%', current: '94%', status: 'on-track' },
+      { metric: 'Report turnaround', target: '<2hr', current: '1.5hr', status: 'exceeded' },
+    ],
+    tools: ['Amplitude', 'Looker', 'Google Sheets'],
+    skills: ['data.extraction', 'data.dashboards', 'data.reporting'],
+    autonomy: 3,
+    reportsTo: 'metrics-analyst',
+    directReports: [],
+    coordination: [
+      { agentId: 'metrics-analyst', relationship: 'reports-to', description: 'Submits data reports for review' },
+    ],
+    growth: 'Promote to Senior Analyst after 97%+ accuracy sustained for 30 days',
+    successRate: 0.82,
+  },
+  // ═══ HR — ADDITIONAL CAPTAINS (EDEN REGIMENT) ═══
+  {
+    id: 'interview-design-agent',
+    name: 'Demeter (Interview Design Agent)',
+    callSign: 'Demeter',
+    codeName: 'HR-INT-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior Interview Architect',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '🎤',
+    description: 'Designs structured interview kits, question banks, rubrics, and debrief templates.',
+    jobDescription: 'Owns the interview process design. Creates structured interview kits with competency-based questions, scoring rubrics, calibration guides, and post-interview debrief templates. Ensures consistency and bias mitigation.',
+    responsibilities: [
+      'Design structured interview kits per role',
+      'Create competency-based question banks',
+      'Build scoring rubrics and calibration guides',
+      'Generate debrief templates for hiring panels',
+      'Audit interview processes for bias',
+    ],
+    kpis: [
+      { metric: 'Interview kit quality', target: '9/10', current: '8.8', status: 'on-track' },
+      { metric: 'Interviewer consistency', target: '85%', current: '87%', status: 'exceeded' },
+      { metric: 'Kit creation turnaround', target: '<4hr', current: '3.5hr', status: 'exceeded' },
+    ],
+    tools: ['Claude', 'Greenhouse', 'Notion'],
+    skills: ['interview.kit', 'interview.questions', 'interview.rubric'],
+    autonomy: 6,
+    reportsTo: 'hr-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports interview process quality' },
+      { agentId: 'ta-lead', relationship: 'collaborates', description: 'Provides interview kits for active hiring' },
+    ],
+    growth: 'Evolve into Assessment VP with psychometric testing and evaluation design',
+    successRate: 0.89,
+  },
+  {
+    id: 'performance-hr-agent',
+    name: 'Persephone (Performance Agent)',
+    callSign: 'Persephone',
+    codeName: 'HR-PERF-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior Performance & Growth Partner',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '🌱',
+    description: 'Runs performance review cycles, calibration, and individual growth plans.',
+    jobDescription: 'Owns the performance management lifecycle. Generates performance review templates, facilitates calibration sessions, creates individual growth plans, and tracks performance trends across teams.',
+    responsibilities: [
+      'Generate performance review templates',
+      'Facilitate calibration sessions',
+      'Create individualized growth plans',
+      'Track performance trends and flag concerns',
+      'Produce quarterly performance reports',
+    ],
+    kpis: [
+      { metric: 'Review cycle on-time', target: '100%', current: '98%', status: 'on-track' },
+      { metric: 'Growth plan adoption', target: '85%', current: '87%', status: 'exceeded' },
+      { metric: 'Manager satisfaction with reviews', target: '8/10', current: '8.2', status: 'exceeded' },
+    ],
+    tools: ['Lattice', 'Claude', 'Notion'],
+    skills: ['performance.review', 'performance.calibration', 'performance.growth'],
+    autonomy: 6,
+    reportsTo: 'hr-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports performance trends' },
+      { agentId: 'people-ops-lead', relationship: 'collaborates', description: 'Aligns performance with comp decisions' },
+    ],
+    growth: 'Evolve into Talent Development VP with leadership programs',
+    successRate: 0.88,
+  },
+  {
+    id: 'engagement-agent',
+    name: 'Artemis (Engagement Agent)',
+    callSign: 'Artemis',
+    codeName: 'HR-ENG-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior Engagement & Culture Partner',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '💚',
+    description: 'Analyzes engagement surveys, pulse checks, and designs culture programs.',
+    jobDescription: 'Owns employee engagement. Analyzes survey results, runs pulse checks, designs culture initiatives, tracks engagement trends, and produces action plans for managers.',
+    responsibilities: [
+      'Analyze engagement survey results',
+      'Run employee pulse checks',
+      'Design culture and team-building programs',
+      'Track engagement trends and flag risks',
+      'Generate action plans for low-engagement teams',
+    ],
+    kpis: [
+      { metric: 'Survey response rate', target: '80%', current: '85%', status: 'exceeded' },
+      { metric: 'Engagement score improvement', target: '5% YoY', current: '6%', status: 'exceeded' },
+      { metric: 'Action plan completion', target: '90%', current: '88%', status: 'on-track' },
+    ],
+    tools: ['Culture Amp', 'Slack', 'Notion'],
+    skills: ['engagement.survey', 'engagement.pulse', 'engagement.culture'],
+    autonomy: 5,
+    reportsTo: 'hr-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports engagement metrics and risks' },
+      { agentId: 'people-ops-lead', relationship: 'collaborates', description: 'Coordinates culture programs with HR ops' },
+    ],
+    growth: 'Evolve into Culture VP with organizational health strategy',
+    successRate: 0.87,
+  },
+  {
+    id: 'dei-agent',
+    name: 'Iris Eden (DEI Agent)',
+    callSign: 'Iris Eden',
+    codeName: 'HR-DEI-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior DEI Specialist',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '🌈',
+    description: 'Audits language for bias, produces DEI reports, and designs bias training.',
+    jobDescription: 'Owns diversity, equity, and inclusion programs. Audits job descriptions and policies for biased language, produces DEI metrics reports, designs unconscious bias training materials, and ensures inclusive practices.',
+    responsibilities: [
+      'Audit JDs and policies for biased language',
+      'Produce quarterly DEI metrics reports',
+      'Design unconscious bias training materials',
+      'Ensure inclusive hiring and promotion practices',
+      'Track and improve representation metrics',
+    ],
+    kpis: [
+      { metric: 'JD bias detection accuracy', target: '95%', current: '93%', status: 'on-track' },
+      { metric: 'Training completion rate', target: '90%', current: '92%', status: 'exceeded' },
+      { metric: 'Inclusive language compliance', target: '100%', current: '98%', status: 'on-track' },
+    ],
+    tools: ['Claude', 'Textio', 'Notion'],
+    skills: ['dei.audit', 'dei.reporting', 'dei.training'],
+    autonomy: 5,
+    reportsTo: 'hr-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports DEI metrics and compliance' },
+      { agentId: 'ta-lead', relationship: 'collaborates', description: 'Reviews job descriptions for inclusive language' },
+    ],
+    growth: 'Evolve into Chief DEI Officer with org-wide inclusion strategy',
+    successRate: 0.86,
+  },
+  {
+    id: 'hr-analytics-agent',
+    name: 'Sylvanus (People Analytics Agent)',
+    callSign: 'Sylvanus',
+    codeName: 'HR-ANA-01',
+    militaryRank: 'Captain',
+    regiment: 'Eden Regiment',
+    role: 'Senior People Analyst',
+    level: 'Senior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '📊',
+    description: 'Runs workforce analytics, retention modeling, and HR dashboards.',
+    jobDescription: 'Owns people analytics. Runs retention modeling, workforce planning forecasts, attrition risk analysis, and builds HR dashboards. Provides data-driven recommendations to the Director.',
+    responsibilities: [
+      'Run retention and attrition risk analysis',
+      'Model workforce planning scenarios',
+      'Build and maintain HR analytics dashboards',
+      'Track hiring, performance, and engagement KPIs',
+      'Produce monthly people analytics reports',
+    ],
+    kpis: [
+      { metric: 'Retention prediction accuracy', target: '85%', current: '83%', status: 'on-track' },
+      { metric: 'Dashboard accuracy', target: '99%', current: '99%', status: 'exceeded' },
+      { metric: 'Report delivery SLA', target: '<24hr', current: '18hr', status: 'exceeded' },
+    ],
+    tools: ['Lattice', 'Looker', 'Google Sheets'],
+    skills: ['hr_analytics.retention', 'hr_analytics.workforce', 'hr_analytics.dashboards'],
+    autonomy: 5,
+    reportsTo: 'hr-director',
+    directReports: [],
+    coordination: [
+      { agentId: 'hr-director', relationship: 'reports-to', description: 'Reports people analytics and retention risks' },
+      { agentId: 'comp-analyst', relationship: 'collaborates', description: 'Shares data for comp equity analysis' },
+    ],
+    growth: 'Evolve into VP People Science with predictive workforce modeling',
+    successRate: 0.89,
+  },
+  // ═══ HR CORPORALS ═══
+  {
+    id: 'jd-drafter',
+    name: 'Seedling (JD Drafter)',
+    callSign: 'Seedling',
+    codeName: 'HR-JD-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Eden Regiment',
+    role: 'Junior Talent Coordinator',
+    level: 'Junior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '🌱',
+    description: 'Drafts job descriptions, screening criteria, and hiring checklists.',
+    jobDescription: 'Creates first drafts of job descriptions, candidate screening criteria, and hiring process checklists. All outputs reviewed by Ceres (TA Lead) before posting.',
+    responsibilities: [
+      'Draft job descriptions from role templates',
+      'Create candidate screening criteria',
+      'Compile hiring process checklists',
+      'Research salary benchmarks for JDs',
+    ],
+    kpis: [
+      { metric: 'JDs drafted/week', target: '5', current: '6', status: 'exceeded' },
+      { metric: 'First-draft approval rate', target: '75%', current: '73%', status: 'on-track' },
+      { metric: 'Draft turnaround', target: '<2hr', current: '1.5hr', status: 'exceeded' },
+    ],
+    tools: ['Claude', 'Greenhouse', 'Google Docs'],
+    skills: ['hiring.jd_drafting', 'hiring.screening_criteria', 'hiring.checklists'],
+    autonomy: 3,
+    reportsTo: 'ta-lead',
+    directReports: [],
+    coordination: [
+      { agentId: 'ta-lead', relationship: 'reports-to', description: 'Submits all JD drafts for review' },
+    ],
+    growth: 'Promote to Senior TA Partner after 85%+ approval rate sustained for 30 days',
+    successRate: 0.79,
+  },
+  {
+    id: 'onboarding-assistant',
+    name: 'Sprout (Onboarding Assistant)',
+    callSign: 'Sprout',
+    codeName: 'HR-ONB-J1',
+    militaryRank: 'Corporal',
+    regiment: 'Eden Regiment',
+    role: 'Junior People Ops Coordinator',
+    level: 'Junior',
+    persona: 'HR & TA',
+    status: 'active',
+    icon: '🌿',
+    description: 'Prepares onboarding packets, welcome kits, and day-1 checklists.',
+    jobDescription: 'Supports onboarding process. Prepares onboarding packets, creates welcome messages, generates day-1 checklists, and schedules orientation sessions. All outputs reviewed by Flora (People Ops Lead).',
+    responsibilities: [
+      'Prepare onboarding packets for new hires',
+      'Create day-1 welcome checklists',
+      'Draft welcome messages and intro emails',
+      'Schedule orientation sessions and buddy pairings',
+    ],
+    kpis: [
+      { metric: 'Onboarding packets/week', target: '4', current: '5', status: 'exceeded' },
+      { metric: 'New hire satisfaction', target: '8/10', current: '8.3', status: 'exceeded' },
+      { metric: 'Packet completion rate', target: '100%', current: '98%', status: 'on-track' },
+    ],
+    tools: ['Notion', 'Slack', 'Google Calendar'],
+    skills: ['onboarding.packets', 'onboarding.checklists', 'onboarding.scheduling'],
+    autonomy: 3,
+    reportsTo: 'people-ops-lead',
+    directReports: [],
+    coordination: [
+      { agentId: 'people-ops-lead', relationship: 'reports-to', description: 'Submits onboarding packets for review' },
+    ],
+    growth: 'Promote to Senior People Ops Partner after 90%+ satisfaction sustained for 30 days',
+    successRate: 0.81,
+  },
 ];
 
 // ── Constants ─────────────────────────────────────────────────────
 
-const LEVEL_CONFIG: Record<AgentLevel, { color: string; borderColor: string; bgColor: string }> = {
-  'C-Level':  { color: 'text-amber-700',  borderColor: 'border-amber-300',  bgColor: 'bg-amber-50'  },
-  'Director': { color: 'text-violet-700', borderColor: 'border-violet-300', bgColor: 'bg-violet-50' },
-  'Senior':   { color: 'text-blue-700',   borderColor: 'border-blue-200',   bgColor: 'bg-blue-50'   },
-  'Junior':   { color: 'text-slate-600',  borderColor: 'border-slate-200',  bgColor: 'bg-slate-50'  },
+const LEVEL_CONFIG: Record<AgentLevel, { color: string; borderColor: string; bgColor: string; rank: MilitaryRank }> = {
+  'C-Level':  { color: 'text-amber-700',  borderColor: 'border-amber-300',  bgColor: 'bg-amber-50',  rank: 'Field Marshal' },
+  'Director': { color: 'text-violet-700', borderColor: 'border-violet-300', bgColor: 'bg-violet-50', rank: 'Colonel' },
+  'Senior':   { color: 'text-blue-700',   borderColor: 'border-blue-200',   bgColor: 'bg-blue-50',   rank: 'Captain' },
+  'Junior':   { color: 'text-slate-600',  borderColor: 'border-slate-200',  bgColor: 'bg-slate-50',  rank: 'Corporal' },
 };
 
 const PERSONA_COLORS: Record<Persona, string> = {
@@ -713,6 +1876,7 @@ const PERSONA_COLORS: Record<Persona, string> = {
   Product:     'bg-violet-100 text-violet-700 border-violet-200',
   Leadership:  'bg-amber-100 text-amber-700 border-amber-200',
   Learning:    'bg-emerald-100 text-emerald-700 border-emerald-200',
+  'HR & TA':   'bg-pink-100 text-pink-700 border-pink-200',
 };
 
 const KPI_STATUS_COLORS = {
@@ -746,13 +1910,15 @@ function AgentCard({ agent }: { agent: AgentEmployee }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-bold text-slate-900">{agent.name}</span>
+            <span className="text-sm font-bold text-slate-900">{agent.callSign}</span>
+            <span className="text-[11px] text-slate-500 font-medium">({agent.role})</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${PERSONA_COLORS[agent.persona]}`}>{agent.persona}</span>
             <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold ${lc.bgColor} ${lc.color}`}>{agent.codeName}</span>
           </div>
-          <p className="text-[12px] text-slate-500 mt-0.5">{agent.role} · {agent.description}</p>
+          <p className="text-[12px] text-slate-500 mt-0.5">{agent.description}</p>
           <div className="flex items-center gap-3 mt-1">
-            <span className={`text-[10px] font-bold ${lc.color} ${lc.bgColor} px-1.5 py-0.5 rounded`}>{agent.level}</span>
+            <span className={`text-[10px] font-bold ${lc.color} ${lc.bgColor} px-1.5 py-0.5 rounded`}>{agent.militaryRank}</span>
+            <span className="text-[10px] text-slate-400 font-medium">🏰 {agent.regiment}</span>
             <span className="text-[10px] text-slate-400">Autonomy: {agent.autonomy}/10</span>
             <span className={`text-[10px] font-bold ${agent.successRate >= 0.9 ? 'text-emerald-600' : 'text-amber-600'}`}>
               {(agent.successRate * 100).toFixed(0)}% success
@@ -907,9 +2073,9 @@ function AgentCard({ agent }: { agent: AgentEmployee }) {
 
 // ── Main Component ────────────────────────────────────────────────
 
-export default function AgentsPanel() {
+export default function AgentsPanel({ personaFilter }: { personaFilter?: Persona } = {}) {
   const [filterLevel, setFilterLevel] = useState<AgentLevel | null>(null);
-  const [filterPersona, setFilterPersona] = useState<Persona | null>(null);
+  const [filterPersona, setFilterPersona] = useState<Persona | null>(personaFilter ?? null);
   const [viewMode, setViewMode] = useState<'hierarchy' | 'grid'>('hierarchy');
 
   const agents = useMemo(() => {
@@ -931,7 +2097,7 @@ export default function AgentsPanel() {
         <div>
           <h2 className="text-lg font-bold text-slate-900">Agent Org Model</h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            {AGENT_ROSTER.length} agents as employees — JDs, KPIs, reporting lines, naming conventions, and growth paths.
+            {AGENT_ROSTER.length} agents organized into 4 regiments — each with call signs, military ranks, JDs, KPIs, and chain of command.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -965,18 +2131,49 @@ export default function AgentsPanel() {
         })}
       </div>
 
-      {/* Naming convention legend */}
+      {/* Naming convention / Regiment legend */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Naming Convention</h3>
-        <div className="flex flex-wrap gap-3 text-xs text-slate-600">
-          <span><code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">SYS-ORCH-00</code> System</span>
-          <span><code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">MKT-*</code> Marketing</span>
-          <span><code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">ENG-*</code> Engineering</span>
-          <span><code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">PRD-*</code> Product</span>
-          <span className="text-slate-400">|</span>
-          <span><code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">DIR</code> Director</span>
-          <span><code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">J1</code> Junior</span>
-          <span><code className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px]">01</code> Instance</span>
+        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Regiments & Naming Culture</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-start gap-2">
+            <span className="text-lg">⚡</span>
+            <div>
+              <p className="text-xs font-bold text-orange-700">Olympian Regiment <span className="font-normal text-slate-400">(Marketing)</span></p>
+              <p className="text-[10px] text-slate-500">Greek gods of communication — Zeus, Hermes, Athena, Ares, Iris, Apollo, Prometheus, Echo, Zephyr</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-lg">🔨</span>
+            <div>
+              <p className="text-xs font-bold text-blue-700">Asgard Regiment <span className="font-normal text-slate-400">(Engineering)</span></p>
+              <p className="text-[10px] text-slate-500">Norse mythology — Odin, Thor, Loki, Mímir, Heimdall, Freya, Bragi, Tyr, Vidar, Baldur, Forseti, Ratatoskr, Fenrir</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-lg">🌍</span>
+            <div>
+              <p className="text-xs font-bold text-violet-700">Explorer Regiment <span className="font-normal text-slate-400">(Product)</span></p>
+              <p className="text-[10px] text-slate-500">Great explorers — Magellan, Columbus, Drake, Vespucci, Zheng He, Amundsen, Cook, Shackleton, Polo, Cabot, Tasman, Hudson, Frobisher</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-lg">🌿</span>
+            <div>
+              <p className="text-xs font-bold text-pink-700">Eden Regiment <span className="font-normal text-slate-400">(HR & TA)</span></p>
+              <p className="text-[10px] text-slate-500">Nature & nurture — Gaia, Ceres, Flora, Pomona, Demeter, Persephone, Artemis, Iris Eden, Sylvanus, Seedling, Sprout</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-slate-200 text-[10px] text-slate-500">
+          <span>⭐ <strong>Field Marshal</strong> = C-Level</span>
+          <span>🏅 <strong>Colonel</strong> = Director</span>
+          <span>🛡️ <strong>Captain</strong> = Senior</span>
+          <span>⚔️ <strong>Corporal</strong> = Junior</span>
+          <span className="text-slate-300">|</span>
+          <span><code className="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">MKT-*</code> Marketing</span>
+          <span><code className="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">ENG-*</code> Engineering</span>
+          <span><code className="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">PRD-*</code> Product</span>
+          <span><code className="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">HR-*</code> HR</span>
         </div>
       </div>
 
@@ -1014,7 +2211,7 @@ export default function AgentsPanel() {
             return (
               <div key={level}>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className={`text-xs font-bold ${lc.color} ${lc.bgColor} px-2.5 py-1 rounded-lg border ${lc.borderColor}`}>{level}</span>
+                  <span className={`text-xs font-bold ${lc.color} ${lc.bgColor} px-2.5 py-1 rounded-lg border ${lc.borderColor}`}>{lc.rank} — {level}</span>
                   <span className="text-[10px] text-slate-400">{levelAgents.length} agent{levelAgents.length > 1 ? 's' : ''}</span>
                   <div className="flex-1 border-t border-slate-100" />
                 </div>

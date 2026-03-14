@@ -5,6 +5,7 @@
  * Tracks connector status, credentials, and test results
  */
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type ConnectorAuthType = 'api-key' | 'oauth' | 'url-token' | 'credentials' | 'sandbox';
 
@@ -82,7 +83,7 @@ export const CONNECTOR_CATALOG: ConnectorDef[] = [
       { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'sk-ant-...', required: true, hint: 'Get from console.anthropic.com' },
     ],
     sandboxAvailable: true,
-    personas: ['engineering', 'product', 'marketing'],
+    personas: ['engineering', 'product', 'marketing', 'hr'],
   },
   {
     id: 'openai',
@@ -97,7 +98,7 @@ export const CONNECTOR_CATALOG: ConnectorDef[] = [
       { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'sk-...', required: true, hint: 'Get from platform.openai.com' },
     ],
     sandboxAvailable: true,
-    personas: ['engineering', 'product', 'marketing'],
+    personas: ['engineering', 'product', 'marketing', 'hr'],
   },
   {
     id: 'azure-openai',
@@ -129,7 +130,7 @@ export const CONNECTOR_CATALOG: ConnectorDef[] = [
       { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'AIza...', required: true, hint: 'Get from aistudio.google.com' },
     ],
     sandboxAvailable: true,
-    personas: ['product', 'marketing'],
+    personas: ['product', 'marketing', 'hr'],
   },
   {
     id: 'ollama',
@@ -194,7 +195,7 @@ export const CONNECTOR_CATALOG: ConnectorDef[] = [
       { key: 'apiKey', label: 'Integration Token', type: 'password', placeholder: 'secret_...', required: true, hint: 'Create at notion.so/my-integrations' },
     ],
     sandboxAvailable: true,
-    personas: ['product', 'marketing'],
+    personas: ['product', 'marketing', 'hr'],
   },
 
   // Design
@@ -389,7 +390,7 @@ export const CONNECTOR_CATALOG: ConnectorDef[] = [
       { key: 'botToken', label: 'Bot OAuth Token', type: 'password', placeholder: 'xoxb-...', required: true, hint: 'Create a Slack App at api.slack.com/apps' },
     ],
     sandboxAvailable: true,
-    personas: ['engineering', 'product', 'marketing'],
+    personas: ['engineering', 'product', 'marketing', 'hr'],
   },
   {
     id: 'ms-teams',
@@ -620,7 +621,7 @@ export function resolveConnectorId(toolNameOrId: string): string | undefined {
 
 const DEFAULT_CONNECTED = new Set<string>([]); // Nothing pre-connected — user must connect tools
 
-export const useConnectionsStore = create<ConnectionsState>((set, get) => ({
+export const useConnectionsStore = create<ConnectionsState>()(persist((set, get) => ({
   connections: Object.fromEntries(
     CONNECTOR_CATALOG.map(c => [
       c.id,
@@ -668,4 +669,9 @@ export const useConnectionsStore = create<ConnectionsState>((set, get) => ({
     const conn = get().connections[resolved];
     return conn ? (conn.status === 'connected' || conn.status === 'sandbox') : false;
   },
+}), {
+  name: 'connections-store',
+  partialize: (state) => ({
+    connections: state.connections,
+  }),
 }));

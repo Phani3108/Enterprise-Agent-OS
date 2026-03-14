@@ -32,7 +32,6 @@ const NAV_COMMANDS: Omit<CommandItem, 'action'>[] = [
   { id: 'goto-workflows',    type: 'nav', label: 'Workflows',          icon: '⚡', subtitle: 'Design workflow automations' },
   { id: 'goto-tools',        type: 'nav', label: 'Tools',              icon: '🔌', subtitle: 'Manage integrations' },
   { id: 'goto-prompts',      type: 'nav', label: 'Prompt Library',     icon: '✨', subtitle: 'Browse curated prompts' },
-  { id: 'goto-knowledge',    type: 'nav', label: 'Knowledge',          icon: '📚', subtitle: 'Search internal knowledge' },
   { id: 'goto-control',      type: 'nav', label: 'Control Plane',      icon: '📡', subtitle: 'Platform monitoring' },
   { id: 'goto-memory',       type: 'nav', label: 'Memory Graph',       icon: '🧠', subtitle: 'Visualize system memory' },
   { id: 'goto-acp',          type: 'nav', label: 'Agent Collaboration', icon: '🔗', subtitle: 'View agent-to-agent flows' },
@@ -56,18 +55,19 @@ const QUICK_ACTIONS: Omit<CommandItem, 'action'>[] = [
 ];
 
 const NAV_SECTION_MAP: Record<string, string> = {
-  'goto-home': 'home', 'goto-personas': 'library-skills', 'goto-marketplace': 'library-skills',
-  'goto-builder': 'builder', 'goto-agents': 'agents', 'goto-workflows': 'workflows',
-  'goto-tools': 'ops-integrations', 'goto-prompts': 'library-prompts', 'goto-knowledge': 'library-templates',
-  'goto-control': 'admin-usage', 'goto-memory': 'admin-usage', 'goto-acp': 'ops-projects',
+  'goto-home': 'home', 'goto-personas': 'ws-marketing', 'goto-marketplace': 'ws-marketing',
+  'goto-builder': 'ws-engineering', 'goto-agents': 'platform-agents', 'goto-workflows': 'ws-marketing',
+  'goto-tools': 'ops-integrations', 'goto-prompts': 'ws-marketing',
+  'goto-control': 'admin-usage', 'goto-memory': 'admin-usage', 'goto-acp': 'ops-executions',
   'goto-governance': 'admin-governance', 'goto-observability': 'ops-executions',
-  'goto-forum': 'community-discussions', 'goto-blog': 'community-blogs', 'goto-scheduler': 'ops-executions',
-  'goto-learning': 'learning-courses', 'goto-settings': 'admin-settings',
+  'goto-forum': 'ops-discussions', 'goto-blog': 'ops-blog',
+  'goto-scheduler': 'ops-executions',
+  'goto-learning': 'platform-courses', 'goto-settings': 'admin-settings',
 };
 
 const ACTION_SECTION_MAP: Record<string, string> = {
-  'create-skill': 'builder', 'create-workflow': 'workflows', 'create-prompt': 'prompts',
-  'create-blog': 'community-blogs', 'create-discussion': 'community-discussions',
+  'create-skill': 'ws-marketing', 'create-workflow': 'ws-marketing', 'create-prompt': 'ws-marketing',
+  'create-blog': 'ops-blog', 'create-discussion': 'ops-discussions',
   'view-executions': 'ops-executions', 'check-licenses': 'admin-governance',
 };
 
@@ -141,7 +141,7 @@ export default function CommandPalette() {
               id: `skill-${s.id}`, type: 'skill',
               label: s.name, subtitle: s.personaName ?? 'Skill',
               icon: '🔧', keywords: s.name,
-              action: () => { setActiveSection('library-skills'); setCommandOpen(false); },
+              action: () => { setActiveSection('ws-marketing'); setCommandOpen(false); },
             });
           });
         }

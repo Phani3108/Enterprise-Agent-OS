@@ -7,16 +7,15 @@ import { RightPanel } from '../components/RightPanel';
 import CommandPalette from '../components/CommandPalette';
 import HomeCommandCenter from '../components/HomeCommandCenter';
 import IntentRouter from '../components/IntentRouter';
-import { LibrarySkillsView } from '../components/LibrarySkillsView';
-import { WorkflowBuilder } from '../components/WorkflowBuilder';
-import { KnowledgeExplorer } from '../components/KnowledgeExplorer';
+
 import { ToolsRegistry } from '../components/ToolsRegistry';
 import AgentsPanel from '../components/AgentsPanel';
 import { MarketingHub } from '../components/MarketingHub';
 import { EngineeringHub } from '../components/EngineeringHub';
 import { ProductHub } from '../components/ProductHub';
+import { HRHub } from '../components/HRHub';
 import { OpsExecutionsView } from '../components/OpsExecutionsView';
-import AgentCollaboration from '../components/AgentCollaboration';
+
 import { AdminUsageView } from '../components/AdminUsageView';
 import GovernanceDashboard from '../components/GovernanceDashboard';
 import SettingsPanel from '../components/SettingsPanel';
@@ -47,11 +46,13 @@ function MainContent({ section }: { section: string }) {
     case 'ws-marketing':            return <MarketingHub />;
     case 'ws-engineering':          return <EngineeringHub />;
     case 'ws-product':              return <ProductHub />;
+    case 'ws-hr':                   return <HRHub />;
 
     // Execution Screens (launched from workspace hubs or sidebar)
     case 'exec-marketing':          return <ExecutionScreen persona="marketing" workspace="ws-marketing" />;
     case 'exec-engineering':        return <ExecutionScreen persona="engineering" workspace="ws-engineering" />;
     case 'exec-product':            return <ExecutionScreen persona="product" workspace="ws-product" />;
+    case 'exec-hr':                 return <ExecutionScreen persona="hr" workspace="ws-hr" />;
 
     // Connections (all route to ConnectionsHub — the store tracks active category)
     case 'conn-ai-models':          return <ConnectionsHub />;
@@ -63,17 +64,13 @@ function MainContent({ section }: { section: string }) {
     case 'conn-messaging':          return <ConnectionsHub />;
     case 'conn-data':               return <ConnectionsHub />;
 
-    // Library
-    case 'library-skills':          return <LibrarySkillsView />;
-    case 'library-workflows':       return <WorkflowBuilder />;
-    case 'library-templates':       return <KnowledgeExplorer />;
-    case 'library-agents':          return <AgentsPanel />;
-    case 'library-courses':          return <AICoursesHub />;
+    // Platform (cross-persona)
+    case 'platform-agents':         return <AgentsPanel />;
+    case 'platform-courses':        return <AICoursesHub />;
 
     // Operations
     case 'ops-integrations':        return <ToolsRegistry />;
     case 'ops-executions':          return <OpsExecutionsView />;
-    case 'ops-projects':            return <AgentCollaboration />;
     case 'ops-discussions':         return <DiscussionForum />;
     case 'ops-blog':                return <BlogEditor />;
 
@@ -92,10 +89,34 @@ export default function Home() {
   const setCommandOpen   = useEAOSStore(s => s.setCommandOpen);
   const commandOpen      = useEAOSStore(s => s.commandOpen);
 
+  // -----------------------------------------------------------------------
+  // URL ↔ activeSection sync — enables deep-linking & back/forward nav
+  // -----------------------------------------------------------------------
+
+  // On mount: read URL path and navigate to the matching section
   useEffect(() => {
-    setActiveSection('home');
+    const path = window.location.pathname.replace(/^\/+/, '') || 'home';
+    setActiveSection(path);
     assertProvenance();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When activeSection changes: push to browser history
+  useEffect(() => {
+    const currentPath = window.location.pathname.replace(/^\/+/, '') || 'home';
+    if (activeSection && activeSection !== currentPath) {
+      window.history.pushState(null, '', `/${activeSection}`);
+    }
+  }, [activeSection]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const onPopState = () => {
+      const path = window.location.pathname.replace(/^\/+/, '') || 'home';
+      setActiveSection(path);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [setActiveSection]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -107,7 +128,7 @@ export default function Home() {
   }, [commandOpen, setCommandOpen]);
 
   // Intent Router shown on skills/marketplace section
-  const showIntentBar = activeSection === 'library-skills';
+  const showIntentBar = false; // Intent router disabled — skills are inside persona hubs
 
   return (
     <div className="flex h-screen bg-white text-slate-900 overflow-hidden">

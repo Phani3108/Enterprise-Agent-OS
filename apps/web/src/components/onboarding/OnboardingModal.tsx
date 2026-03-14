@@ -52,7 +52,7 @@ export default function OnboardingModal({ forceOpen, onClose }: OnboardingModalP
             // Route to home and put query into command bar
             setActiveSection('home');
         } else if (card.domain === 'Skills') {
-            setActiveSection('library-skills');
+            setActiveSection('ws-marketing');
         } else if (card.domain === 'System') {
             setActiveSection('ops-executions');
         }

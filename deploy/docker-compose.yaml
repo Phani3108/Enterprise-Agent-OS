@@ -41,7 +41,7 @@ services:
       - "4222:4222"
       - "8222:8222"  # monitoring
     healthcheck:
-      test: ["CMD", "nats-server", "--help"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -62,6 +62,14 @@ services:
       NATS_URL: nats://nats:4222
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://eaos:${POSTGRES_PASSWORD:-eaos-dev-password}@postgres:5432/eaos
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -80,6 +88,8 @@ services:
       NATS_URL: nats://nats:4222
       DATABASE_URL: postgresql://eaos:${POSTGRES_PASSWORD:-eaos-dev-password}@postgres:5432/eaos
       COGNITIVE_ENGINE_URL: http://cognitive-engine:3005
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
     depends_on:
       - gateway
       - nats
@@ -96,6 +106,13 @@ services:
       PORT: 3002
       DATABASE_URL: postgresql://eaos:${POSTGRES_PASSWORD:-eaos-dev-password}@postgres:5432/eaos
       REDIS_URL: redis://redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -112,6 +129,12 @@ services:
       PORT: 3004
       SKILL_SOURCE_URL: ${SKILL_SOURCE_URL:-https://skills.zeta.tech}
       NATS_URL: nats://nats:4222
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       - nats
 
@@ -129,6 +152,13 @@ services:
       MEMORY_URL: http://memory:3002
       SKILLS_URL: http://skills-runtime:3004
       RELIABILITY_URL: http://reliability-engine:3006
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3005/api/cognitive/process"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       - memory
       - skills-runtime

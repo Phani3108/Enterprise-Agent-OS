@@ -254,6 +254,23 @@ export class BlogStore {
             totalLikes: all.reduce((s, p) => s + p.likeCount, 0),
         };
     }
+
+    // -----------------------------------------------------------------------
+    // Persistence hooks
+    // -----------------------------------------------------------------------
+
+    _exportData(): BlogPost[] {
+        return Array.from(this.posts.values());
+    }
+
+    _importData(posts: BlogPost[]): void {
+        this.posts.clear();
+        this.slugIndex.clear();
+        for (const p of posts) {
+            this.posts.set(p.id, p);
+            this.slugIndex.set(p.slug, p.id);
+        }
+    }
 }
 
 export const blogStore = new BlogStore();

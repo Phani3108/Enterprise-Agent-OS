@@ -5,6 +5,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +36,8 @@ export interface Execution {
   /** Skill or workflow ID */
   skillId: string;
   skillName: string;
+  /** Whether this was a skill or workflow execution */
+  executableType: 'skill' | 'workflow';
   /** Which workspace section triggered this */
   workspace: string;
   status: ExecutionStatus;
@@ -67,6 +70,8 @@ export interface SkillDefinition {
   description: string;
   persona: string;
   category?: string;
+  /** Whether this is an atomic skill or a composed workflow template */
+  executableType: 'skill' | 'workflow';
   /** Tools this skill needs */
   requiredTools: string[];
   /** Steps in the workflow */
@@ -77,6 +82,10 @@ export interface SkillDefinition {
   outputFormat?: string;
   icon?: string;
   estimatedTime?: string;
+  /** Linked prompt IDs from prompt library */
+  promptIds?: string[];
+  /** For workflows: the skill IDs this composes */
+  composedSkillIds?: string[];
 }
 
 export interface SkillStep {
@@ -96,7 +105,18 @@ export interface SkillInputField {
   placeholder?: string;
   required: boolean;
   options?: { label: string; value: string }[];
+  /** Short inline hint shown below the input */
   hint?: string;
+  /** Rich description shown in right panel when field is focused */
+  description?: string;
+  /** Clickable examples the user can pick from */
+  examples?: string[];
+  /** Suggested values shown in right panel */
+  suggestedValues?: string[];
+  /** URL for external help documentation */
+  helpUrl?: string;
+  /** ID of a related prompt from the prompt library */
+  relatedPromptId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,9 +134,13 @@ interface ExecutionState {
   /** Currently selected skill (before execution starts) */
   selectedSkill: SkillDefinition | null;
 
+  /** Currently focused input field key (for right panel contextual help) */
+  focusedField: string | null;
+
   // Actions
   setSelectedSkill: (skill: SkillDefinition | null) => void;
   setAvailableSkills: (skills: SkillDefinition[]) => void;
+  setFocusedField: (fieldKey: string | null) => void;
 
   /** Create a new execution and make it active */
   createExecution: (params: {
@@ -153,14 +177,16 @@ interface ExecutionState {
   getRecent: (limit?: number) => Execution[];
 }
 
-export const useExecutionStore = create<ExecutionState>((set, get) => ({
+export const useExecutionStore = create<ExecutionState>()(persist((set, get) => ({
   activeExecution: null,
   executions: [],
   availableSkills: [],
   selectedSkill: null,
+  focusedField: null,
 
   setSelectedSkill: (skill) => set({ selectedSkill: skill }),
   setAvailableSkills: (skills) => set({ availableSkills: skills }),
+  setFocusedField: (fieldKey) => set({ focusedField: fieldKey }),
 
   createExecution: ({ persona, skill, workspace, inputs, fileIds, simulate }) => {
     const id = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -169,6 +195,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
       persona,
       skillId: skill.id,
       skillName: skill.name,
+      executableType: skill.executableType ?? 'skill',
       workspace,
       status: 'queued',
       steps: skill.steps.map(s => ({
@@ -246,4 +273,9 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     get().executions
       .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
       .slice(0, limit),
+}), {
+  name: 'execution-store',
+  partialize: (state) => ({
+    executions: state.executions,
+  }),
 }));

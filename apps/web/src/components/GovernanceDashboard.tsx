@@ -157,6 +157,7 @@ type Tab = 'licenses' | 'costs' | 'access' | 'audit' | 'compliance';
 export default function GovernanceDashboard() {
   const [tab, setTab] = useState<Tab>('licenses');
   const [licenses, setLicenses] = useState<LicenseRow[]>(SEED_LICENSES);
+  const [auditEntries, setAuditEntries] = useState<AuditRow[]>(SEED_AUDIT);
 
   useEffect(() => {
     // Try to load live license data
@@ -172,6 +173,24 @@ export default function GovernanceDashboard() {
         }));
       }
     }).catch(() => {});
+
+    // Fetch real audit log
+    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+    fetch(`${base}/api/governance/audit?limit=50`)
+      .then(r => r.json())
+      .then((data: { audit?: Array<{ id: string; timestamp: string; user: string; action: string; target: string; result: string }> }) => {
+        if (data.audit?.length) {
+          setAuditEntries(data.audit.map(a => ({
+            id: a.id,
+            timestamp: a.timestamp,
+            userName: a.user,
+            action: a.action,
+            target: a.target,
+            result: a.result as AuditRow['result'],
+          })));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const TABS: { id: Tab; label: string }[] = [
@@ -424,7 +443,7 @@ export default function GovernanceDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {SEED_AUDIT.map(entry => (
+                    {auditEntries.map(entry => (
                       <tr key={entry.id} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
                           {fmtTime(entry.timestamp)}

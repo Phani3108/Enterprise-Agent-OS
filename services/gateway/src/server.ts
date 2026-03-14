@@ -12,7 +12,7 @@
  */
 
 import { InMemoryStore, SessionRepository, ExecutionRepository, executeQuery, classifyIntent } from './core.js';
-import { PersistentStore } from './db.js';
+import { PersistentStore, PostgresStore } from './db.js';
 import { authenticateRequest } from './auth.js';
 import { PromptStore } from './prompt-library-data.js';
 import { CapabilityGraph } from './capability-graph.js';
@@ -33,28 +33,106 @@ import { getToolConnectFlow, shouldRedirectToOAuth } from './tool-connect-flows.
 import { getNotificationConfig, setNotificationConfig } from './marketing-notifications.js';
 import { ENGINEERING_SKILLS, getEngineeringSkill, getEngineeringSkillsByCluster } from './engineering-skills-data.js';
 import { PRODUCT_SKILLS, getProductSkill, getProductSkillsByCluster } from './product-skills-data.js';
-import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep } from './persona-api.js';
+import { HR_SKILLS, getHRSkill, getHRSkillsByCluster } from './hr-skills-data.js';
+import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep, getAgentKPIs, getAgentKPI, initPersonaStore, getExecutionStats, getAllExecutions } from './persona-api.js';
+import { getAvailableProviders, getDefaultProvider } from './llm-provider.js';
+import { getFullRegistry, getAgentIdentity, getAgentsByPersona } from './agent-registry.js';
+import { processCognitivePipeline, decompose, reason, reflect, groundCheck, getCognitiveResult, getCognitiveTrace, type CognitiveRequest } from './cognitive-pipeline.js';
 import { eventBus } from './event-bus.js';
 import { submitGoal, getGoalExecution, listGoalExecutions, cancelGoal } from './gateway-orchestrator.js';
+import { registerStore, initGatewayPersistence, flushGatewayPersistence } from './gateway-persistence.js';
+import { getAgentMemory, getAllAgentMemorySnapshots, recordAgentMemory, _exportData as exportAgentMemory, _importData as importAgentMemory } from './agent-memory.js';
+// Workflow engine available as library but not exposed as API routes
+// (all execution flows use persona-api.ts sequential model)
+// import { executeWorkflow, getWorkflowExecution, resumeWorkflow } from './workflow-bridge.js';
+import { initOTel, shutdownOTel } from '../../../packages/observability/src/otel.js';
+import { attachWebSocket, broadcastEvent, getWSClientCount } from './ws.js';
 import http from 'node:http';
 import { URL } from 'node:url';
 
-// Use persistent store if PERSIST=true or in production; otherwise in-memory
-const usePersistence = process.env.PERSIST === 'true' || process.env.NODE_ENV === 'production';
-const store = usePersistence ? new PersistentStore() : new InMemoryStore();
+// Store selection: DATABASE_URL → Postgres, PERSIST=false → In-memory, default → File-backed
+const usePostgres = !!process.env.DATABASE_URL;
+const useInMemory = process.env.PERSIST === 'false';
+const store = usePostgres ? new PostgresStore() : useInMemory ? new InMemoryStore() : new PersistentStore();
 const sessions = new SessionRepository(store);
 const executions = new ExecutionRepository(store);
+initPersonaStore(store); // Wire persona executions & KPIs to persistent backing store
 const promptStore = new PromptStore();
 const capabilityGraph = new CapabilityGraph();
 const personaSystem = new PersonaSystem();
 const licenseStore = new LicenseStore();
 
+// ---------------------------------------------------------------------------
+// Gateway-wide persistence — wire all ephemeral stores to backing store
+// ---------------------------------------------------------------------------
+registerStore('forum_threads',
+  () => forumStore._exportData().threads.map(t => ({ ...t, _type: 'thread' })).concat(forumStore._exportData().comments.map(c => ({ ...c, _type: 'comment' }))) as Record<string, unknown>[],
+  (rows) => forumStore._importData({
+    threads: rows.filter(r => r._type === 'thread') as any[],
+    comments: rows.filter(r => r._type === 'comment') as any[],
+  })
+);
+registerStore('blog_posts',
+  () => blogStore._exportData() as unknown as Record<string, unknown>[],
+  (rows) => blogStore._importData(rows as any[])
+);
+registerStore('scheduler_data',
+  () => {
+    const d = scheduler._exportData();
+    return [...d.jobs.map(j => ({ ...j, _type: 'job' } as Record<string, unknown>)), ...d.logs.map(l => ({ ...l, _type: 'log' } as Record<string, unknown>))];
+  },
+  (rows) => scheduler._importData({
+    jobs: rows.filter(r => r._type === 'job') as any[],
+    logs: rows.filter(r => r._type === 'log') as any[],
+  })
+);
+registerStore('event_log',
+  () => eventBus._exportLog() as unknown as Record<string, unknown>[],
+  (rows) => eventBus._importLog(rows as any[])
+);
+registerStore('memory_graph',
+  () => {
+    const d = memoryGraph._exportData();
+    return [
+      ...d.executions.map(e => ({ ...e, _type: 'execution' } as Record<string, unknown>)),
+      ...d.feedback.map(f => ({ ...f, _type: 'feedback' } as Record<string, unknown>)),
+      ...d.comments.map(c => ({ ...c, _type: 'comment' } as Record<string, unknown>)),
+    ];
+  },
+  (rows) => memoryGraph._importData({
+    executions: rows.filter(r => r._type === 'execution') as any[],
+    feedback: rows.filter(r => r._type === 'feedback') as any[],
+    comments: rows.filter(r => r._type === 'comment') as any[],
+  })
+);
+registerStore('agent_memory',
+  () => exportAgentMemory(),
+  (rows) => importAgentMemory(rows)
+);
+
 // Generic connection store for ConnectionsHub
 interface ConnectionRecord { connectorId: string; status: string; connectedAt?: string; lastTestedAt?: string; credentials?: Record<string, string>; error?: string; }
 const connectionStore = new Map<string, ConnectionRecord>();
 
+// Real audit log — records actual gateway operations
+interface AuditEntry { id: string; timestamp: string; user: string; action: string; target: string; result: 'success' | 'failed' | 'warning'; detail?: string; }
+const auditLog: AuditEntry[] = [];
+function recordAudit(user: string, action: string, target: string, result: AuditEntry['result'] = 'success', detail?: string): void {
+    auditLog.push({ id: `au-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), user, action, target, result, detail });
+    if (auditLog.length > 500) auditLog.splice(0, auditLog.length - 500); // keep last 500
+}
+
 // Course engagement tracking
 const courseVotes = new Set<string>();
+registerStore('connections',
+  () => Array.from(connectionStore.entries()).map(([id, rec]) => ({ id, ...rec })) as unknown as Record<string, unknown>[],
+  (rows) => { connectionStore.clear(); for (const r of rows) { const { id, ...rest } = r as any; connectionStore.set(id, rest); } }
+);
+registerStore('audit_log',
+  () => auditLog.map(e => ({ ...e })) as unknown as Record<string, unknown>[],
+  (rows) => { auditLog.length = 0; auditLog.push(...(rows as any[])); }
+);
+
 const courseStats = {
     totalCourses: 24,
     totalViews: 38420,
@@ -69,6 +147,13 @@ const courseStats = {
         isPinned: [4, 7, 17, 21, 23].includes(i + 1),
     })),
 };
+
+registerStore('course_stats',
+  () => [courseStats as unknown as Record<string, unknown>],
+  (rows) => { if (rows[0]) Object.assign(courseStats, rows[0]); }
+);
+
+initGatewayPersistence(store); // Restore all ephemeral stores from backing store
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
@@ -126,7 +211,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 timestamp: new Date().toISOString(),
                 llmConfigured: !!process.env.ANTHROPIC_API_KEY,
                 githubConfigured: !!process.env.GITHUB_TOKEN,
-                persistenceEnabled: usePersistence,
+                persistenceEnabled: usePostgres ? 'postgres' : usePersistence,
+                wsClients: getWSClientCount(),
                 storeStats: 'stats' in store ? (store as PersistentStore).stats() : { tables: 0, totalRows: 0 },
             });
             return;
@@ -143,6 +229,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
             await eventBus.emit('query.received', { query, userId });
             const result = await executeQuery(query, userId, sessions, executions);
+            recordAudit(userId, 'query.execute', String(query).slice(0, 80), 'success');
             await eventBus.emit('query.completed', {
                 sessionId: result.sessionId,
                 intent: result.intent.type,
@@ -174,9 +261,35 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
 
-        // Skills catalog
+        // Skills catalog (legacy)
         if (path === '/api/skills' && method === 'GET') {
             sendJSON(res, 200, { skills: SKILL_CATALOG, total: SKILL_CATALOG.length });
+            return;
+        }
+
+        // Unified skills & workflows — all personas, filterable by type
+        if (path === '/api/skills/unified' && method === 'GET') {
+            const typeFilter = url.searchParams.get('type'); // 'skill' | 'workflow' | null
+            const personaFilter = url.searchParams.get('persona');
+            const all = [
+                ...ENGINEERING_SKILLS,
+                ...PRODUCT_SKILLS,
+                ...HR_SKILLS,
+                ...marketingApi.getMarketingSkills(),
+            ];
+            const filtered = all.filter(s => {
+                if (typeFilter && (s as any).executableType !== typeFilter) return false;
+                if (personaFilter && (s as any).persona !== personaFilter) return false;
+                return true;
+            });
+            sendJSON(res, 200, {
+                skills: filtered,
+                total: filtered.length,
+                counts: {
+                    skills: all.filter((s: any) => s.executableType !== 'workflow').length,
+                    workflows: all.filter((s: any) => s.executableType === 'workflow').length,
+                },
+            });
             return;
         }
 
@@ -1034,27 +1147,44 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path === '/api/observability/agents' && method === 'GET') {
-            sendJSON(res, 200, {
-                agents: [
-                    { id: 'ag1', name: 'Campaign Strategist', persona: 'Marketing',   model: 'claude-opus-4-6',    status: 'active', tokensUsed: 48200, lastAction: 'Generating ICP analysis',       successRate: 0.97, startedAt: new Date(Date.now() - 120000).toISOString() },
-                    { id: 'ag2', name: 'Ticket Classifier',   persona: 'Support',     model: 'claude-haiku-4-5',   status: 'active', tokensUsed: 12800, lastAction: 'Classifying support ticket',     successRate: 0.99, startedAt: new Date(Date.now() - 300000).toISOString() },
-                    { id: 'ag3', name: 'Contract Analyzer',   persona: 'Legal',       model: 'claude-opus-4-6',    status: 'idle',   tokensUsed: 82400, lastAction: 'Contract risk analysis',         successRate: 0.94, startedAt: new Date(Date.now() - 600000).toISOString() },
-                    { id: 'ag4', name: 'Code Reviewer',       persona: 'Engineering', model: 'claude-sonnet-4-6',  status: 'active', tokensUsed: 33600, lastAction: 'PR review: auth module',         successRate: 0.98, startedAt: new Date(Date.now() - 180000).toISOString() },
-                    { id: 'ag5', name: 'Intent Router',       persona: 'System',      model: 'claude-sonnet-4-6',  status: 'active', tokensUsed: 8400,  lastAction: 'Routing user query',             successRate: 0.96, startedAt: new Date(Date.now() -  60000).toISOString() },
-                ],
-                total: 5, active: 4, idle: 1,
+            // Real agent data from KPI store + registry
+            const kpis = getAgentKPIs();
+            const stats = getExecutionStats();
+            const activeSet = new Set(stats.activeAgents);
+            const agents = kpis.map(k => {
+                const identity = getAgentIdentity(k.agentId);
+                return {
+                    id: k.agentId,
+                    name: identity?.callSign ?? k.callSign,
+                    persona: identity?.persona ?? 'unknown',
+                    model: identity?.preferredModel ?? 'claude-sonnet-4-6',
+                    status: activeSet.has(k.agentId) ? 'active' : 'idle',
+                    tokensUsed: Math.round(k.avgTokenCost * k.totalExecutions * 1_000_000),
+                    lastAction: `Last executed: ${k.lastExecutedAt}`,
+                    successRate: k.handoffSuccessRate / 100,
+                    startedAt: k.lastExecutedAt,
+                    totalExecutions: k.totalExecutions,
+                    avgQualityScore: Math.round(k.avgQualityScore * 10) / 10,
+                    avgLatencyMs: Math.round(k.avgLatencyMs),
+                };
             });
+            const active = agents.filter(a => a.status === 'active').length;
+            sendJSON(res, 200, { agents, total: agents.length, active, idle: agents.length - active });
             return;
         }
 
         if (path === '/api/observability/metrics' && method === 'GET') {
+            const execStats = getExecutionStats();
+            const kpis = getAgentKPIs();
             sendJSON(res, 200, {
-                gateway: { status: 'healthy', uptime: process.uptime(), memoryMb: process.memoryUsage().heapUsed / 1_000_000 },
-                skills: { total: 8, active: 8 },
+                gateway: { status: 'healthy', uptime: process.uptime(), memoryMb: Math.round(process.memoryUsage().heapUsed / 1_000_000 * 100) / 100, wsClients: getWSClientCount() },
+                executions: { total: execStats.totalExecutions, byPersona: execStats.byPersona, totalCost: Math.round(execStats.totalCost * 10000) / 10000, avgQuality: Math.round(execStats.avgQuality * 10) / 10 },
+                agents: { total: kpis.length, active: execStats.activeAgents.length, avgQualityScore: kpis.length ? Math.round(kpis.reduce((s, k) => s + k.avgQualityScore, 0) / kpis.length * 10) / 10 : 0 },
                 scheduler: scheduler.getStats(),
                 blog: blogStore.getStats(),
                 forum: forumStore.getStats(),
                 memory: memoryGraph.getStats(),
+                llm: { defaultProvider: getDefaultProvider(), availableProviders: getAvailableProviders().filter(p => p.available).map(p => p.id) },
             });
             return;
         }
@@ -1063,29 +1193,52 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // ACP Executions
         // -----------------------------------------------------------------------
         if (path === '/api/acp/executions' && method === 'GET') {
-            sendJSON(res, 200, {
-                executions: [
-                    {
-                        id: 'exec-1', name: 'Campaign Launch Flow', persona: 'Marketing',
-                        skill: 'Campaign Strategy v2.1', status: 'running',
-                        startedAt: new Date(Date.now() - 45000).toISOString(),
-                        agents: [
-                            { id: 'a1', name: 'Intent Router',      icon: '🎯', model: 'claude-sonnet-4-6', persona: 'System',    x: 80,  y: 160 },
-                            { id: 'a2', name: 'Campaign Strategist', icon: '📣', model: 'claude-opus-4-6',   persona: 'Marketing', x: 280, y: 80  },
-                            { id: 'a3', name: 'Content Generator',   icon: '✍️', model: 'claude-sonnet-4-6', persona: 'Marketing', x: 480, y: 80  },
-                            { id: 'a4', name: 'HubSpot Connector',   icon: '🔌', model: 'tool',              persona: 'Tool',      x: 480, y: 240 },
-                            { id: 'a5', name: 'QA Reviewer',         icon: '✅', model: 'claude-haiku-4-5',  persona: 'Marketing', x: 280, y: 240 },
-                        ],
-                        messages: [
-                            { id: 'm1', from: 'a1', to: 'a2', type: 'task_delegation',  label: 'delegate',  payload: '{"intent":"launch_campaign","confidence":0.94}', timestamp: new Date(Date.now() - 44000).toISOString(), status: 'delivered' },
-                            { id: 'm2', from: 'a2', to: 'a4', type: 'task_delegation',  label: 'query CRM', payload: '{"tool":"hubspot","action":"get_contacts"}',       timestamp: new Date(Date.now() - 38000).toISOString(), status: 'delivered' },
-                            { id: 'm3', from: 'a4', to: 'a2', type: 'result_handoff',   label: 'CRM data',  payload: '{"contacts":847,"segments":["enterprise"]}',       timestamp: new Date(Date.now() - 30000).toISOString(), status: 'delivered' },
-                            { id: 'm4', from: 'a2', to: 'a3', type: 'task_delegation',  label: 'generate',  payload: '{"task":"write_campaign_copy","tone":"pro"}',       timestamp: new Date(Date.now() - 22000).toISOString(), status: 'delivered' },
-                            { id: 'm5', from: 'a3', to: 'a5', type: 'approval_request', label: 'review',    payload: '{"draft":"Your AI-powered workflow...","wc":142}',  timestamp: new Date(Date.now() - 10000).toISOString(), status: 'in_flight' },
-                        ],
-                    },
-                ],
+            // Real execution data — show recent executions with agent flow
+            const allExecs = getAllExecutions()
+              .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+              .slice(0, 10);
+
+            const executions = allExecs.map(exec => {
+              const agentSet = new Map<string, { id: string; name: string; persona: string; model: string }>();
+              const messages: Array<{ id: string; from: string; to: string; type: string; label: string; timestamp: string; status: string }> = [];
+
+              for (let i = 0; i < exec.steps.length; i++) {
+                const step = exec.steps[i];
+                const identity = getAgentIdentity(step.agent);
+                agentSet.set(step.agent, {
+                  id: step.agent,
+                  name: identity?.callSign ?? step.agent,
+                  persona: identity?.persona ?? exec.persona,
+                  model: identity?.preferredModel ?? 'claude-sonnet-4-6',
+                });
+                if (i < exec.steps.length - 1) {
+                  const next = exec.steps[i + 1];
+                  messages.push({
+                    id: `m-${exec.id}-${i}`,
+                    from: step.agent,
+                    to: next.agent,
+                    type: step.handoffValid === false ? 'handoff_warning' : 'result_handoff',
+                    label: step.stepName,
+                    timestamp: step.completedAt ?? step.startedAt ?? exec.startedAt,
+                    status: step.status === 'completed' ? 'delivered' : 'in_flight',
+                  });
+                }
+              }
+
+              return {
+                id: exec.id,
+                name: exec.skillName,
+                persona: exec.persona.charAt(0).toUpperCase() + exec.persona.slice(1),
+                skill: exec.skillName,
+                status: exec.status,
+                startedAt: exec.startedAt,
+                completedAt: exec.completedAt,
+                agents: Array.from(agentSet.values()),
+                messages,
+              };
             });
+
+            sendJSON(res, 200, { executions });
             return;
         }
 
@@ -1093,19 +1246,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // Governance — Audit Log
         // -----------------------------------------------------------------------
         if (path === '/api/governance/audit' && method === 'GET') {
-            const entries = [
-                { id: 'au1', timestamp: new Date(Date.now() - 300000).toISOString(), user: 'admin@corp.com',  action: 'skill.publish',        target: 'Campaign Strategy v2.1', result: 'success' },
-                { id: 'au2', timestamp: new Date(Date.now() - 240000).toISOString(), user: 'alice@corp.com',  action: 'tool.connect',         target: 'HubSpot CRM',            result: 'success' },
-                { id: 'au3', timestamp: new Date(Date.now() - 180000).toISOString(), user: 'bob@corp.com',    action: 'workflow.execute',     target: 'Lead Nurture v3',        result: 'success' },
-                { id: 'au4', timestamp: new Date(Date.now() - 120000).toISOString(), user: 'carol@corp.com',  action: 'prompt.fork',          target: 'Email Generator',        result: 'success' },
-                { id: 'au5', timestamp: new Date(Date.now() - 90000).toISOString(),  user: 'admin@corp.com',  action: 'user.role_change',     target: 'dave@corp.com → Admin',  result: 'success' },
-                { id: 'au6', timestamp: new Date(Date.now() - 60000).toISOString(),  user: 'eve@corp.com',    action: 'skill.execute',        target: 'Ticket Classifier v1.4', result: 'success' },
-                { id: 'au7', timestamp: new Date(Date.now() - 45000).toISOString(),  user: 'frank@corp.com',  action: 'tool.connect',         target: 'Salesforce CRM',         result: 'failed'  },
-                { id: 'au8', timestamp: new Date(Date.now() - 30000).toISOString(),  user: 'admin@corp.com',  action: 'governance.review',    target: 'OFAC Compliance Check',  result: 'warning' },
-                { id: 'au9', timestamp: new Date(Date.now() - 15000).toISOString(),  user: 'alice@corp.com',  action: 'skill.execute',        target: 'Contract Analyzer v3.0', result: 'success' },
-                { id: 'au10',timestamp: new Date(Date.now() - 5000).toISOString(),   user: 'system',          action: 'scheduler.trigger',    target: 'Weekly Report Cron',     result: 'success' },
-            ];
-            sendJSON(res, 200, { audit: entries, total: entries.length });
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            const entries = auditLog.slice(-limit).reverse();
+            sendJSON(res, 200, { audit: entries, total: auditLog.length });
             return;
         }
 
@@ -1113,16 +1256,21 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // Governance — Cost Attribution
         // -----------------------------------------------------------------------
         if (path === '/api/governance/costs' && method === 'GET') {
+            // Real cost attribution from actual execution data
+            const execStats = getExecutionStats();
+            const now = new Date();
+            const period = `${now.toLocaleString('en', { month: 'long' })} ${now.getFullYear()}`;
+            const breakdown = Object.entries(execStats.byPersona).map(([persona, data]) => ({
+                persona: persona.charAt(0).toUpperCase() + persona.slice(1),
+                skillsUsed: data.count,
+                estimatedCost: Math.round(data.totalCost * 10000) / 10000,
+                avgQuality: Math.round(data.avgQuality * 10) / 10,
+            }));
             sendJSON(res, 200, {
-                period: 'March 2026',
-                totalCost: 4218.50,
-                breakdown: [
-                    { persona: 'Marketing',  skillsUsed: 312, toolCalls: 1847, estimatedCost: 1240.20, budget: 2000, budgetPct: 62 },
-                    { persona: 'Engineering',skillsUsed: 284, toolCalls: 2103, estimatedCost: 980.75,  budget: 1500, budgetPct: 65 },
-                    { persona: 'Support',    skillsUsed: 198, toolCalls: 943,  estimatedCost: 620.40,  budget: 1000, budgetPct: 62 },
-                    { persona: 'Legal',      skillsUsed: 87,  toolCalls: 321,  estimatedCost: 840.15,  budget: 1200, budgetPct: 70 },
-                    { persona: 'Finance',    skillsUsed: 64,  toolCalls: 218,  estimatedCost: 537.00,  budget: 800,  budgetPct: 67 },
-                ],
+                period,
+                totalCost: Math.round(execStats.totalCost * 10000) / 10000,
+                totalExecutions: execStats.totalExecutions,
+                breakdown,
             });
             return;
         }
@@ -1165,10 +1313,10 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/marketing/execute' && method === 'POST') {
             const body = await readBody(req);
-            const { workflowId, inputs, simulate, customPrompt, modelId } = body as { workflowId: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; modelId?: string };
+            const { workflowId, inputs, simulate, customPrompt, provider, modelId } = body as { workflowId: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; provider?: string; modelId?: string };
             if (!workflowId) { sendJSON(res, 400, { error: 'Missing workflowId' }); return; }
             try {
-                const exec = marketingApi.createMarketingExecution(workflowId, inputs ?? {}, userId, simulate === true, customPrompt, modelId);
+                const exec = marketingApi.createMarketingExecution(workflowId, inputs ?? {}, userId, simulate === true, customPrompt, provider as any, modelId);
                 sendJSON(res, 201, { execution: exec });
             } catch (err) {
                 sendJSON(res, 400, { error: (err as Error).message });
@@ -1224,16 +1372,15 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path === '/api/marketing/roles' && method === 'GET') {
-            sendJSON(res, 200, {
-                roles: [
-                    { id: 'admin', name: 'Admin', permissions: ['*'] },
-                    { id: 'corp_it', name: 'Corp IT', permissions: ['marketing:manage_integrations', 'marketing:manage_users', 'marketing:view_analytics'] },
-                    { id: 'marketing_lead', name: 'Marketing Lead', permissions: ['marketing:execute', 'marketing:approve', 'marketing:approve_budget', 'marketing:approve_campaign', 'marketing:approve_content', 'marketing:manage_skills', 'marketing:manage_workflows', 'marketing:view_analytics', 'marketing:manage_assets'] },
-                    { id: 'marketing_manager', name: 'Marketing Manager', permissions: ['marketing:execute', 'marketing:approve', 'marketing:approve_content', 'marketing:manage_skills', 'marketing:view_analytics', 'marketing:manage_assets'] },
-                    { id: 'marketing_user', name: 'Marketing User', permissions: ['marketing:execute', 'marketing:view_analytics'] },
-                    { id: 'viewer', name: 'Viewer', permissions: ['marketing:view_only'] },
-                ],
-            });
+            // Derive roles from agent registry ranks
+            const registry = getFullRegistry();
+            const roles = Object.entries(registry.byRank).map(([rank, count]) => ({
+                id: rank,
+                name: rank.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                agentCount: count,
+                permissions: rank === 'field-marshal' ? ['*'] : rank === 'colonel' ? ['execute', 'approve', 'manage_skills', 'manage_workflows', 'view_analytics'] : rank === 'captain' ? ['execute', 'approve', 'view_analytics'] : ['execute', 'view_analytics'],
+            }));
+            sendJSON(res, 200, { roles });
             return;
         }
 
@@ -1326,6 +1473,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const body = await readBody(req);
             const { apiKey, accessToken, accountName } = body as { apiKey?: string; accessToken?: string; accountName?: string };
             const result = connectTool(toolId, { apiKey, accessToken, accountName });
+            recordAudit(userId, 'tool.connect', toolId, result.success ? 'success' : 'failed');
             if (result.success) {
                 const status = getToolConnectionStatus(toolId);
                 sendJSON(res, 200, { success: true, message: result.message, connection: status });
@@ -1339,6 +1487,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (path.match(/^\/api\/tools\/[^/]+\/disconnect$/) && method === 'POST') {
             const toolId = path.split('/')[3]!;
             const result = disconnectTool(toolId);
+            recordAudit(userId, 'tool.disconnect', toolId);
             sendJSON(res, 200, { success: result.success, message: result.message });
             return;
         }
@@ -1450,11 +1599,13 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // POST /api/engineering/execute — run a skill
         if (path === '/api/engineering/execute' && method === 'POST') {
             const body = await readBody(req);
-            const { skillId, inputs, simulate, customPrompt, modelId } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; modelId?: string };
+            const { skillId, inputs, simulate, customPrompt, provider, modelId } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; provider?: string; modelId?: string };
             if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
             const skill = getEngineeringSkill(skillId);
             if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
-            const exec = createPersonaExecution('engineering', skill, inputs ?? {}, undefined, simulate, customPrompt, modelId);
+            const exec = createPersonaExecution('engineering', skill, inputs ?? {}, undefined, simulate, customPrompt, provider as any, modelId);
+            recordAudit(userId, 'skill.execute', `Engineering / ${skill.name}`);
+            broadcastEvent(exec.id, 'session.started', { persona: 'engineering', skillId, simulate, provider });
             sendJSON(res, 200, { execution: exec });
             return;
         }
@@ -1506,11 +1657,13 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // POST /api/product/execute — run a skill
         if (path === '/api/product/execute' && method === 'POST') {
             const body = await readBody(req);
-            const { skillId, inputs, simulate, customPrompt, modelId } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; modelId?: string };
+            const { skillId, inputs, simulate, customPrompt, provider, modelId } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; provider?: string; modelId?: string };
             if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
             const skill = getProductSkill(skillId);
             if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
-            const exec = createPersonaExecution('product', skill, inputs ?? {}, undefined, simulate, customPrompt, modelId);
+            const exec = createPersonaExecution('product', skill, inputs ?? {}, undefined, simulate, customPrompt, provider as any, modelId);
+            recordAudit(userId, 'skill.execute', `Product / ${skill.name}`);
+            broadcastEvent(exec.id, 'session.started', { persona: 'product', skillId, simulate, provider });
             sendJSON(res, 200, { execution: exec });
             return;
         }
@@ -1542,6 +1695,64 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         // -----------------------------------------------------------------------
+        // HR & Talent Acquisition Persona API
+
+        // GET /api/hr/skills — full skill catalog
+        if (path === '/api/hr/skills' && method === 'GET') {
+            sendJSON(res, 200, { skills: HR_SKILLS, clusters: getHRSkillsByCluster() });
+            return;
+        }
+
+        // GET /api/hr/skills/:idOrSlug — single skill
+        if (path.match(/^\/api\/hr\/skills\/[^/]+$/) && method === 'GET') {
+            const idOrSlug = path.split('/')[4]!;
+            const skill = getHRSkill(idOrSlug);
+            if (!skill) { sendJSON(res, 404, { error: 'Skill not found' }); return; }
+            sendJSON(res, 200, { skill });
+            return;
+        }
+
+        // POST /api/hr/execute — run a skill
+        if (path === '/api/hr/execute' && method === 'POST') {
+            const body = await readBody(req);
+            const { skillId, inputs, simulate, customPrompt, provider, modelId } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean; customPrompt?: string; provider?: string; modelId?: string };
+            if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
+            const skill = getHRSkill(skillId);
+            if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
+            const exec = createPersonaExecution('hr', skill, inputs ?? {}, undefined, simulate, customPrompt, provider as any, modelId);
+            recordAudit(userId, 'skill.execute', `HR / ${skill.name}`);
+            broadcastEvent(exec.id, 'session.started', { persona: 'hr', skillId, simulate, provider });
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        // GET /api/hr/executions — list recent executions
+        if (path === '/api/hr/executions' && method === 'GET') {
+            const execs = listPersonaExecutions('hr');
+            sendJSON(res, 200, { executions: execs });
+            return;
+        }
+
+        // GET /api/hr/executions/:id — single execution
+        if (path.match(/^\/api\/hr\/executions\/[^/]+$/) && method === 'GET') {
+            const execId = path.split('/')[4]!;
+            const exec = getPersonaExecution(execId);
+            if (!exec || exec.persona !== 'hr') { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        // POST /api/hr/executions/:id/approve/:stepId — approve a step
+        if (path.match(/^\/api\/hr\/executions\/[^/]+\/approve\/[^/]+$/) && method === 'POST') {
+            const parts = path.split('/');
+            const execId = parts[4]!;
+            const stepId = parts[6]!;
+            const result = approvePersonaStep(execId, stepId);
+            sendJSON(res, result.success ? 200 : 400, result);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
         // Orchestrator API — Goal decomposition & execution
         // -----------------------------------------------------------------------
 
@@ -1558,6 +1769,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 (priority as 'low' | 'normal' | 'high' | 'critical') ?? 'normal',
                 userId
             );
+            recordAudit(userId, 'goal.submit', String(description).slice(0, 80));
+            broadcastEvent(exec.id, 'session.started', { type: 'goal', description, priority });
             sendJSON(res, 200, exec);
             return;
         }
@@ -1596,6 +1809,149 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/events/metrics' && method === 'GET') {
             sendJSON(res, 200, eventBus.getMetrics());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // LLM Provider API — Multi-model support
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/llm/providers' && method === 'GET') {
+            const providers = getAvailableProviders();
+            const defaultProvider = getDefaultProvider();
+            sendJSON(res, 200, { providers, defaultProvider });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Agent Registry API — Backend agent identities
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/agents/registry' && method === 'GET') {
+            sendJSON(res, 200, getFullRegistry());
+            return;
+        }
+
+        if (path.match(/^\/api\/agents\/registry\/[^/]+$/) && method === 'GET') {
+            const agentIdOrCallSign = decodeURIComponent(path.split('/')[4]!);
+            const agent = getAgentIdentity(agentIdOrCallSign);
+            if (!agent) { sendJSON(res, 404, { error: `Agent not found: ${agentIdOrCallSign}` }); return; }
+            sendJSON(res, 200, { agent });
+            return;
+        }
+
+        if (path.match(/^\/api\/agents\/persona\/[^/]+$/) && method === 'GET') {
+            const persona = path.split('/')[4] as any;
+            const agents = getAgentsByPersona(persona);
+            sendJSON(res, 200, { agents, count: agents.length });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Agent KPI API — Performance metrics from real executions
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/agents/kpis' && method === 'GET') {
+            sendJSON(res, 200, { kpis: getAgentKPIs() });
+            return;
+        }
+
+        if (path.match(/^\/api\/agents\/kpis\/[^/]+$/) && method === 'GET') {
+            const agentId = decodeURIComponent(path.split('/')[4]!);
+            const kpi = getAgentKPI(agentId);
+            if (!kpi) { sendJSON(res, 404, { error: `No KPI data for agent: ${agentId}` }); return; }
+            sendJSON(res, 200, { kpi });
+            return;
+        }
+
+        // Agent Memory — per-agent accumulated context
+        if (path === '/api/agents/memory' && method === 'GET') {
+            sendJSON(res, 200, { snapshots: getAllAgentMemorySnapshots() });
+            return;
+        }
+
+        if (path.match(/^\/api\/agents\/memory\/[^/]+$/) && method === 'GET') {
+            const agentId = decodeURIComponent(path.split('/')[4]!);
+            sendJSON(res, 200, { agentId, entries: getAgentMemory(agentId) });
+            return;
+        }
+
+        if (path.match(/^\/api\/agents\/memory\/[^/]+$/) && method === 'POST') {
+            const agentId = decodeURIComponent(path.split('/')[4]!);
+            const body = await readBody(req);
+            if (!body.kind || !body.content) { sendJSON(res, 400, { error: 'kind and content required' }); return; }
+            const entry = recordAgentMemory(agentId, body.kind, body.content, body.source ?? 'manual');
+            sendJSON(res, 201, { entry });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Cognitive Pipeline — goal decomposition, reasoning, reflection, grounding
+        // -----------------------------------------------------------------------
+        if (path === '/api/cognitive/process' && method === 'POST') {
+            const body = await readBody(req);
+            const { goal, context, options } = body as { goal: string; context?: Record<string, unknown>; options?: CognitiveRequest['options'] };
+            if (!goal) { sendJSON(res, 400, { error: 'goal required' }); return; }
+            const request: CognitiveRequest = {
+                id: `cog-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                goal,
+                context: context ?? {},
+                options,
+            };
+            const result = await processCognitivePipeline(request);
+            sendJSON(res, 200, { result });
+            return;
+        }
+
+        if (path === '/api/cognitive/decompose' && method === 'POST') {
+            const body = await readBody(req);
+            const { goal } = body as { goal: string };
+            if (!goal) { sendJSON(res, 400, { error: 'goal required' }); return; }
+            const result = await decompose(goal);
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        if (path === '/api/cognitive/reason' && method === 'POST') {
+            const body = await readBody(req);
+            const { goal, plan } = body as { goal: string; plan: string };
+            if (!goal) { sendJSON(res, 400, { error: 'goal required' }); return; }
+            const result = await reason(goal, plan ?? '');
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        if (path === '/api/cognitive/reflect' && method === 'POST') {
+            const body = await readBody(req);
+            const { output, goal } = body as { output: string; goal: string };
+            if (!output || !goal) { sendJSON(res, 400, { error: 'output and goal required' }); return; }
+            const result = await reflect(output, goal);
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        if (path === '/api/cognitive/ground' && method === 'POST') {
+            const body = await readBody(req);
+            const { output, context } = body as { output: string; context: Record<string, unknown> };
+            if (!output) { sendJSON(res, 400, { error: 'output required' }); return; }
+            const result = await groundCheck(output, context ?? {});
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        if (path.match(/^\/api\/cognitive\/status\/[^/]+$/) && method === 'GET') {
+            const requestId = path.split('/').pop()!;
+            const result = getCognitiveResult(requestId);
+            if (!result) { sendJSON(res, 404, { error: 'Not found' }); return; }
+            sendJSON(res, 200, { status: 'completed', result });
+            return;
+        }
+
+        if (path.match(/^\/api\/cognitive\/trace\/[^/]+$/) && method === 'GET') {
+            const requestId = path.split('/').pop()!;
+            const trace = getCognitiveTrace(requestId);
+            if (!trace) { sendJSON(res, 404, { error: 'Not found' }); return; }
+            sendJSON(res, 200, { trace });
             return;
         }
 
@@ -1642,6 +1998,12 @@ async function readBody(req: http.IncomingMessage): Promise<Record<string, unkno
 
 const server = http.createServer(handleRequest);
 
+// Initialize OpenTelemetry (non-blocking — logs warning if OTel packages missing)
+void initOTel('gateway');
+
+// Attach WebSocket handler for live execution streaming
+attachWebSocket(server);
+
 server.listen(PORT, () => {
     console.log(`\n  ╔══════════════════════════════════════╗`);
     console.log(`  ║   EOS Gateway — Enterprise OS API    ║`);
@@ -1676,18 +2038,26 @@ server.listen(PORT, () => {
     console.log(`    GET  /api/orchestrator/goals       — List all goal executions`);
     console.log(`    GET  /api/events                   — Event bus log`);
     console.log(`    GET  /api/events/metrics            — Event bus metrics`);
+    console.log(`    WS   /ws                            — Live execution streaming`);
     console.log(`\n  LLM: ${process.env.ANTHROPIC_API_KEY ? '✅ ANTHROPIC_API_KEY configured — real AI calls enabled' : '⚠️  ANTHROPIC_API_KEY not set — using fallback responses'}`);
     console.log(`  GitHub: ${process.env.GITHUB_TOKEN ? '✅ GITHUB_TOKEN configured' : '⚠️  GITHUB_TOKEN not set'}`);
-    console.log(`  Persistence: ${usePersistence ? '✅ File-backed persistent store' : '📝 In-memory store (set PERSIST=true for persistence)'}\n`);
+    console.log(`  Persistence: ${usePostgres ? '✅ PostgreSQL (DATABASE_URL)' : useInMemory ? '📝 In-memory store (PERSIST=false)' : '✅ File-backed persistent store (default)'}`);
+    console.log(`  OpenTelemetry: ${process.env.OTEL_EXPORTER_OTLP_ENDPOINT ? '✅ Exporting to ' + process.env.OTEL_EXPORTER_OTLP_ENDPOINT : '📝 Set OTEL_EXPORTER_OTLP_ENDPOINT to enable'}\n`);
 });
 
 // Graceful shutdown — flush persistent store
 process.on('SIGTERM', () => {
+    flushGatewayPersistence();
     if ('flush' in store) (store as PersistentStore).flush();
+    if ('close' in store) void (store as PostgresStore).close();
+    void shutdownOTel();
     server.close();
 });
 process.on('SIGINT', () => {
+    flushGatewayPersistence();
     if ('flush' in store) (store as PersistentStore).flush();
+    if ('close' in store) void (store as PostgresStore).close();
+    void shutdownOTel();
     server.close();
 });
 

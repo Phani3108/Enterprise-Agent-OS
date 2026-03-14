@@ -20,18 +20,12 @@ const NAV_LABELS: Record<string, string> = {
   'conn-cms':             'CMS & Publishing',
   'conn-messaging':       'Messaging',
   'conn-data':            'Data & Infra',
-  'library-skills':       'Skills',
-  'library-workflows':    'Workflows',
-  'library-prompts':      'Prompts',
-  'library-templates':    'Templates',
-  'library-agents':       'Agents',
+  'platform-agents':      'Agents',
+  'platform-courses':     'Courses',
   'ops-integrations':     'Tool Registry',
   'ops-executions':       'Executions',
-  'ops-projects':         'Projects',
-  'learning-courses':     'Courses',
-  'learning-playbooks':   'Playbooks',
-  'community-discussions':'Discussions',
-  'community-blogs':      'Blogs',
+  'ops-discussions':      'Discussions',
+  'ops-blog':             'Blog',
   'admin-governance':     'Governance',
   'admin-usage':          'Usage',
   'admin-settings':       'Settings',
@@ -43,22 +37,19 @@ const GROUP_LABELS: Record<string, string> = {
   'conn-ai-models':'Connections', 'conn-storage':'Connections',    'conn-design':'Connections',
   'conn-crm':'Connections',       'conn-devtools':'Connections',   'conn-cms':'Connections',
   'conn-messaging':'Connections', 'conn-data':'Connections',
-  'library-skills':'Library',     'library-workflows':'Library',   'library-prompts':'Library',
-  'library-templates':'Library',  'library-agents':'Library',
-  'ops-integrations':'Operations','ops-executions':'Operations',   'ops-projects':'Operations',
-  'learning-courses':'Learning',  'learning-playbooks':'Learning',
-  'community-discussions':'Community','community-blogs':'Community',
+  'platform-agents':'Platform',   'platform-courses':'Platform',
+  'ops-integrations':'Operations','ops-executions':'Operations',
+  'ops-discussions':'Operations',  'ops-blog':'Operations',
+  'platform-agents':'Platform',   'platform-courses':'Platform',
   'admin-governance':'Admin',     'admin-usage':'Admin',            'admin-settings':'Admin',
 };
 
-const LIVE_EXECUTION_SECTIONS = ['ws-marketing', 'library-skills', 'ops-executions'];
+const LIVE_EXECUTION_SECTIONS = ['ws-marketing', 'ws-engineering', 'ws-product', 'ws-hr', 'ops-executions'];
 
 const CREATE_ITEMS = [
-  { label: 'New Skill',     icon: '🔧', section: 'library-skills'    },
-  { label: 'New Workflow',  icon: '⚡', section: 'library-workflows'  },
-  { label: 'New Prompt',    icon: '✨', section: 'library-prompts'    },
-  { label: 'New Blog Post', icon: '✍️', section: 'community-blogs'   },
-  { label: 'New Discussion',icon: '💬', section: 'community-discussions'},
+  { label: 'New Workflow',  icon: '⚡', section: 'ws-marketing'      },
+  { label: 'New Blog Post', icon: '✍️', section: 'ops-blog'           },
+  { label: 'New Discussion',icon: '💬', section: 'ops-discussions'    },
 ];
 
 export function TopBar() {

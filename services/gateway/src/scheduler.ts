@@ -419,6 +419,31 @@ export class Scheduler {
         if (this.tickInterval) clearInterval(this.tickInterval);
         for (const timer of this.timers.values()) clearInterval(timer);
     }
+
+    // -----------------------------------------------------------------------
+    // Persistence hooks
+    // -----------------------------------------------------------------------
+
+    _exportData(): { jobs: ScheduledJob[]; logs: { jobId: string; entries: JobLog[] }[] } {
+        const logs: { jobId: string; entries: JobLog[] }[] = [];
+        for (const [jobId, entries] of this.logs) {
+            logs.push({ jobId, entries });
+        }
+        return { jobs: Array.from(this.jobs.values()), logs };
+    }
+
+    _importData(data: { jobs?: ScheduledJob[]; logs?: { jobId: string; entries: JobLog[] }[] }): void {
+        if (data.jobs) {
+            this.jobs.clear();
+            for (const j of data.jobs) this.jobs.set(j.id, j);
+        }
+        if (data.logs) {
+            this.logs.clear();
+            for (const entry of data.logs) {
+                this.logs.set(entry.jobId, entry.entries);
+            }
+        }
+    }
 }
 
 // Singleton

@@ -107,6 +107,18 @@ class GatewayEventBus {
         }
         return false;
     }
+
+    // -----------------------------------------------------------------------
+    // Persistence hooks
+    // -----------------------------------------------------------------------
+
+    _exportLog(): GatewayEvent[] {
+        return [...this.log];
+    }
+
+    _importLog(events: GatewayEvent[]): void {
+        this.log = events.slice(-this.maxLogSize);
+    }
 }
 
 // Singleton event bus

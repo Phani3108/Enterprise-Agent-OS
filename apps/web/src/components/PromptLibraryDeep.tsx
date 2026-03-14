@@ -14,6 +14,7 @@ const PERSONA_META: Record<Persona, { label: string; icon: string; color: string
   marketing:   { label: 'Marketing',   icon: '📣', color: 'bg-orange-100 text-orange-700 border-orange-200' },
   engineering: { label: 'Engineering', icon: '⚙️', color: 'bg-blue-100 text-blue-700 border-blue-200' },
   product:     { label: 'Product',     icon: '🗺️', color: 'bg-violet-100 text-violet-700 border-violet-200' },
+  hr:          { label: 'HR & TA',     icon: '👥', color: 'bg-pink-100 text-pink-700 border-pink-200' },
 };
 
 const LLM_META: Record<LLMProvider, { label: string; color: string; icon: string }> = {
@@ -239,17 +240,46 @@ function PromptCard({ prompt }: { prompt: DeepPrompt }) {
               </pre>
             )}
           </div>
+
+          {/* Linked skills/workflows */}
+          {prompt.linkedSkillIds && prompt.linkedSkillIds.length > 0 && (
+            <div>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Used by</span>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {prompt.linkedSkillIds.map(sid => (
+                  <span key={sid} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+                    ⚡ {sid}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Source badge */}
+          {prompt.source && (
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                prompt.source === 'built-in' ? 'bg-slate-100 text-slate-600' :
+                prompt.source === 'community' ? 'bg-violet-50 text-violet-600' :
+                'bg-amber-50 text-amber-600'
+              }`}>
+                {prompt.source === 'built-in' ? '📦 Built-in' :
+                 prompt.source === 'community' ? '🌐 Community' :
+                 '✏️ Custom'}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export function PromptLibrary() {
+export function PromptLibrary({ personaFilter }: { personaFilter?: Persona } = {}) {
   const prompts = usePromptStore(s => s.prompts);
 
   const [search, setSearch] = useState('');
-  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(personaFilter ?? null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLlm, setSelectedLlm] = useState<LLMProvider | null>(null);
 
@@ -277,6 +307,7 @@ export function PromptLibrary() {
     marketing: prompts.filter(p => p.persona === 'marketing').length,
     engineering: prompts.filter(p => p.persona === 'engineering').length,
     product: prompts.filter(p => p.persona === 'product').length,
+    hr: prompts.filter(p => p.persona === 'hr').length,
   }), [prompts]);
 
   const totalVariants = useMemo(() =>
@@ -296,13 +327,14 @@ export function PromptLibrary() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-6 gap-3">
         {[
           { label: 'Total Prompts', value: prompts.length, color: 'text-slate-900' },
           { label: 'Variations', value: totalVariants, color: 'text-blue-600' },
           { label: 'Marketing', value: personaCounts.marketing, color: 'text-orange-600' },
           { label: 'Engineering', value: personaCounts.engineering, color: 'text-blue-600' },
           { label: 'Product', value: personaCounts.product, color: 'text-violet-600' },
+          { label: 'HR & TA', value: personaCounts.hr, color: 'text-pink-600' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border border-slate-200 bg-white p-3 text-center">
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>

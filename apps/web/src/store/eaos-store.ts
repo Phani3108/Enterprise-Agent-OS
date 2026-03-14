@@ -4,6 +4,7 @@
  * Zustand store for EAOS Mission Control state.
  */
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,6 +38,9 @@ interface EAOSState {
     toggleRightPanel: () => void;
     activeExecutionId: string | null;
     setActiveExecutionId: (id: string | null) => void;
+    /** Right panel mode: 'help' during configuration, 'execution' during runs */
+    rightPanelMode: 'help' | 'execution';
+    setRightPanelMode: (mode: 'help' | 'execution') => void;
 }
 
 interface Session {
@@ -63,7 +67,7 @@ interface Notification {
 // Store
 // ---------------------------------------------------------------------------
 
-export const useEAOSStore = create<EAOSState>((set) => ({
+export const useEAOSStore = create<EAOSState>()(persist((set) => ({
     // Navigation
     activeSection: 'personas',
     sidebarCollapsed: false,
@@ -127,6 +131,16 @@ export const useEAOSStore = create<EAOSState>((set) => ({
     toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
     activeExecutionId: null,
     setActiveExecutionId: (id) => set({ activeExecutionId: id }),
+    rightPanelMode: 'help' as const,
+    setRightPanelMode: (mode) => set({ rightPanelMode: mode }),
+}), {
+  name: 'eaos-store',
+  partialize: (state) => ({
+    activeSection: state.activeSection,
+    sidebarCollapsed: state.sidebarCollapsed,
+    notifications: state.notifications,
+    activeSessions: state.activeSessions,
+  }),
 }));
 
 /** Store hydration anchor — required for cross-tab state reconciliation */

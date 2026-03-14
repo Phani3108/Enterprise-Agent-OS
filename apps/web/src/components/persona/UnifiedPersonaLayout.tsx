@@ -1,7 +1,6 @@
 /**
- * UnifiedPersonaLayout — Shared 4-section sidebar for all personas.
- * Consolidates MarketingModuleLayout, EngineeringModuleLayout, ProductModuleLayout
- * into a single clean navigation: Skills → Outputs → Programs → Memory.
+ * UnifiedPersonaLayout — Shared 7-section sidebar for all personas.
+ * Skills → Workflows → Prompts → Agents → Outputs → Programs → Memory.
  * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
@@ -14,10 +13,13 @@ import type { ReactNode } from 'react';
 // ---------------------------------------------------------------------------
 
 const SECTIONS = [
-  { id: 'skills',   label: 'Skills',   icon: '⚡' },
-  { id: 'outputs',  label: 'Outputs',  icon: '📦' },
-  { id: 'programs', label: 'Programs', icon: '📋' },
-  { id: 'memory',   label: 'Memory',   icon: '🧠' },
+  { id: 'skills',    label: 'Skills',    icon: '⚡' },
+  { id: 'workflows', label: 'Workflows', icon: '🔀' },
+  { id: 'prompts',   label: 'Prompts',   icon: '✨' },
+  { id: 'agents',    label: 'Agents',    icon: '🤖' },
+  { id: 'outputs',   label: 'Outputs',   icon: '📦' },
+  { id: 'programs',  label: 'Programs',  icon: '📋' },
+  { id: 'memory',    label: 'Memory',    icon: '🧠' },
 ] as const;
 
 export type PersonaSection = (typeof SECTIONS)[number]['id'];

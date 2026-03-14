@@ -2,55 +2,17 @@
  * Engineering Persona — Skill Catalog
  * 10 seed skills for software engineering teams.
  * All use the same AgentOS execution runtime as Marketing.
+ * Uses UnifiedSkillDef from @agentos/skills for cross-persona consistency.
  * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
-export interface SkillStep {
-  id: string;
-  order: number;
-  name: string;
-  agent: string;
-  tool?: string;
-  outputKey: string;
-  requiresApproval?: boolean;
-  capability?: string;
-}
+import type { UnifiedSkillDef, UnifiedStepDef, UnifiedInputField } from '../../../packages/skills/src/schema.js';
 
-export interface SkillInputField {
-  id: string;
-  label: string;
-  type: 'text' | 'textarea' | 'url' | 'select' | 'multiselect' | 'file' | 'tags' | 'number' | 'toggle';
-  required?: boolean;
-  placeholder?: string;
-  options?: string[];
-  helpText?: string;
-  section: 'basic' | 'advanced';
-  accept?: string;
-  /** Show this field only if the named field has a truthy value */
-  dependsOn?: string;
-  /** For file fields: accepted MIME types or extensions */
-  multiple?: boolean;
-}
+// Re-export for backward compat
+export type { UnifiedSkillDef as PersonaSkillDef, UnifiedStepDef as SkillStep, UnifiedInputField as SkillInputField };
 
-export interface PersonaSkillDef {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  icon: string;
-  cluster: string;
-  complexity: 'simple' | 'moderate' | 'complex';
-  estimatedTime: string;
-  inputs: SkillInputField[];
-  steps: SkillStep[];
-  outputs: string[];
-  requiredTools: string[];
-  optionalTools: string[];
-  tags: string[];
-}
-
-export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
+export const ENGINEERING_SKILLS: UnifiedSkillDef[] = [
   // ──────────────────────────────────────────────────────────────────────────
   // 1) PR Review Assistant
   // ──────────────────────────────────────────────────────────────────────────
@@ -60,6 +22,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'PR Review Assistant',
     description: 'Review a pull request for correctness, maintainability, security, and performance. Generates structured feedback with risk findings and inline suggestions.',
     icon: '🔍',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Code Quality',
     complexity: 'moderate',
     estimatedTime: '45–90s',
@@ -102,6 +66,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'PR Summary Generator',
     description: 'Generate a concise, accurate PR summary for reviewers, release notes, or standup updates from a PR reference or pasted diff.',
     icon: '📝',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Code Quality',
     complexity: 'simple',
     estimatedTime: '15–30s',
@@ -140,6 +106,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'Unit Test Generator',
     description: 'Generate unit tests for a file, module, or function from a repo path or pasted source. Covers happy paths, edge cases, and error conditions.',
     icon: '🧪',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Testing',
     complexity: 'moderate',
     estimatedTime: '30–60s',
@@ -183,6 +151,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'Integration Test Generator',
     description: 'Generate integration tests for API endpoints, database interactions, or service-to-service calls. Includes setup, teardown, and assertion patterns.',
     icon: '🔗',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Testing',
     complexity: 'complex',
     estimatedTime: '45–90s',
@@ -214,6 +184,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'CI Failure Diagnosis',
     description: 'Diagnose a failed CI/CD job from logs or a build reference. Generates likely root causes, remediation checklist, and optionally creates a Jira issue.',
     icon: '🚨',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'CI/CD',
     complexity: 'moderate',
     estimatedTime: '20–45s',
@@ -254,6 +226,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'Incident RCA Draft',
     description: 'Generate a first-pass Root Cause Analysis document from incident notes, logs, timeline, and impact. Optionally creates a Confluence draft.',
     icon: '🔥',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Incidents',
     complexity: 'moderate',
     estimatedTime: '30–60s',
@@ -292,6 +266,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'Codebase Explainer',
     description: 'Analyze and explain an unfamiliar codebase, module, or function. Generates architecture summary, data flow, and onboarding guide.',
     icon: '🗺️',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Documentation',
     complexity: 'moderate',
     estimatedTime: '30–60s',
@@ -317,6 +293,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'Architecture Summary Generator',
     description: 'Generate a clear architecture summary document from system diagrams, code, and descriptions. Suitable for design reviews, wikis, and onboarding.',
     icon: '🏗️',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Architecture',
     complexity: 'moderate',
     estimatedTime: '30–60s',
@@ -346,6 +324,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'Technical Documentation Generator',
     description: 'Generate comprehensive technical docs for APIs, services, or libraries. Includes overview, usage, examples, and configuration reference.',
     icon: '📖',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Documentation',
     complexity: 'moderate',
     estimatedTime: '30–60s',
@@ -373,6 +353,8 @@ export const ENGINEERING_SKILLS: PersonaSkillDef[] = [
     name: 'Jira Ticket → Engineering Task Breakdown',
     description: 'Convert a Jira epic or story into a structured set of engineering sub-tasks with acceptance criteria, effort estimates, and technical notes.',
     icon: '📋',
+    persona: 'engineering',
+    executableType: 'skill',
     cluster: 'Planning',
     complexity: 'simple',
     estimatedTime: '20–40s',

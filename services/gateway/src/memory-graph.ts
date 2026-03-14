@@ -176,6 +176,20 @@ export class MemoryGraph {
       successRate: totalExecutions > 0 ? successCount / totalExecutions : 0,
     };
   }
+
+  // -----------------------------------------------------------------------
+  // Persistence hooks
+  // -----------------------------------------------------------------------
+
+  _exportData(): { executions: ExecutionRecord[]; feedback: SkillFeedback[]; comments: SkillComment[] } {
+    return { executions: [...executions], feedback: [...feedback], comments: [...comments] };
+  }
+
+  _importData(data: { executions?: ExecutionRecord[]; feedback?: SkillFeedback[]; comments?: SkillComment[] }): void {
+    if (data.executions) { executions.length = 0; executions.push(...data.executions); }
+    if (data.feedback) { feedback.length = 0; feedback.push(...data.feedback); }
+    if (data.comments) { comments.length = 0; comments.push(...data.comments); }
+  }
 }
 
 export const memoryGraph = new MemoryGraph();

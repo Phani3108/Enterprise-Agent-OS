@@ -44,8 +44,8 @@ export interface PersonaWorkflowFormProps {
   tools: SkillToolRef[];           // tool strip (required + optional)
   accentClass?: string;            // Tailwind bg class for Run button, e.g. 'bg-slate-900'
   accentHoverClass?: string;       // hover variant
-  persona?: 'engineering' | 'product' | 'marketing';
-  onExecute: (inputs: Record<string, string>, simulate: boolean, customPrompt?: string, modelId?: string) => void;
+  persona?: 'engineering' | 'product' | 'marketing' | 'hr';
+  onExecute: (inputs: Record<string, string>, simulate: boolean, customPrompt?: string, modelId?: string, provider?: string) => void;
   onCancel: () => void;
   executing: boolean;
 }
@@ -483,27 +483,65 @@ function FieldRenderer({
 // LLM Model selector
 // ---------------------------------------------------------------------------
 
-const LLM_MODELS = [
-  { id: 'claude-sonnet-4-6-20251001', label: 'Claude Sonnet 4.6', provider: 'Anthropic', icon: '🟣' },
-  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', provider: 'Anthropic', icon: '🟣' },
-  { id: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', provider: 'Anthropic', icon: '🟣' },
-  { id: 'claude-opus-4-20250514', label: 'Claude Opus 4', provider: 'Anthropic', icon: '🟣' },
+type LLMProvider = 'anthropic' | 'openai' | 'azure-openai' | 'gemini' | 'ollama';
+
+const LLM_MODELS: { id: string; label: string; provider: LLMProvider; icon: string }[] = [
+  // Anthropic
+  { id: 'claude-sonnet-4-6-20251001', label: 'Claude Sonnet 4.6', provider: 'anthropic', icon: '🟣' },
+  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', provider: 'anthropic', icon: '🟣' },
+  { id: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5', provider: 'anthropic', icon: '🟣' },
+  { id: 'claude-opus-4-20250514', label: 'Claude Opus 4', provider: 'anthropic', icon: '🟣' },
+  // OpenAI
+  { id: 'gpt-4o', label: 'GPT-4o', provider: 'openai', icon: '🟢' },
+  { id: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'openai', icon: '🟢' },
+  { id: 'gpt-4-turbo', label: 'GPT-4 Turbo', provider: 'openai', icon: '🟢' },
+  { id: 'o3-mini', label: 'O3 Mini', provider: 'openai', icon: '🟢' },
+  // Google Gemini
+  { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', provider: 'gemini', icon: '🔵' },
+  { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', provider: 'gemini', icon: '🔵' },
+  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', provider: 'gemini', icon: '🔵' },
+  // Azure OpenAI
+  { id: 'azure-gpt-4o', label: 'Azure GPT-4o', provider: 'azure-openai', icon: '☁️' },
+  { id: 'azure-gpt-4-turbo', label: 'Azure GPT-4 Turbo', provider: 'azure-openai', icon: '☁️' },
+  // Ollama (Local)
+  { id: 'llama3.1', label: 'Llama 3.1', provider: 'ollama', icon: '🦙' },
+  { id: 'codellama', label: 'Code Llama', provider: 'ollama', icon: '🦙' },
+  { id: 'mistral', label: 'Mistral', provider: 'ollama', icon: '🦙' },
+  { id: 'deepseek-coder', label: 'DeepSeek Coder', provider: 'ollama', icon: '🦙' },
 ];
 
+const PROVIDER_LABELS: Record<LLMProvider, string> = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  'azure-openai': 'Azure OpenAI',
+  gemini: 'Google Gemini',
+  ollama: 'Ollama (Local)',
+};
+
 function ModelSelector({ modelId, onChange }: { modelId: string; onChange: (id: string) => void }) {
+  const grouped = LLM_MODELS.reduce<Record<string, typeof LLM_MODELS>>((acc, m) => {
+    if (!acc[m.provider]) acc[m.provider] = [];
+    acc[m.provider]!.push(m);
+    return acc;
+  }, {});
+
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-700 mb-1.5">AI Model</p>
+      <p className="text-xs font-semibold text-slate-700 mb-1.5">AI Model & Provider</p>
       <select
         value={modelId}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
       >
-        {LLM_MODELS.map((m) => (
-          <option key={m.id} value={m.id}>{m.icon} {m.label} ({m.provider})</option>
+        {Object.entries(grouped).map(([provider, models]) => (
+          <optgroup key={provider} label={PROVIDER_LABELS[provider as LLMProvider] ?? provider}>
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>{m.icon} {m.label}</option>
+            ))}
+          </optgroup>
         ))}
       </select>
-      <p className="text-[11px] text-slate-400 mt-1">Select which AI model powers this skill execution</p>
+      <p className="text-[11px] text-slate-400 mt-1">Select which AI model and provider powers this skill execution</p>
     </div>
   );
 }
@@ -626,7 +664,9 @@ export function PersonaWorkflowForm({
     const promptContent = selectedPromptId
       ? prompts.find((p) => p.id === selectedPromptId)?.content
       : undefined;
-    onExecute(serialized, runMode === 'sandbox', promptContent, selectedModelId);
+    const selectedModel = LLM_MODELS.find((m) => m.id === selectedModelId);
+    const provider = selectedModel?.provider;
+    onExecute(serialized, runMode === 'sandbox', promptContent, selectedModelId, provider);
   };
 
   return (

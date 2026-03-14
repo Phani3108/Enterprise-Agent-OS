@@ -363,3 +363,82 @@ export interface ValidationResult {
     errors: string[];
     warnings: string[];
 }
+
+// ---------------------------------------------------------------------------
+// UnifiedSkillDef — Shared type used by gateway & frontend for all personas
+// ---------------------------------------------------------------------------
+
+/**
+ * ExecutableType distinguishes:
+ *  - skill: a focused, atomic action the user can run standalone
+ *  - workflow: a pre-composed template that wires multiple skills together
+ */
+export type ExecutableType = 'skill' | 'workflow';
+
+export interface UnifiedInputField {
+    id: string;
+    label: string;
+    type: 'text' | 'textarea' | 'url' | 'number' | 'date' | 'select' | 'multiselect' | 'file' | 'tags' | 'toggle';
+    required?: boolean;
+    placeholder?: string;
+    options?: string[] | { label: string; value: string }[];
+    /** Short inline hint shown below field */
+    helpText?: string;
+    /** Rich description shown in right panel */
+    description?: string;
+    /** Clickable examples the user can pick from */
+    examples?: string[];
+    /** Suggested values that auto-fill on click */
+    suggestedValues?: string[];
+    /** URL for external help docs */
+    helpUrl?: string;
+    /** ID of a prompt from prompt library that's related to this field */
+    relatedPromptId?: string;
+    section: 'basic' | 'advanced';
+    /** Show this field only if the named field has a truthy value */
+    dependsOn?: string;
+    /** For file fields: accepted MIME types or extensions */
+    accept?: string;
+    multiple?: boolean;
+}
+
+export interface UnifiedStepDef {
+    id: string;
+    order: number;
+    name: string;
+    agent: string;
+    tool?: string;
+    outputKey: string;
+    requiresApproval?: boolean;
+    description?: string;
+    /** Capability identifier for capability-based routing */
+    capability?: string;
+}
+
+export interface UnifiedSkillDef {
+    id: string;
+    slug: string;
+    name: string;
+    description: string;
+    icon: string;
+    /** The persona this belongs to */
+    persona: 'engineering' | 'marketing' | 'product' | 'leadership' | 'learning' | 'hr';
+    /** Visual grouping label */
+    cluster: string;
+    /** Whether this is an atomic skill or a composed workflow template */
+    executableType: ExecutableType;
+    complexity: 'simple' | 'moderate' | 'complex';
+    estimatedTime: string;
+    inputs: UnifiedInputField[];
+    steps: UnifiedStepDef[];
+    outputs: string[];
+    requiredTools: string[];
+    optionalTools: string[];
+    tags: string[];
+    /** Link to prompt library entry */
+    promptIds?: string[];
+    /** For workflows: the skill IDs this workflow composes */
+    composedSkillIds?: string[];
+    /** For workflows: DAG edges (if non-sequential) */
+    edges?: { from: string; to: string; condition?: string }[];
+}

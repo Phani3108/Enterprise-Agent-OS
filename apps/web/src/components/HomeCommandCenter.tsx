@@ -12,6 +12,7 @@ import { getStats, getPlatformMetrics } from '../lib/api';
 import { useConnectionsStore, CONNECTOR_CATALOG } from '../store/connections-store';
 import { useMarketingStore } from '../store/marketing-store';
 import { useEngineeringStore, useProductStore } from '../store/persona-store';
+import PlatformArchitecture from './PlatformArchitecture';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -220,6 +221,9 @@ export default function HomeCommandCenter() {
                 ))}
               </div>
             </div>
+
+            {/* Platform Architecture — How it works + Agent hierarchy */}
+            <PlatformArchitecture />
           </>
         ) : (
         <>
@@ -335,6 +339,9 @@ export default function HomeCommandCenter() {
             ))}
           </div>
         </div>
+
+        {/* ── Platform Architecture ── */}
+        <PlatformArchitecture />
 
         {/* ── Continue working + Pending attention ── */}
         <div className="grid grid-cols-5 gap-4">

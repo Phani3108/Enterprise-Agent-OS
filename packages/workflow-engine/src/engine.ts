@@ -23,6 +23,29 @@ export interface Workflow {
     variables: Record<string, unknown>;
     triggers: WorkflowTrigger[];
     metadata: { createdBy: string; createdAt: Date; domain: string };
+    /** Template metadata — present when this workflow is a reusable template */
+    template?: WorkflowTemplate;
+}
+
+/** Metadata for workflows that act as reusable templates users can fork & customize */
+export interface WorkflowTemplate {
+    /** Persona this template belongs to */
+    persona: 'engineering' | 'marketing' | 'product' | 'leadership' | 'learning';
+    /** Visual grouping */
+    category: string;
+    /** Icon for UI display */
+    icon: string;
+    /** Skill IDs this workflow composes */
+    composedSkillIds: string[];
+    /** Prompt IDs linked to this workflow */
+    promptIds: string[];
+    /** Whether users can fork / customize before running */
+    forkable: boolean;
+    /** If forked, the original template ID */
+    forkedFrom?: string;
+    /** Usage & rating */
+    usageCount: number;
+    rating: number;
 }
 
 export interface WorkflowStep {

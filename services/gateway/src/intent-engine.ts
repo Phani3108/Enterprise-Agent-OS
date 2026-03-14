@@ -58,9 +58,9 @@ const INTENT_PATTERNS: Array<{
   // HR
   {
     personaId: 'hr',
-    keywords: ['resume', 'hiring', 'job description', 'jd', 'interview', 'candidate', 'screening'],
-    skillKeywords: ['resume', 'hiring', 'jd', 'interview'],
-    skillSlugHint: 'hr-resume',
+    keywords: ['resume', 'hiring', 'job description', 'jd', 'interview', 'candidate', 'screening', 'onboarding', 'offboarding', 'performance review', 'engagement survey', 'compensation', 'offer letter', 'talent acquisition', 'people ops', 'dei', 'employee', 'recruiter', 'hr policy'],
+    skillKeywords: ['resume', 'hiring', 'jd', 'interview', 'onboarding', 'performance', 'compensation', 'offer', 'policy'],
+    skillSlugHint: 'hr-jd-generator',
   },
   // Finance
   {

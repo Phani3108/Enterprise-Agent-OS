@@ -144,7 +144,7 @@ export function MarketingCommandCenter() {
   const setActiveExecutionId = useEAOSStore((s) => s.setActiveExecutionId);
   const mainSetActiveSection = useEAOSStore((s) => s.setActiveSection);
 
-  const handleExecute = async (inputs: Record<string, unknown>, fileIds?: string[], simulate?: boolean, customPrompt?: string, modelId?: string) => {
+  const handleExecute = async (inputs: Record<string, unknown>, fileIds?: string[], simulate?: boolean, customPrompt?: string, modelId?: string, provider?: string) => {
     if (!selectedWorkflow) return;
     setExecuting(true);
     try {
@@ -156,6 +156,7 @@ export function MarketingCommandCenter() {
           inputs: { ...inputs, _fileIds: fileIds },
           simulate: simulate === true,
           customPrompt,
+          provider,
           modelId,
         }),
       });

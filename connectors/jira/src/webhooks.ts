@@ -143,14 +143,55 @@ _Confidence: ${((output.confidence as number ?? 0) * 100).toFixed(0)}% · Genera
     }
 
     // Jira API helpers
+    private get authHeader(): string {
+        return 'Basic ' + Buffer.from(`${this.config.jiraEmail}:${this.config.jiraApiToken}`).toString('base64');
+    }
+
     private async addComment(issueKey: string, body: string): Promise<void> {
-        // TODO: POST /rest/api/3/issue/{issueKey}/comment
-        console.log(`[Jira] Comment added to ${issueKey}`);
+        const res = await fetch(
+            `${this.config.jiraBaseUrl}/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': this.authHeader,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    body: {
+                        type: 'doc',
+                        version: 1,
+                        content: [{ type: 'paragraph', content: [{ type: 'text', text: body }] }],
+                    },
+                }),
+            },
+        );
+        if (!res.ok) console.error(`[Jira] Comment failed on ${issueKey}: ${res.status}`);
     }
 
     private async addLabels(issueKey: string, labels: string[]): Promise<void> {
-        // TODO: PUT /rest/api/3/issue/{issueKey}
-        console.log(`[Jira] Labels added to ${issueKey}: ${labels.join(', ')}`);
+        // First get existing labels, then merge
+        const getRes = await fetch(
+            `${this.config.jiraBaseUrl}/rest/api/3/issue/${encodeURIComponent(issueKey)}?fields=labels`,
+            { headers: { 'Authorization': this.authHeader, 'Accept': 'application/json' } },
+        );
+        const existing = getRes.ok
+            ? ((await getRes.json()) as { fields: { labels: string[] } }).fields.labels
+            : [];
+        const merged = [...new Set([...existing, ...labels])];
+
+        const res = await fetch(
+            `${this.config.jiraBaseUrl}/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': this.authHeader,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ fields: { labels: merged } }),
+            },
+        );
+        if (!res.ok) console.error(`[Jira] Labels update failed on ${issueKey}: ${res.status}`);
     }
 }
 

@@ -1,11 +1,18 @@
 /**
- * Persona API — Shared execution runtime for Engineering and Product personas
- * Uses the same Claude-backed step execution pattern as Marketing workflows.
+ * Persona API — Shared execution runtime for all personas (Engineering, Product, HR, Marketing)
+ * Uses the multi-LLM provider system and agent identity injection.
+ * Every step is executed with the assigned agent's system prompt, quality gates,
+ * and handoff validation between steps.
+ *
  * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
 import type { PersonaSkillDef, SkillStep } from './engineering-skills-data.js';
+import { callLLM as callLLMProvider, type LLMProviderId, type LLMResponse } from './llm-provider.js';
+import { getAgentIdentity, getAgentsByPersona, validateHandoff, type AgentIdentity } from './agent-registry.js';
+import { buildAgentMemoryContext, extractAndStoreMemory, initAgentMemory } from './agent-memory.js';
+import type { Store } from './db.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -13,14 +20,18 @@ import type { PersonaSkillDef, SkillStep } from './engineering-skills-data.js';
 
 export interface PersonaExecutionRecord {
   id: string;
-  persona: 'engineering' | 'product';
+  persona: 'engineering' | 'product' | 'hr' | 'marketing';
   skillId: string;
   skillName: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
+  provider?: LLMProviderId;
+  model?: string;
   steps: Array<{
     stepId: string;
     stepName: string;
     agent: string;
+    agentCallSign?: string;
+    agentRank?: string;
     tool?: string;
     status: string;
     startedAt?: string;
@@ -28,60 +39,102 @@ export interface PersonaExecutionRecord {
     outputKey?: string;
     outputPreview?: string;
     error?: string;
+    // KPI tracking
+    latencyMs?: number;
+    tokenCost?: number;
+    qualityScore?: number;
+    handoffValid?: boolean;
+    handoffWarnings?: string[];
   }>;
   outputs: Record<string, string>;
   inputs: Record<string, unknown>;
   startedAt: string;
   completedAt?: string;
   userId?: string;
+  // Aggregate metrics
+  totalTokenCost?: number;
+  totalLatencyMs?: number;
+  avgQualityScore?: number;
 }
 
 // ---------------------------------------------------------------------------
-// In-memory execution store
+// In-memory execution store (with optional persistence backing)
 // ---------------------------------------------------------------------------
 
 const executions = new Map<string, PersonaExecutionRecord>();
+let backingStore: Store | null = null;
+const EXEC_TABLE = 'persona_executions';
+const KPI_TABLE = 'agent_kpis';
+
+/** Initialize persistence — call from server.ts with the gateway store */
+export function initPersonaStore(store: Store): void {
+  backingStore = store;
+  // Restore executions from persistent store
+  const saved = store.all(EXEC_TABLE);
+  for (const row of saved) {
+    const rec = row as unknown as PersonaExecutionRecord;
+    if (rec.id) executions.set(rec.id, rec);
+  }
+  // Restore KPIs from persistent store
+  const savedKPIs = store.all(KPI_TABLE);
+  for (const row of savedKPIs) {
+    const kpi = row as unknown as AgentKPI;
+    if (kpi.agentId) agentKPIs.set(kpi.agentId, kpi);
+  }
+  const execCount = executions.size;
+  const kpiCount = agentKPIs.size;
+  if (execCount > 0 || kpiCount > 0) {
+    console.log(`[persona-api] Restored ${execCount} executions and ${kpiCount} agent KPIs from persistent store`);
+  }
+
+  // Wire agent memory persistence
+  initAgentMemory(store);
+}
+
+/** Persist an execution record to backing store */
+function persistExec(exec: PersonaExecutionRecord): void {
+  executions.set(exec.id, exec);
+  if (backingStore) {
+    const existing = backingStore.get(EXEC_TABLE, exec.id);
+    if (existing) {
+      backingStore.update(EXEC_TABLE, exec.id, exec as unknown as Record<string, unknown>);
+    } else {
+      backingStore.insert(EXEC_TABLE, exec.id, exec as unknown as Record<string, unknown>);
+    }
+  }
+}
+
+/** Persist a KPI record to backing store */
+function persistKPI(agentId: string, kpi: AgentKPI): void {
+  agentKPIs.set(agentId, kpi);
+  if (backingStore) {
+    const existing = backingStore.get(KPI_TABLE, agentId);
+    if (existing) {
+      backingStore.update(KPI_TABLE, agentId, kpi as unknown as Record<string, unknown>);
+    } else {
+      backingStore.insert(KPI_TABLE, agentId, kpi as unknown as Record<string, unknown>);
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Claude API call
 // ---------------------------------------------------------------------------
 
-async function callClaude(systemPrompt: string, userPrompt: string, modelId?: string): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    return generatePlaceholder(userPrompt);
-  }
-
-  const model = modelId || 'claude-sonnet-4-6-20251001';
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
+/** Unified LLM call — routes to the configured provider (Claude, OpenAI, Gemini, Ollama, Azure) */
+async function callLLMUnified(
+  systemPrompt: string,
+  userPrompt: string,
+  provider?: LLMProviderId,
+  modelId?: string
+): Promise<LLMResponse> {
+  return callLLMProvider({
+    provider,
+    model: modelId,
+    systemPrompt,
+    userPrompt,
+    maxTokens: 4096,
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Claude API error ${res.status}: ${errText}`);
-  }
-
-  const data = (await res.json()) as { content: Array<{ text: string }> };
-  return data.content?.[0]?.text ?? '';
-}
-
-function generatePlaceholder(prompt: string): string {
-  const topic = prompt.slice(0, 120).trim();
-  return `# AI-Generated Output\n\n*Configure ANTHROPIC_API_KEY to enable real Claude generation.*\n\n**Task:** ${topic}\n\nThis section would contain AI-generated content specific to your inputs.\n\n*Generated by AgentOS Persona Engine*`;
 }
 
 // ---------------------------------------------------------------------------
@@ -667,12 +720,13 @@ ${inputSummary ? `## Inputs Received\n${inputSummary}` : ''}
 // ---------------------------------------------------------------------------
 
 function buildStepPrompt(
-  persona: 'engineering' | 'product',
+  persona: 'engineering' | 'product' | 'hr' | 'marketing',
   skillName: string,
   step: SkillStep,
   inputs: Record<string, unknown>,
   previousOutputs: Record<string, string>,
-  customPrompt?: string
+  customPrompt?: string,
+  agentIdentity?: AgentIdentity
 ): { system: string; user: string } {
   const inputLines = Object.entries(inputs)
     .filter(([k, v]) => v !== undefined && v !== '' && v !== null)
@@ -691,12 +745,40 @@ function buildStepPrompt(
           .join('\n\n')
       : '';
 
-  const personaDescription =
-    persona === 'engineering'
-      ? 'expert software engineer and technical lead helping engineering teams with code quality, testing, CI/CD, architecture, documentation, and incident response'
-      : 'expert product manager and strategist helping product teams with requirements, planning, roadmaps, stakeholder communication, and customer research';
+  // Agent identity injection — if we have a registered agent, use their system prompt
+  let system: string;
+  if (agentIdentity) {
+    const qualitySection = agentIdentity.qualityGates.length > 0
+      ? `\n\nQuality Gates (you MUST verify before delivering output):\n${agentIdentity.qualityGates.map(g => `- ${g}`).join('\n')}`
+      : '';
+    const outputSection = agentIdentity.handoffOutputSchema.length > 0
+      ? `\n\nExpected Output Sections:\n${agentIdentity.handoffOutputSchema.map(s => `- ${s}`).join('\n')}`
+      : '';
+    const memoryContext = buildAgentMemoryContext(agentIdentity.id);
 
-  const system = `You are an ${personaDescription} working inside AgentOS, an AI operating system.
+    system = `${agentIdentity.systemPrompt}
+
+You are executing the "${skillName}" skill, step: "${step.name}".
+
+Your rank: ${agentIdentity.rank.replace('-', ' ').toUpperCase()}
+Your regiment: ${agentIdentity.regiment}
+You report to: ${agentIdentity.escalatesTo}${qualitySection}${outputSection}${memoryContext}
+
+Guidelines:
+- Be concrete and specific — no generic filler
+- Your output must meet ALL quality gates listed above
+- Include the expected output sections in your response
+- Output should be ready for review by your commanding officer
+- Include actionable recommendations backed by evidence`;
+  } else {
+    const personaDescriptions: Record<string, string> = {
+      engineering: 'expert software engineer and technical lead',
+      product: 'expert product manager and strategist',
+      hr: 'expert HR professional and people operations leader',
+      marketing: 'expert marketing strategist and campaign manager',
+    };
+    const desc = personaDescriptions[persona] ?? 'expert professional';
+    system = `You are an ${desc} working inside AgentOS, an AI operating system.
 
 You are executing the "${skillName}" skill. Produce high-quality, specific, immediately usable output.
 
@@ -706,6 +788,7 @@ Guidelines:
 - Write in a professional, technical tone appropriate for your audience
 - Output should be ready to review and use with minimal editing
 - Include actionable recommendations and specific details`;
+  }
 
   const customSection = customPrompt
     ? `\n\n## Additional Instructions (from selected prompt)\n${customPrompt}`
@@ -725,22 +808,62 @@ Please execute this step now. Produce specific, high-quality output for: "${step
 // Execution Runtime
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Adaptive Agent Routing — select best-performing agent for a role
+// ---------------------------------------------------------------------------
+
+/**
+ * Find the best available agent for a given role within the same persona.
+ * If the assigned agent has a quality score below the threshold AND alternative
+ * agents in the same persona have higher scores, swap to the better agent.
+ */
+function selectBestAgent(defaultAgentId: string, persona: string): string {
+  const kpi = agentKPIs.get(defaultAgentId);
+  // Need at least 3 executions to have meaningful KPI data
+  if (!kpi || kpi.totalExecutions < 3) return defaultAgentId;
+
+  const QUALITY_THRESHOLD = 6.0; // Below this, look for alternatives
+  if (kpi.avgQualityScore >= QUALITY_THRESHOLD) return defaultAgentId;
+
+  // Find alternative agents in the same persona with better scores
+  const defaultAgent = getAgentIdentity(defaultAgentId);
+  if (!defaultAgent) return defaultAgentId;
+
+  const candidates = getAgentsByPersona(defaultAgent.persona)
+    .filter(a => a.id !== defaultAgentId && a.rank === defaultAgent.rank)
+    .map(a => ({ agent: a, kpi: agentKPIs.get(a.id) }))
+    .filter(c => c.kpi && c.kpi.totalExecutions >= 3 && c.kpi.avgQualityScore > kpi.avgQualityScore)
+    .sort((a, b) => (b.kpi!.avgQualityScore - a.kpi!.avgQualityScore));
+
+  if (candidates.length > 0) {
+    const best = candidates[0]!;
+    console.log(`[adaptive-routing] Swapping ${defaultAgentId} (quality: ${kpi.avgQualityScore.toFixed(1)}) → ${best.agent.id} (quality: ${best.kpi!.avgQualityScore.toFixed(1)})`);
+    return best.agent.id;
+  }
+
+  return defaultAgentId;
+}
+
 async function processSkillSteps(
   execId: string,
-  persona: 'engineering' | 'product',
+  persona: 'engineering' | 'product' | 'hr' | 'marketing',
   skill: PersonaSkillDef,
   inputs: Record<string, unknown>,
   simulate: boolean,
   customPrompt?: string,
+  provider?: LLMProviderId,
   modelId?: string
 ): Promise<void> {
   const exec = executions.get(execId);
   if (!exec) return;
 
   exec.status = 'running';
-  executions.set(execId, exec);
+  persistExec(exec);
 
   const previousOutputs: Record<string, string> = {};
+  let totalTokenCost = 0;
+  let totalLatencyMs = 0;
+  let qualityScores: number[] = [];
 
   for (let i = 0; i < skill.steps.length; i++) {
     const skillStep = skill.steps[i];
@@ -748,49 +871,193 @@ async function processSkillSteps(
 
     if (!skillStep || !stepRecord) continue;
 
+    // Adaptive agent routing — select best performer for this role
+    const resolvedAgentId = selectBestAgent(skillStep.agent, persona);
+    const agentIdentity = getAgentIdentity(resolvedAgentId);
+    if (agentIdentity) {
+      stepRecord.agent = resolvedAgentId;
+      stepRecord.agentCallSign = agentIdentity.callSign;
+      stepRecord.agentRank = agentIdentity.rank;
+    }
+
     // Mark step as running
     stepRecord.status = 'running';
     stepRecord.startedAt = new Date().toISOString();
-    executions.set(execId, exec);
+    persistExec(exec);
+
+    const stepStart = Date.now();
 
     try {
       let output: string;
+      let llmResponse: LLMResponse | undefined;
 
       if (simulate) {
         await new Promise((r) => setTimeout(r, 600 + Math.random() * 800));
         output = generateSandboxOutput(persona, skill.name, skillStep, inputs, previousOutputs);
       } else {
-        const { system, user } = buildStepPrompt(persona, skill.name, skillStep, inputs, previousOutputs, customPrompt);
-        output = await callClaude(system, user, modelId);
+        const { system, user } = buildStepPrompt(persona, skill.name, skillStep, inputs, previousOutputs, customPrompt, agentIdentity);
+        llmResponse = await callLLMUnified(system, user, provider, modelId);
+        output = llmResponse.content;
+      }
+
+      // Handoff validation — check if output meets contract with next agent
+      if (i < skill.steps.length - 1) {
+        const nextStep = skill.steps[i + 1];
+        if (nextStep) {
+          const handoffResult = validateHandoff(skillStep.agent, nextStep.agent, output);
+          stepRecord.handoffValid = handoffResult.valid;
+          stepRecord.handoffWarnings = handoffResult.warnings;
+          if (!handoffResult.valid) {
+            console.warn(`[persona-api] Handoff warning: ${skillStep.agent} → ${nextStep.agent} missing fields: ${handoffResult.missingFields.join(', ')}`);
+          }
+        }
       }
 
       previousOutputs[skillStep.outputKey] = output;
       exec.outputs[skillStep.outputKey] = output;
+
+      // KPI tracking
+      const latencyMs = Date.now() - stepStart;
+      stepRecord.latencyMs = latencyMs;
+      totalLatencyMs += latencyMs;
+
+      if (llmResponse) {
+        stepRecord.tokenCost = llmResponse.cost;
+        totalTokenCost += llmResponse.cost;
+        exec.provider = llmResponse.provider;
+        exec.model = llmResponse.model;
+      }
+
+      // Quality heuristic: based on output length, section coverage, and completeness
+      const qualityScore = computeQualityScore(output, agentIdentity);
+      stepRecord.qualityScore = qualityScore;
+      qualityScores.push(qualityScore);
+
+      // Agent memory — extract and store learnings from this execution
+      if (agentIdentity) {
+        extractAndStoreMemory(agentIdentity.id, exec.id, skillStep.name, output);
+      }
 
       stepRecord.status = skillStep.requiresApproval ? 'approval_required' : 'completed';
       stepRecord.completedAt = new Date().toISOString();
       stepRecord.outputKey = skillStep.outputKey;
       stepRecord.outputPreview = output.slice(0, 300);
 
-      // Pause and wait for approval if required (in real system, would suspend)
-      if (skillStep.requiresApproval && !simulate) {
-        // Continue automatically in this runtime — approval UI is informational
-      }
     } catch (err) {
       stepRecord.status = 'failed';
       stepRecord.completedAt = new Date().toISOString();
+      stepRecord.latencyMs = Date.now() - stepStart;
       stepRecord.error = err instanceof Error ? err.message : 'Step failed';
       console.error(`[persona-api] Step ${skillStep.id} failed:`, err);
-      // Continue to next step (partial execution)
     }
 
-    executions.set(execId, exec);
+    persistExec(exec);
   }
+
+  // Aggregate metrics
+  exec.totalTokenCost = totalTokenCost;
+  exec.totalLatencyMs = totalLatencyMs;
+  exec.avgQualityScore = qualityScores.length > 0
+    ? Math.round((qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length) * 10) / 10
+    : undefined;
 
   const anyFailed = exec.steps.some((s) => s.status === 'failed');
   exec.status = anyFailed ? 'failed' : 'completed';
   exec.completedAt = new Date().toISOString();
-  executions.set(execId, exec);
+  persistExec(exec);
+
+  // Record to KPI store
+  recordExecutionMetrics(exec);
+}
+
+/** Compute a quality score (0-10) for agent output based on heuristics */
+function computeQualityScore(output: string, agent?: AgentIdentity): number {
+  let score = 5; // baseline
+
+  // Length check — very short output is likely low quality
+  if (output.length > 500) score += 1;
+  if (output.length > 1500) score += 1;
+  if (output.length > 3000) score += 0.5;
+  if (output.length < 100) score -= 2;
+
+  // Structure check — has markdown headers
+  const headerCount = (output.match(/^#{1,3} /gm) || []).length;
+  if (headerCount >= 2) score += 1;
+  if (headerCount >= 4) score += 0.5;
+
+  // Quality gate check — if agent has expected output sections, verify presence
+  if (agent?.handoffOutputSchema) {
+    const outputLower = output.toLowerCase();
+    const covered = agent.handoffOutputSchema.filter(s => outputLower.includes(s.toLowerCase())).length;
+    const coverage = covered / agent.handoffOutputSchema.length;
+    score += coverage * 2; // up to +2 for full schema coverage
+  }
+
+  // Actionability check — has specific items
+  if (output.includes('- [') || output.includes('| ')) score += 0.5; // checklists or tables
+  if (output.match(/```/g)?.length) score += 0.5; // code blocks
+
+  return Math.min(10, Math.max(0, Math.round(score * 10) / 10));
+}
+
+// ---------------------------------------------------------------------------
+// KPI Store — tracks agent performance across executions
+// ---------------------------------------------------------------------------
+
+interface AgentKPI {
+  agentId: string;
+  callSign: string;
+  totalExecutions: number;
+  avgLatencyMs: number;
+  avgQualityScore: number;
+  avgTokenCost: number;
+  handoffSuccessRate: number;
+  lastExecutedAt: string;
+}
+
+const agentKPIs = new Map<string, AgentKPI>();
+
+function recordExecutionMetrics(exec: PersonaExecutionRecord): void {
+  for (const step of exec.steps) {
+    if (step.status !== 'completed' && step.status !== 'approval_required') continue;
+
+    const agentId = step.agent;
+    const existing = agentKPIs.get(agentId);
+    const callSign = step.agentCallSign ?? agentId;
+
+    if (!existing) {
+      const kpi: AgentKPI = {
+        agentId,
+        callSign,
+        totalExecutions: 1,
+        avgLatencyMs: step.latencyMs ?? 0,
+        avgQualityScore: step.qualityScore ?? 5,
+        avgTokenCost: step.tokenCost ?? 0,
+        handoffSuccessRate: step.handoffValid !== false ? 100 : 0,
+        lastExecutedAt: step.completedAt ?? new Date().toISOString(),
+      };
+      persistKPI(agentId, kpi);
+    } else {
+      const n = existing.totalExecutions;
+      existing.totalExecutions = n + 1;
+      existing.avgLatencyMs = (existing.avgLatencyMs * n + (step.latencyMs ?? 0)) / (n + 1);
+      existing.avgQualityScore = (existing.avgQualityScore * n + (step.qualityScore ?? 5)) / (n + 1);
+      existing.avgTokenCost = (existing.avgTokenCost * n + (step.tokenCost ?? 0)) / (n + 1);
+      existing.handoffSuccessRate = (existing.handoffSuccessRate * n + (step.handoffValid !== false ? 100 : 0)) / (n + 1);
+      existing.lastExecutedAt = step.completedAt ?? new Date().toISOString();
+      persistKPI(agentId, existing);
+    }
+  }
+}
+
+/** Get KPI metrics for all agents */
+export function getAgentKPIs(): AgentKPI[] {
+  return Array.from(agentKPIs.values()).sort((a, b) => b.totalExecutions - a.totalExecutions);
+}
+
+/** Get KPI for a specific agent */
+export function getAgentKPI(agentId: string): AgentKPI | undefined {
+  return agentKPIs.get(agentId);
 }
 
 // ---------------------------------------------------------------------------
@@ -798,24 +1065,30 @@ async function processSkillSteps(
 // ---------------------------------------------------------------------------
 
 export function createPersonaExecution(
-  persona: 'engineering' | 'product',
+  persona: 'engineering' | 'product' | 'hr' | 'marketing',
   skill: PersonaSkillDef,
   inputs: Record<string, unknown>,
   userId?: string,
   simulate?: boolean,
   customPrompt?: string,
+  provider?: LLMProviderId,
   modelId?: string
 ): PersonaExecutionRecord {
   const id = `${persona}-exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-  const steps = skill.steps.map((s) => ({
-    stepId: s.id,
-    stepName: s.name,
-    agent: s.agent,
-    tool: s.tool,
-    status: 'pending' as const,
-    outputKey: s.outputKey,
-  }));
+  const steps = skill.steps.map((s) => {
+    const identity = getAgentIdentity(s.agent);
+    return {
+      stepId: s.id,
+      stepName: s.name,
+      agent: s.agent,
+      agentCallSign: identity?.callSign,
+      agentRank: identity?.rank,
+      tool: s.tool,
+      status: 'pending' as const,
+      outputKey: s.outputKey,
+    };
+  });
 
   const exec: PersonaExecutionRecord = {
     id,
@@ -823,6 +1096,7 @@ export function createPersonaExecution(
     skillId: skill.id,
     skillName: skill.name,
     status: 'queued',
+    provider,
     steps,
     outputs: {},
     inputs,
@@ -830,13 +1104,13 @@ export function createPersonaExecution(
     userId,
   };
 
-  executions.set(id, exec);
+  persistExec(exec);
 
   // Fire execution asynchronously
-  processSkillSteps(id, persona, skill, inputs, simulate ?? false, customPrompt, modelId).catch((err) => {
+  processSkillSteps(id, persona, skill, inputs, simulate ?? false, customPrompt, provider, modelId).catch((err) => {
     console.error(`[persona-api] processSkillSteps error for ${id}:`, err);
     const e = executions.get(id);
-    if (e) { e.status = 'failed'; executions.set(id, e); }
+    if (e) { e.status = 'failed'; persistExec(e); }
   });
 
   return exec;
@@ -846,12 +1120,59 @@ export function getPersonaExecution(execId: string): PersonaExecutionRecord | un
   return executions.get(execId);
 }
 
-export function listPersonaExecutions(persona: 'engineering' | 'product', limit = 20): PersonaExecutionRecord[] {
+export function listPersonaExecutions(persona: 'engineering' | 'product' | 'hr' | 'marketing', limit = 20): PersonaExecutionRecord[] {
   const all = Array.from(executions.values())
     .filter((e) => e.persona === persona)
     .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
     .slice(0, limit);
   return all;
+}
+
+/** Get all executions across all personas (for real metrics) */
+export function getAllExecutions(): PersonaExecutionRecord[] {
+  return Array.from(executions.values());
+}
+
+/** Computed stats from actual execution data */
+export function getExecutionStats(): {
+  totalExecutions: number;
+  byPersona: Record<string, { count: number; totalCost: number; avgQuality: number }>;
+  totalCost: number;
+  avgQuality: number;
+  activeAgents: string[];
+} {
+  const execs = Array.from(executions.values());
+  const byPersona: Record<string, { count: number; totalCost: number; qualitySum: number; qualityCount: number }> = {};
+
+  let totalCost = 0;
+  let qualitySum = 0;
+  let qualityCount = 0;
+  const activeAgentSet = new Set<string>();
+
+  for (const exec of execs) {
+    const pc = byPersona[exec.persona] ?? { count: 0, totalCost: 0, qualitySum: 0, qualityCount: 0 };
+    pc.count++;
+    if (exec.totalTokenCost) { pc.totalCost += exec.totalTokenCost; totalCost += exec.totalTokenCost; }
+    if (exec.avgQualityScore) { pc.qualitySum += exec.avgQualityScore; pc.qualityCount++; qualitySum += exec.avgQualityScore; qualityCount++; }
+    byPersona[exec.persona] = pc;
+
+    for (const step of exec.steps) {
+      if (step.status === 'running') activeAgentSet.add(step.agent);
+    }
+  }
+
+  const result: Record<string, { count: number; totalCost: number; avgQuality: number }> = {};
+  for (const [p, v] of Object.entries(byPersona)) {
+    result[p] = { count: v.count, totalCost: v.totalCost, avgQuality: v.qualityCount ? v.qualitySum / v.qualityCount : 0 };
+  }
+
+  return {
+    totalExecutions: execs.length,
+    byPersona: result,
+    totalCost,
+    avgQuality: qualityCount ? qualitySum / qualityCount : 0,
+    activeAgents: Array.from(activeAgentSet),
+  };
 }
 
 export function approvePersonaStep(execId: string, stepId: string): { success: boolean; message: string } {
@@ -861,6 +1182,6 @@ export function approvePersonaStep(execId: string, stepId: string): { success: b
   if (!step) return { success: false, message: 'Step not found' };
   if (step.status !== 'approval_required') return { success: false, message: 'Step is not awaiting approval' };
   step.status = 'completed';
-  executions.set(execId, exec);
+  persistExec(exec);
   return { success: true, message: 'Step approved' };
 }

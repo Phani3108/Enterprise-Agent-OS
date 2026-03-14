@@ -16,6 +16,9 @@ import { ProductProgramManagement } from './product/ProductProgramManagement';
 import { UnifiedPersonaLayout } from './persona/UnifiedPersonaLayout';
 import { OutputsView, type OutputExecution } from './persona/OutputsView';
 import { MemoryView } from './persona/MemoryView';
+import { WorkflowBuilder } from './WorkflowBuilder';
+import { PromptLibrary } from './PromptLibraryDeep';
+import AgentsPanel from './AgentsPanel';
 import type { ExecutionStepEvent } from '../store/marketing-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -130,7 +133,7 @@ function ProductCommandCenter({ initialSkillSlug }: { initialSkillSlug?: string 
         if (!execution) return;
         updateExecution(activeExecution.id, { status: execution.status, completedAt: execution.completedAt, outputs: execution.outputs ?? {} });
         for (const step of execution.steps ?? []) {
-          updateExecutionStep(activeExecution.id, step.stepId, { status: step.status, startedAt: step.startedAt, completedAt: step.completedAt, outputPreview: step.outputPreview, error: step.error });
+          updateExecutionStep(activeExecution.id, step.stepId, { status: step.status, startedAt: step.startedAt, completedAt: step.completedAt, outputPreview: step.outputPreview, error: step.error, agentCallSign: step.agentCallSign, agentRank: step.agentRank, qualityScore: step.qualityScore, latencyMs: step.latencyMs });
         }
         if (['completed', 'failed'].includes(execution.status)) {
           if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
@@ -140,14 +143,14 @@ function ProductCommandCenter({ initialSkillSlug }: { initialSkillSlug?: string 
     return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
   }, [activeExecution?.id, activeExecution?.status]);
 
-  const handleExecute = async (inputs: Record<string, string>, simulate: boolean, customPrompt?: string, modelId?: string) => {
+  const handleExecute = async (inputs: Record<string, string>, simulate: boolean, customPrompt?: string, modelId?: string, provider?: string) => {
     if (!selectedSkill) return;
     setExecuting(true);
     try {
       const res = await fetch(`${GATEWAY_URL}/api/product/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skillId: selectedSkill.id, inputs, simulate, customPrompt, modelId }),
+        body: JSON.stringify({ skillId: selectedSkill.id, inputs, simulate, customPrompt, provider, modelId }),
       });
       if (!res.ok) throw new Error('Execution failed');
       const { execution } = await res.json();
@@ -174,6 +177,8 @@ function ProductCommandCenter({ initialSkillSlug }: { initialSkillSlug?: string 
     stepId: s.stepId,
     stepName: s.stepName,
     agent: s.agent,
+    agentCallSign: s.agentCallSign,
+    agentRank: s.agentRank,
     tool: s.tool,
     status: s.status,
     startedAt: s.startedAt,
@@ -181,6 +186,8 @@ function ProductCommandCenter({ initialSkillSlug }: { initialSkillSlug?: string 
     outputKey: s.outputKey,
     outputPreview: s.outputPreview,
     error: s.error,
+    qualityScore: s.qualityScore,
+    latencyMs: s.latencyMs,
   }));
 
   return (
@@ -637,6 +644,9 @@ export function ProductHub() {
       onSectionChange={(s) => setActiveSection(s as typeof activeSection)}
     >
       {activeSection === 'skills' && <ProdSkillsContent />}
+      {activeSection === 'workflows' && <WorkflowBuilder personaFilter="Product" />}
+      {activeSection === 'prompts' && <PromptLibrary personaFilter="product" />}
+      {activeSection === 'agents' && <AgentsPanel personaFilter="Product" />}
       {activeSection === 'outputs' && <ProdOutputsContent />}
       {activeSection === 'programs' && <ProductProgramManagement />}
       {activeSection === 'memory' && <ProdMemoryContent />}

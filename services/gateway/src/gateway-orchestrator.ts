@@ -12,47 +12,22 @@
  */
 
 import { eventBus } from './event-bus.js';
+import { callLLM as callLLMProvider } from './llm-provider.js';
 
 // ---------------------------------------------------------------------------
-// LLM Call
+// LLM Call — Routes through multi-provider LLM system
 // ---------------------------------------------------------------------------
-
-const LLM_MODEL = 'claude-sonnet-4-6-20251001';
 
 async function callLLM(systemPrompt: string, userPrompt: string): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return { content: '', inputTokens: 0, outputTokens: 0 };
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-            model: LLM_MODEL,
-            max_tokens: 4096,
-            temperature: 0.2,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: userPrompt }],
-        }),
+    const response = await callLLMProvider({
+        systemPrompt,
+        userPrompt,
+        maxTokens: 4096,
     });
-
-    if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Claude API error ${res.status}: ${errText}`);
-    }
-
-    const data = (await res.json()) as {
-        content: Array<{ text: string }>;
-        usage?: { input_tokens: number; output_tokens: number };
-    };
-
     return {
-        content: data.content?.[0]?.text ?? '',
-        inputTokens: data.usage?.input_tokens ?? 0,
-        outputTokens: data.usage?.output_tokens ?? 0,
+        content: response.content,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
     };
 }
 

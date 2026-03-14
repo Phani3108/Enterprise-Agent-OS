@@ -55,9 +55,8 @@ const STATUS_RING: Record<WorkflowNode['status'], string> = {
 const WORKFLOW_TEMPLATES = [
   { name: 'Campaign Launch',    nodes: 8, status: 'active',   persona: 'Marketing' },
   { name: 'Incident Response',  nodes: 6, status: 'active',   persona: 'Engineering' },
-  { name: 'Contract Review',    nodes: 5, status: 'draft',    persona: 'Legal' },
-  { name: 'Onboarding Flow',    nodes: 7, status: 'inactive', persona: 'HR' },
-  { name: 'Budget Approval',    nodes: 4, status: 'active',   persona: 'Finance' },
+  { name: 'Product Launch',     nodes: 7, status: 'active',   persona: 'Product' },
+  { name: 'Onboarding Flow',    nodes: 7, status: 'active',   persona: 'HR' },
 ];
 
 const STATUS_BADGE: Record<string, string> = {
@@ -69,18 +68,20 @@ const STATUS_BADGE: Record<string, string> = {
 const PERSONA_COLOR: Record<string, string> = {
   Marketing:   'bg-pink-100 text-pink-700',
   Engineering: 'bg-blue-100 text-blue-700',
-  Legal:       'bg-amber-100 text-amber-700',
+  Product:     'bg-violet-100 text-violet-700',
   HR:          'bg-teal-100 text-teal-700',
-  Finance:     'bg-emerald-100 text-emerald-700',
 };
 
-export function WorkflowBuilder() {
+export function WorkflowBuilder({ personaFilter }: { personaFilter?: string } = {}) {
+  const templates = personaFilter
+    ? WORKFLOW_TEMPLATES.filter(wf => wf.persona === personaFilter)
+    : WORKFLOW_TEMPLATES;
   return (
     <div className="p-6 bg-slate-50 min-h-full space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Workflow Builder</h2>
+          <h2 className="text-xl font-bold text-slate-900">{personaFilter ? `${personaFilter} Workflows` : 'Workflow Builder'}</h2>
           <p className="text-sm text-slate-600 font-medium mt-0.5">Design and orchestrate multi-agent automation pipelines</p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm">
@@ -170,7 +171,7 @@ export function WorkflowBuilder() {
           <h3 className="text-sm font-bold text-slate-900">All Workflows</h3>
         </div>
         <div className="divide-y divide-slate-100">
-          {WORKFLOW_TEMPLATES.map(wf => (
+          {templates.map(wf => (
             <div key={wf.name} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600">⚡</div>

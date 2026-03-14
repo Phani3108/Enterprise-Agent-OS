@@ -6,12 +6,13 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type MarketingSection = 'skills' | 'outputs' | 'programs' | 'memory';
+export type MarketingSection = 'skills' | 'workflows' | 'prompts' | 'agents' | 'outputs' | 'programs' | 'memory';
 
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'approval_required';
 
@@ -20,6 +21,8 @@ export interface ExecutionStepEvent {
   stepId: string;
   stepName: string;
   agent: string;
+  agentCallSign?: string;
+  agentRank?: string;
   tool?: string;
   status: ExecutionStepStatus;
   startedAt?: string;
@@ -27,6 +30,11 @@ export interface ExecutionStepEvent {
   outputKey?: string;
   outputPreview?: string;
   error?: string;
+  // KPI metrics from backend
+  latencyMs?: number;
+  tokenCost?: number;
+  qualityScore?: number;
+  handoffValid?: boolean;
 }
 
 export interface MarketingExecution {
@@ -78,7 +86,7 @@ interface MarketingState {
 // Store
 // ---------------------------------------------------------------------------
 
-export const useMarketingStore = create<MarketingState>((set) => ({
+export const useMarketingStore = create<MarketingState>()(persist((set) => ({
   activeSection: 'skills',
   setActiveSection: (section) => set({ activeSection: section }),
 
@@ -137,4 +145,10 @@ export const useMarketingStore = create<MarketingState>((set) => ({
 
   selectedWorkflowId: null,
   setSelectedWorkflowId: (id) => set({ selectedWorkflowId: id }),
+}), {
+  name: 'marketing-store',
+  partialize: (state) => ({
+    executions: state.executions,
+    approvalQueue: state.approvalQueue,
+  }),
 }));

@@ -401,6 +401,34 @@ export class ForumStore {
             categories: [...new Set(threads.map((t) => t.category))],
         };
     }
+
+    // -----------------------------------------------------------------------
+    // Persistence hooks
+    // -----------------------------------------------------------------------
+
+    _exportData(): { threads: ForumThread[]; comments: ForumComment[] } {
+        return {
+            threads: Array.from(this.threads.values()),
+            comments: Array.from(this.comments.values()),
+        };
+    }
+
+    _importData(data: { threads?: ForumThread[]; comments?: ForumComment[] }): void {
+        if (data.threads) {
+            this.threads.clear();
+            for (const t of data.threads) this.threads.set(t.id, t);
+        }
+        if (data.comments) {
+            this.comments.clear();
+            this.threadComments.clear();
+            for (const c of data.comments) {
+                this.comments.set(c.id, c);
+                const existing = this.threadComments.get(c.threadId) ?? [];
+                existing.push(c.id);
+                this.threadComments.set(c.threadId, existing);
+            }
+        }
+    }
 }
 
 export const forumStore = new ForumStore();

@@ -12,6 +12,9 @@ import { ProgramManagement } from './marketing/ProgramManagement';
 import { UnifiedPersonaLayout } from './persona/UnifiedPersonaLayout';
 import { OutputsView, type OutputExecution } from './persona/OutputsView';
 import { MemoryView } from './persona/MemoryView';
+import { WorkflowBuilder } from './WorkflowBuilder';
+import { PromptLibrary } from './PromptLibraryDeep';
+import AgentsPanel from './AgentsPanel';
 import { useMarketingStore } from '../store/marketing-store';
 import { useConnectionsStore } from '../store/connections-store';
 
@@ -405,6 +408,9 @@ export function MarketingHub() {
       onSectionChange={(s) => setActiveSection(s as typeof activeSection)}
     >
       {activeSection === 'skills' && <MarketingSkillsContent />}
+      {activeSection === 'workflows' && <WorkflowBuilder personaFilter="Marketing" />}
+      {activeSection === 'prompts' && <PromptLibrary personaFilter="marketing" />}
+      {activeSection === 'agents' && <AgentsPanel personaFilter="Marketing" />}
       {activeSection === 'outputs' && <MarketingOutputsContent />}
       {activeSection === 'programs' && <ProgramManagement />}
       {activeSection === 'memory' && <MarketingMemoryContent />}

@@ -17,6 +17,7 @@
 
 import { InMemoryStore, SessionRepository, ExecutionRepository } from './db.js';
 import type { SessionRecord, ExecutionRecord } from './db.js';
+import { callLLM as callLLMProvider } from './llm-provider.js';
 
 // Re-export db types for convenience
 export type { SessionRecord, ExecutionRecord };
@@ -32,7 +33,7 @@ export interface GatewayConfig {
 }
 
 // ---------------------------------------------------------------------------
-// LLM Call — Real Claude API integration
+// LLM Call — Routes through multi-provider LLM system
 // ---------------------------------------------------------------------------
 
 interface LLMCallResult {
@@ -42,53 +43,23 @@ interface LLMCallResult {
     model: string;
 }
 
-const LLM_MODEL = 'claude-sonnet-4-6-20251001';
-const COST_PER_M_INPUT = 3.0;    // claude-3.5-sonnet input cost per 1M tokens
-const COST_PER_M_OUTPUT = 15.0;   // claude-3.5-sonnet output cost per 1M tokens
-
 async function callLLM(systemPrompt: string, userPrompt: string): Promise<LLMCallResult> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey) {
-        return { content: '', inputTokens: 0, outputTokens: 0, model: 'none' };
-    }
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-            model: LLM_MODEL,
-            max_tokens: 4096,
-            temperature: 0.3,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: userPrompt }],
-        }),
+    const response = await callLLMProvider({
+        systemPrompt,
+        userPrompt,
+        maxTokens: 4096,
     });
 
-    if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Claude API error ${res.status}: ${errText}`);
-    }
-
-    const data = (await res.json()) as {
-        content: Array<{ text: string }>;
-        usage?: { input_tokens: number; output_tokens: number };
-    };
-
     return {
-        content: data.content?.[0]?.text ?? '',
-        inputTokens: data.usage?.input_tokens ?? 0,
-        outputTokens: data.usage?.output_tokens ?? 0,
-        model: LLM_MODEL,
+        content: response.content,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
+        model: response.model,
     };
 }
 
 function estimateCost(inputTokens: number, outputTokens: number): number {
-    return (inputTokens * COST_PER_M_INPUT + outputTokens * COST_PER_M_OUTPUT) / 1_000_000;
+    return (inputTokens * 3.0 + outputTokens * 15.0) / 1_000_000;
 }
 
 /**

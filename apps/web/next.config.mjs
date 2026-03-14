@@ -8,6 +8,13 @@ const nextConfig = {
     transpilePackages: ['@agentos/sdk', '@agentos/output-schemas', '@agentos/streaming', '@agentos/gateway'],
     // Marketing subdomain: build with basePath when deploying to marketing.agentos.com
     // basePath: process.env.MARKETING_SUBDOMAIN === 'true' ? '/marketing' : undefined,
+
+    // SPA-style routing: all paths served by the root page.tsx
+    async rewrites() {
+        return [
+            { source: '/:path*', destination: '/' },
+        ];
+    },
 };
 
 export default nextConfig;

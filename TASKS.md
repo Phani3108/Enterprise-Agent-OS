@@ -18,24 +18,24 @@
 - [ ] Worker-to-worker delegation protocol
 
 ### Workflow Engine
-- [ ] DAG parser and validator
-- [ ] Step executor with dependency resolution
+- [x] DAG parser and validator
+- [x] Step executor with dependency resolution
 - [ ] Conditional edge evaluation
 - [ ] Retry with configurable backoff
 - [ ] Workflow state persistence
 
 ### Event Bus
-- [ ] Event bus abstraction (publish, subscribe, replay)
-- [ ] NATS adapter implementation
+- [x] Event bus abstraction (publish, subscribe, replay)
+- [x] NATS adapter implementation
 - [ ] Event envelope schema enforcement
 - [ ] Dead-letter queue routing
 - [ ] Idempotency key management
 
 ### Memory Layer
-- [ ] Vector store integration (pgvector / Qdrant)
-- [ ] Episode memory: action-result pairs with timestamps
+- [x] Vector store integration (pgvector / Qdrant)
+- [x] Episode memory: action-result pairs with timestamps
 - [ ] Context bus: real-time context propagation
-- [ ] Memory query API (semantic search + temporal filters)
+- [x] Memory query API (semantic search + temporal filters)
 - [ ] Memory garbage collection / TTL policies
 
 ### SDK
@@ -50,10 +50,10 @@
 > **Goal:** Enterprise-grade policy enforcement, audit trail, and full observability.
 
 ### Policy Engine
-- [ ] Policy DSL parser (YAML rules → policy objects)
-- [ ] Policy evaluation runtime (pre/post task execution)
-- [ ] Allow / deny / escalate action model
-- [ ] Policy composition (AND/OR/NOT combinators)
+- [x] Policy DSL parser (YAML rules → policy objects)
+- [x] Policy evaluation runtime (pre/post task execution)
+- [x] Allow / deny / escalate action model
+- [x] Policy composition (AND/OR/NOT combinators)
 - [ ] Policy testing framework
 
 ### Approval Flows
@@ -64,9 +64,9 @@
 - [ ] Approval audit log
 
 ### Audit Trail
-- [ ] Immutable append-only event log
-- [ ] Action attribution (which worker, which tool, which user)
-- [ ] Query API with filters (time range, worker, action type)
+- [x] Immutable append-only event log
+- [x] Action attribution (which worker, which tool, which user)
+- [x] Query API with filters (time range, worker, action type)
 - [ ] Export to S3 / data lake
 - [ ] Compliance report generation
 
@@ -77,7 +77,7 @@
 - [ ] Time-travel debugging
 
 ### Observability
-- [ ] OpenTelemetry SDK integration
+- [x] OpenTelemetry SDK integration
 - [ ] Distributed trace propagation across worker chains
 - [ ] Metrics: task throughput, latency p50/p95/p99, error rate
 - [ ] Token usage tracking per worker/task
@@ -85,8 +85,8 @@
 - [ ] Alert rules (error spike, latency degradation, budget exceeded)
 
 ### API Gateway
-- [ ] REST API for task submission, status, and results
-- [ ] WebSocket API for real-time task streaming
+- [x] REST API for task submission, status, and results
+- [x] WebSocket API for real-time task streaming
 - [ ] Authentication (API key + JWT)
 - [ ] Rate limiting and quota management
 - [ ] OpenAPI spec generation
@@ -98,9 +98,9 @@
 
 ### Connectors
 - [ ] Connector SDK with standard interface
-- [ ] Slack connector (read/write messages, reactions, threads)
-- [ ] GitHub connector (PRs, issues, reviews, actions)
-- [ ] Jira connector (tickets, boards, sprints)
+- [x] Slack connector (read/write messages, reactions, threads)
+- [x] GitHub connector (PRs, issues, reviews, actions)
+- [x] Jira connector (tickets, boards, sprints)
 - [ ] Email connector (IMAP/SMTP)
 - [ ] Webhook connector (generic HTTP events)
 - [ ] Connector health monitoring
@@ -113,12 +113,12 @@
 - [ ] Tenant onboarding automation
 
 ### Deployment
-- [ ] Docker Compose for local development
+- [x] Docker Compose for local development
 - [ ] Kubernetes Helm charts
 - [ ] Terraform modules (AWS / GCP / Azure)
 - [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Blue/green deployment support
-- [ ] Health check and readiness probes
+- [x] Health check and readiness probes
 
 ### Security
 - [ ] Secrets management (Vault / AWS Secrets Manager)

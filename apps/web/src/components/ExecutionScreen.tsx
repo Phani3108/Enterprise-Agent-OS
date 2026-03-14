@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useExecutionStore, type SkillDefinition, type Execution, type PreCheckResult } from '../store/execution-store';
 import { useConnectionsStore, resolveConnectorId } from '../store/connections-store';
+import { useEAOSStore } from '../store/eaos-store';
 import { OutputViewer } from './OutputViewer';
 
 const GATEWAY = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -117,6 +118,9 @@ export function ExecutionScreen({ persona, workspace, onBack }: Props) {
             outputFormat: s.outputFormat,
             icon: s.icon,
             estimatedTime: s.estimatedTime ?? s.estimated_time,
+            executableType: s.executableType ?? 'skill',
+            promptIds: s.linkedPromptIds ?? s.promptIds ?? [],
+            composedSkillIds: s.composedSkillIds ?? [],
           }));
           setAvailableSkills(skills);
         }
@@ -273,10 +277,19 @@ function SkillPicker({ skills, persona, onSelect }: {
   onSelect: (skill: SkillDefinition) => void;
 }) {
   const [search, setSearch] = useState('');
-  const filtered = skills.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const [pickerTab, setPickerTab] = useState<'all' | 'skills' | 'workflows'>('all');
+
+  const filtered = skills.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.description.toLowerCase().includes(search.toLowerCase());
+    const matchesTab = pickerTab === 'all' ? true
+      : pickerTab === 'skills' ? s.executableType !== 'workflow'
+      : s.executableType === 'workflow';
+    return matchesSearch && matchesTab;
+  });
+
+  const skillCount = skills.filter(s => s.executableType !== 'workflow').length;
+  const workflowCount = skills.filter(s => s.executableType === 'workflow').length;
 
   // Group by category
   const grouped: Record<string, SkillDefinition[]> = {};
@@ -290,12 +303,33 @@ function SkillPicker({ skills, persona, onSelect }: {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-[22px] font-semibold text-slate-900">
-            {persona.charAt(0).toUpperCase() + persona.slice(1)} Skills
+            {persona.charAt(0).toUpperCase() + persona.slice(1)} Skills & Workflows
           </h1>
           <p className="text-[13px] text-slate-500 mt-1">
-            Choose a skill to run. Each skill orchestrates tools, prompts, and agents to deliver output.
+            Skills are atomic execution units. Workflows compose multiple skills into a pipeline.
           </p>
         </div>
+      </div>
+
+      {/* Picker tabs: All | Skills | Workflows */}
+      <div className="flex items-center gap-1 mb-4 p-0.5 bg-slate-100 rounded-lg w-fit">
+        {[
+          { key: 'all' as const, label: 'All', count: skills.length },
+          { key: 'skills' as const, label: '⚡ Skills', count: skillCount },
+          { key: 'workflows' as const, label: '🔀 Workflows', count: workflowCount },
+        ].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setPickerTab(t.key)}
+            className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors ${
+              pickerTab === t.key
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t.label} <span className="text-[11px] text-slate-400 ml-0.5">{t.count}</span>
+          </button>
+        ))}
       </div>
 
       {/* Search */}
@@ -305,7 +339,7 @@ function SkillPicker({ skills, persona, onSelect }: {
         </svg>
         <input
           className="input pl-10 w-full max-w-md"
-          placeholder="Search skills…"
+          placeholder={pickerTab === 'workflows' ? 'Search workflows…' : pickerTab === 'skills' ? 'Search skills…' : 'Search skills & workflows…'}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -323,15 +357,35 @@ function SkillPicker({ skills, persona, onSelect }: {
                 className="card p-4 text-left hover:border-blue-200 hover:shadow-sm transition-all group"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 text-lg">
-                    {skill.icon || '⚡'}
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-lg ${
+                    skill.executableType === 'workflow'
+                      ? 'bg-purple-50 text-purple-600'
+                      : 'bg-blue-50 text-blue-600'
+                  }`}>
+                    {skill.icon || (skill.executableType === 'workflow' ? '🔀' : '⚡')}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-[14px] font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
-                      {skill.name}
-                    </h3>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className={`text-[14px] font-medium text-slate-900 transition-colors ${
+                        skill.executableType === 'workflow' ? 'group-hover:text-purple-600' : 'group-hover:text-blue-600'
+                      }`}>
+                        {skill.name}
+                      </h3>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        skill.executableType === 'workflow'
+                          ? 'bg-purple-100 text-purple-600'
+                          : 'bg-blue-100 text-blue-600'
+                      }`}>
+                        {skill.executableType === 'workflow' ? 'Workflow' : 'Skill'}
+                      </span>
+                    </div>
                     <p className="text-[12px] text-slate-500 mt-0.5 line-clamp-2">{skill.description}</p>
                     <div className="flex items-center gap-2 mt-2">
+                      {skill.executableType === 'workflow' && skill.composedSkillIds && skill.composedSkillIds.length > 0 && (
+                        <span className="text-[11px] text-purple-400">
+                          {skill.composedSkillIds.length} skill{skill.composedSkillIds.length > 1 ? 's' : ''} composed
+                        </span>
+                      )}
                       {skill.requiredTools.length > 0 && (
                         <span className="text-[11px] text-slate-400">
                           {skill.requiredTools.length} tool{skill.requiredTools.length > 1 ? 's' : ''}
@@ -381,6 +435,14 @@ function ConfigurePanel({ skill, persona, workspace, isToolConnected, onRun, onB
   const [simulate, setSimulate] = useState(false);
   const [preCheck, setPreCheck] = useState<PreCheckResult | null>(null);
   const [checking, setChecking] = useState(false);
+  const setFocusedField = useExecutionStore(s => s.setFocusedField);
+  const setRightPanelMode = useEAOSStore(s => s.setRightPanelMode);
+
+  // Switch right panel to help mode when entering configuration
+  useEffect(() => {
+    setRightPanelMode('help');
+    return () => { setFocusedField(null); };
+  }, [setRightPanelMode, setFocusedField]);
 
   const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
 
@@ -439,12 +501,14 @@ function ConfigurePanel({ skill, persona, workspace, isToolConnected, onRun, onB
                         placeholder={field.placeholder}
                         value={inputs[field.key] ?? ''}
                         onChange={e => setInputs(p => ({ ...p, [field.key]: e.target.value }))}
+                        onFocus={() => setFocusedField(field.key)}
                       />
                     ) : field.type === 'select' && field.options ? (
                       <select
                         className="input w-full"
                         value={inputs[field.key] ?? ''}
                         onChange={e => setInputs(p => ({ ...p, [field.key]: e.target.value }))}
+                        onFocus={() => setFocusedField(field.key)}
                       >
                         <option value="">{field.placeholder || 'Select…'}</option>
                         {field.options.map(o => (
@@ -458,6 +522,7 @@ function ConfigurePanel({ skill, persona, workspace, isToolConnected, onRun, onB
                         placeholder={field.placeholder}
                         value={inputs[field.key] ?? ''}
                         onChange={e => setInputs(p => ({ ...p, [field.key]: e.target.value }))}
+                        onFocus={() => setFocusedField(field.key)}
                       />
                     )}
                     {field.hint && <p className="text-[11px] text-slate-400 mt-1">{field.hint}</p>}
@@ -555,7 +620,7 @@ function ConfigurePanel({ skill, persona, workspace, isToolConnected, onRun, onB
               disabled={!canRun}
               className="btn btn-primary w-full py-2.5 text-[14px] disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {simulate ? 'Simulate Execution' : 'Run Skill'}
+              {simulate ? 'Simulate Execution' : skill.executableType === 'workflow' ? 'Run Workflow' : 'Run Skill'}
             </button>
           </div>
         </div>

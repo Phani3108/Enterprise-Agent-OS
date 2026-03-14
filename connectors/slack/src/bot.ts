@@ -328,19 +328,49 @@ class EAOSSlackBot {
     // -------------------------------------------------------------------------
 
     private async sendMessage(channel: string, text: string, threadTs?: string): Promise<string> {
-        // TODO: Use Slack Web API
-        console.log(`[Slack] → ${channel}: ${text.slice(0, 100)}...`);
-        return `msg-${Date.now()}`;
+        const res = await fetch('https://slack.com/api/chat.postMessage', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.config.botToken}`,
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+            body: JSON.stringify({
+                channel,
+                text,
+                ...(threadTs ? { thread_ts: threadTs } : {}),
+            }),
+        });
+        const data = (await res.json()) as { ok: boolean; ts?: string; error?: string };
+        if (!data.ok) console.error(`[Slack] postMessage error: ${data.error}`);
+        return data.ts ?? '';
     }
 
     private async updateMessage(channel: string, ts: string, text: string): Promise<void> {
-        // TODO: Use chat.update
-        console.log(`[Slack] ↻ ${channel}/${ts}: ${text.slice(0, 100)}...`);
+        const res = await fetch('https://slack.com/api/chat.update', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.config.botToken}`,
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+            body: JSON.stringify({ channel, ts, text }),
+        });
+        const data = (await res.json()) as { ok: boolean; error?: string };
+        if (!data.ok) console.error(`[Slack] chat.update error: ${data.error}`);
     }
 
     private async sendReaction(channel: string, ts: string, emoji: string): Promise<void> {
-        // TODO: Use reactions.add
-        console.log(`[Slack] :${emoji}: on ${channel}/${ts}`);
+        const res = await fetch('https://slack.com/api/reactions.add', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.config.botToken}`,
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+            body: JSON.stringify({ channel, timestamp: ts, name: emoji }),
+        });
+        const data = (await res.json()) as { ok: boolean; error?: string };
+        if (!data.ok && data.error !== 'already_reacted') {
+            console.error(`[Slack] reactions.add error: ${data.error}`);
+        }
     }
 }
 
