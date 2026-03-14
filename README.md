@@ -6,6 +6,14 @@ Enterprise Agent OS (EAOS) is a full-stack platform that coordinates AI agents a
 
 ---
 
+## Demo
+
+https://github.com/user-attachments/assets/agentos-simulation-demo.mp4
+
+> Full simulation demo — Engineering skill execution from start to finish. [Watch on GitHub →](demos/agentos-simulation-demo.mp4)
+
+---
+
 ## Screenshots
 
 ### Command Center (Home)
@@ -14,9 +22,247 @@ Mission control dashboard — live agent stats, recent executions, agent activit
 ![Command Center](docs/screenshots/01-home-command-center.png)
 
 ### Personas
-Browse AI personas (Marketing, Engineering, Support, Legal, Finance, etc.) and their associated skills, tools, and agents. Each persona scopes the platform to its domain.
+Browse AI personas (Marketing, Engineering, Product) and their associated skills, tools, and agents. Each persona scopes the platform to its domain.
 
 ![Personas](docs/screenshots/02-personas.png)
+
+---
+
+## Persona Hubs — Carousel
+
+Each persona hub provides a unified workspace with **Skills → Outputs → Programs → Memory** tabs, a skill form with simulation mode, and a full execution pipeline.
+
+---
+
+### Engineering Hub
+
+<table>
+<tr>
+<td width="50%">
+
+**1. Skills Dashboard**
+Browse 10 engineering skills across Code Review, Testing, Incident Response, and Documentation clusters.
+
+![Engineering Skills](docs/screenshots/engineering-01-skills.png)
+
+</td>
+<td width="50%">
+
+**2. Execution Outputs**
+Review generated outputs — PRDs, reviews, test suites, docs — with export actions and quality metrics.
+
+![Engineering Outputs](docs/screenshots/engineering-02-outputs.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**3. Program Management**
+Track engineering programs across sprints — backlog items, milestones, team velocity, and deliverables.
+
+![Engineering Programs](docs/screenshots/engineering-03-programs.png)
+
+</td>
+<td width="50%">
+
+**4. Memory Graph**
+Agent memory — past executions, learned patterns, context retention, and knowledge persistence.
+
+![Engineering Memory](docs/screenshots/engineering-04-memory.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**5. Skill Configuration Form**
+Smart adaptive forms — file upload, severity selectors, conditional fields, and required tool indicators.
+
+![Engineering Skill Form](docs/screenshots/engineering-05-skill-form.png)
+
+</td>
+<td width="50%">
+
+**6. Simulation Mode**
+Toggle simulation mode to run skills without real tool connections — safe dry-run for testing workflows.
+
+![Engineering Simulation](docs/screenshots/engineering-06-simulation-mode.png)
+
+</td>
+</tr>
+</table>
+
+---
+
+### Product Hub
+
+<table>
+<tr>
+<td width="50%">
+
+**1. Skills Dashboard**
+10 product skills — PRD Generator, Jira Epic Writer, User Story Builder, Roadmap Planner, and more.
+
+![Product Skills](docs/screenshots/product-01-skills.png)
+
+</td>
+<td width="50%">
+
+**2. Execution Outputs**
+Generated PRDs, user stories, roadmaps, and release notes — with Jira and Confluence push integration.
+
+![Product Outputs](docs/screenshots/product-02-outputs.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**3. Program Management**
+Product programs with milestone tracking, stakeholder updates, and cross-functional delivery timelines.
+
+![Product Programs](docs/screenshots/product-03-programs.png)
+
+</td>
+<td width="50%">
+
+**4. Memory Graph**
+Product context memory — past decisions, research insights, and customer feedback patterns.
+
+![Product Memory](docs/screenshots/product-04-memory.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**5. Skill Configuration Form**
+Tags input for success metrics, constraints, and stakeholders. Toggle Jira push and Confluence drafts.
+
+![Product Skill Form](docs/screenshots/product-05-skill-form.png)
+
+</td>
+<td width="50%">
+
+**6. Simulation Mode**
+Dry-run product skills — generate mock PRDs, user stories, and roadmaps without API calls.
+
+![Product Simulation](docs/screenshots/product-06-simulation-mode.png)
+
+</td>
+</tr>
+</table>
+
+---
+
+### Marketing Hub
+
+<table>
+<tr>
+<td width="50%">
+
+**1. Skills Dashboard**
+30 marketing workflows across Campaign, Content, Creative, Event, Research, Analytics, and Sales clusters.
+
+![Marketing Skills](docs/screenshots/marketing-01-skills.png)
+
+</td>
+<td width="50%">
+
+**2. Execution Outputs**
+Campaign assets, content drafts, analytics reports, and creative briefs — with export and sharing.
+
+![Marketing Outputs](docs/screenshots/marketing-02-outputs.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**3. Program Management**
+Marketing programs with campaign timelines, budget tracking, ROI metrics, and team assignments.
+
+![Marketing Programs](docs/screenshots/marketing-03-programs.png)
+
+</td>
+<td width="50%">
+
+**4. Memory Graph**
+Campaign memory — audience insights, brand voice patterns, performance history, and learned optimizations.
+
+![Marketing Memory](docs/screenshots/marketing-04-memory.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**5. Skill Configuration Form**
+Campaign builder with audience targeting, channel selection, budget allocation, and content parameters.
+
+![Marketing Skill Form](docs/screenshots/marketing-05-skill-form.png)
+
+</td>
+<td width="50%">
+
+**6. Simulation Mode**
+Simulate marketing campaigns — generate mock assets, analytics, and performance projections safely.
+
+![Marketing Simulation](docs/screenshots/marketing-06-simulation-mode.png)
+
+</td>
+</tr>
+</table>
+
+---
+
+## Simulation Platform
+
+The simulation platform enables **risk-free testing** of any skill or workflow across all personas. Enable simulation mode to run the full execution pipeline — agent orchestration, tool calls, and output generation — without connecting real tools or making live API calls.
+
+<table>
+<tr>
+<td width="33%">
+
+**Engineering Simulation**
+
+![Sim Eng Configure](docs/screenshots/simulation-engineering-02-configure.png)
+![Sim Eng Running](docs/screenshots/simulation-engineering-04-running.png)
+![Sim Eng Complete](docs/screenshots/simulation-engineering-05-completed.png)
+
+</td>
+<td width="33%">
+
+**Product Simulation**
+
+![Sim Prod Configure](docs/screenshots/simulation-product-02-configure.png)
+![Sim Prod Running](docs/screenshots/simulation-product-03-running.png)
+![Sim Prod Complete](docs/screenshots/simulation-product-04-completed.png)
+
+</td>
+<td width="33%">
+
+**Marketing Simulation**
+
+![Sim Mkt Configure](docs/screenshots/simulation-marketing-02-configure.png)
+![Sim Mkt Running](docs/screenshots/simulation-marketing-03-running.png)
+![Sim Mkt Complete](docs/screenshots/simulation-marketing-04-completed.png)
+
+</td>
+</tr>
+</table>
+
+**Simulation features:**
+- **Dry-run mode** — No real tool calls or API requests
+- **Full pipeline** — All agents, steps, and checkpoints execute as normal
+- **Mock outputs** — Realistic synthetic output generation
+- **Cost-free** — Zero token usage or external API costs
+- **Safe testing** — No side effects on production data
+
+---
+
+## Core Platform Screenshots
 
 ### Skill Marketplace
 Discover, search, and install skills across personas. Filter by category, status, and visibility. Browse community-contributed and platform skills with ratings and usage stats.
@@ -92,36 +338,6 @@ Schedule cron jobs and event-triggered automations. Define triggers, target skil
 Configure profile, notification preferences, API keys, appearance, and platform defaults. Manage connected tools and session tokens.
 
 ![Settings](docs/screenshots/17-settings.png)
-
-### Engineering Hub — Command Center
-AI-powered engineering assistant. Select from 10 skills across Code Review, Code Generation, Incident Response, and Documentation clusters. Each skill shows its step pipeline, required tools, and estimated runtime.
-
-![Engineering Hub](docs/screenshots/18-engineering-hub.png)
-
-### Engineering Skill Form
-Smart adaptive forms — multiselect focus areas, severity thresholds, toggle fields with `dependsOn` conditional visibility, file attachments, and a Live / Sandbox run mode selector. Tool strip shows Claude (always connected) vs GitHub/Jira (connect in Integrations).
-
-![Engineering Skill Form](docs/screenshots/19-engineering-skill-form.png)
-
-### Engineering Integrations
-Connect GitHub, Jira, Sentry, Datadog, and PagerDuty to unlock optional skill capabilities. Claude is always available without credentials.
-
-![Engineering Integrations](docs/screenshots/20-engineering-integrations.png)
-
-### Product Hub — Command Center
-AI product management assistant with 10 skills: PRD Generator, Jira Epic Generator, User Story Writer, Roadmap Builder, Competitor Analysis Brief, and more.
-
-![Product Hub](docs/screenshots/21-product-hub.png)
-
-### Product Skill Form
-Tags input for success metrics, constraints, and stakeholders. Toggles to push epics directly to Jira or create Confluence drafts. Advanced fields collapse until needed.
-
-![Product Skill Form](docs/screenshots/22-product-skill-form.png)
-
-### Marketing Hub
-End-to-end AI marketing execution — 30 workflows across Campaign, Content, Creative, Event, Research, Analytics, and Sales clusters. Connected to LinkedIn Ads, HubSpot, Canva, GA4, Perplexity, and more.
-
-![Marketing Hub](docs/screenshots/23-marketing-hub.png)
 
 ---
 
@@ -211,6 +427,14 @@ User Intent → Skill Detection → Agent Deployment → Tool Selection
 - **Onboarding modal** for first-time users
 - **Keyboard navigation** (Arrow keys, Escape, Enter)
 - **Help menu** with tour restart
+
+### Simulation Platform
+- **Dry-run execution** — Run any skill without real tool connections or API calls
+- **Full pipeline simulation** — All agents, steps, and checkpoints execute as normal
+- **Mock output generation** — Realistic synthetic outputs for review and testing
+- **Zero cost** — No token usage, no external API charges
+- **Cross-persona** — Available for Engineering, Product, and Marketing hubs
+- **Safe testing** — No side effects on production systems or data
 
 ---
 
