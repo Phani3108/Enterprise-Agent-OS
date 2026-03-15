@@ -37,3 +37,4 @@ docker-volumes/
 # Logs
 *.log
 logs/
+.agentos-data/

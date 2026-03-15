@@ -648,13 +648,25 @@ function ExecutionView({ execution, onBack, onRerun }: {
     ? ((new Date(execution.completedAt).getTime() - new Date(execution.startedAt).getTime()) / 1000).toFixed(1)
     : ((Date.now() - new Date(execution.startedAt).getTime()) / 1000).toFixed(0);
 
-  // Tab: 'timeline' or 'output'
-  const [tab, setTab] = useState<'timeline' | 'output'>(isDone ? 'output' : 'timeline');
+  // Tab: 'timeline' | 'output' | 'report'
+  const [tab, setTab] = useState<'timeline' | 'output' | 'report'>(isDone ? 'output' : 'timeline');
+
+  // After-Action Report state
+  const [aar, setAAR] = useState<any>(null);
 
   // Switch to output tab when execution completes
   useEffect(() => {
     if (isDone) setTab('output');
   }, [isDone]);
+
+  // Fetch AAR when execution is done
+  useEffect(() => {
+    if (!isDone && !isFailed) return;
+    fetch(`${GATEWAY}/api/aar/${execution.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.report) setAAR(data.report); })
+      .catch(() => {});
+  }, [isDone, isFailed, execution.id]);
 
   return (
     <div>
@@ -679,6 +691,9 @@ function ExecutionView({ execution, onBack, onRerun }: {
               </span>
               <span className="text-[12px] text-slate-400">{duration}s</span>
               <span className="text-[12px] text-slate-400">{completedSteps}/{totalSteps} steps</span>
+              {execution.executionMode === 'dag' && (
+                <span className="text-[11px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-medium">DAG</span>
+              )}
               {execution.simulate && (
                 <span className="text-[11px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded font-medium">Sandbox</span>
               )}
@@ -726,6 +741,16 @@ function ExecutionView({ execution, onBack, onRerun }: {
             <span className="ml-1.5 w-2 h-2 rounded-full bg-emerald-500 inline-block" />
           )}
         </button>
+        {(isDone || isFailed) && aar && (
+          <button
+            onClick={() => setTab('report')}
+            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
+              tab === 'report' ? 'text-blue-600 border-blue-600' : 'text-slate-500 border-transparent hover:text-slate-700'
+            }`}
+          >
+            Report
+          </button>
+        )}
       </div>
 
       {/* Timeline tab */}
@@ -754,6 +779,14 @@ function ExecutionView({ execution, onBack, onRerun }: {
                     <span className="text-[11px] text-slate-400">{step.agent}</span>
                     {step.tool && <span className="text-[11px] text-slate-400">via {step.tool}</span>}
                     {step.durationMs && <span className="text-[11px] text-slate-400">{(step.durationMs / 1000).toFixed(1)}s</span>}
+                    {step.dependsOn && step.dependsOn.length > 0 && (
+                      <span className="text-[11px] text-slate-400">
+                        after {step.dependsOn.map(d => {
+                          const dep = execution.steps.find(s => s.stepId === d);
+                          return dep?.stepName ?? d;
+                        }).join(', ')}
+                      </span>
+                    )}
                   </div>
                   {step.error && (
                     <div className="mt-1.5 p-2 rounded bg-red-50 text-[12px] text-red-700">{step.error}</div>
@@ -776,6 +809,110 @@ function ExecutionView({ execution, onBack, onRerun }: {
           execution={execution}
           isRunning={isRunning}
         />
+      )}
+
+      {/* After-Action Report tab */}
+      {tab === 'report' && aar && (
+        <div className="space-y-4">
+          {/* Summary */}
+          <div className="card p-5">
+            <h3 className="text-[14px] font-semibold text-slate-900 mb-2">After-Action Report</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                aar.outcome === 'success' ? 'bg-emerald-50 text-emerald-700' :
+                aar.outcome === 'partial' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
+              }`}>
+                {aar.outcome === 'success' ? '✓ Success' : aar.outcome === 'partial' ? '⚠ Partial' : '✗ Failed'}
+              </span>
+              <span className="text-[12px] text-slate-400">{(aar.totalDurationMs / 1000).toFixed(1)}s</span>
+              <span className="text-[12px] text-slate-400">${aar.totalTokenCost.toFixed(4)}</span>
+            </div>
+            <p className="text-[13px] text-slate-600">{aar.summary}</p>
+          </div>
+
+          {/* Agent Performance */}
+          <div className="card p-5">
+            <h4 className="text-[13px] font-semibold text-slate-900 mb-3">Agent Performance</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left py-2 font-medium text-slate-500">Agent</th>
+                    <th className="text-left py-2 font-medium text-slate-500">Step</th>
+                    <th className="text-center py-2 font-medium text-slate-500">Quality</th>
+                    <th className="text-center py-2 font-medium text-slate-500">Duration</th>
+                    <th className="text-center py-2 font-medium text-slate-500">Handoff</th>
+                    <th className="text-center py-2 font-medium text-slate-500">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aar.agentPerformance.map((ap: any, i: number) => (
+                    <tr key={i} className="border-b border-slate-50">
+                      <td className="py-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-slate-700">{ap.callSign}</span>
+                          {ap.wasRouted && <span className="text-[10px] px-1 bg-blue-50 text-blue-600 rounded">routed</span>}
+                        </div>
+                        <span className="text-[11px] text-slate-400">{ap.rank}</span>
+                      </td>
+                      <td className="py-2 text-slate-600">{ap.stepName}</td>
+                      <td className="py-2 text-center">
+                        <span className={`font-medium ${
+                          ap.qualityScore >= 7 ? 'text-emerald-600' :
+                          ap.qualityScore >= 5 ? 'text-amber-600' : 'text-red-600'
+                        }`}>{ap.qualityScore.toFixed(1)}</span>
+                      </td>
+                      <td className="py-2 text-center text-slate-500">{(ap.durationMs / 1000).toFixed(1)}s</td>
+                      <td className="py-2 text-center">
+                        {ap.handoffValid
+                          ? <span className="text-emerald-500">✓</span>
+                          : <span className="text-red-500">✗</span>}
+                      </td>
+                      <td className="py-2 text-center">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          ap.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
+                          ap.status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'
+                        }`}>{ap.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Issues & Recommendations */}
+          {(aar.issues.length > 0 || aar.recommendations.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {aar.issues.length > 0 && (
+                <div className="card p-5">
+                  <h4 className="text-[13px] font-semibold text-red-700 mb-2">Issues ({aar.issues.length})</h4>
+                  <ul className="space-y-1.5">
+                    {aar.issues.map((issue: string, i: number) => (
+                      <li key={i} className="text-[12px] text-red-600 flex items-start gap-1.5">
+                        <span className="mt-0.5 flex-shrink-0">•</span>
+                        <span>{issue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {aar.recommendations.length > 0 && (
+                <div className="card p-5">
+                  <h4 className="text-[13px] font-semibold text-blue-700 mb-2">Recommendations</h4>
+                  <ul className="space-y-1.5">
+                    {aar.recommendations.map((rec: string, i: number) => (
+                      <li key={i} className="text-[12px] text-blue-600 flex items-start gap-1.5">
+                        <span className="mt-0.5 flex-shrink-0">→</span>
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

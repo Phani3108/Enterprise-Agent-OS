@@ -24,6 +24,8 @@ export interface PersonaExecutionRecord {
   skillId: string;
   skillName: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
+  /** Sequential (default) or DAG-based execution */
+  executionMode?: 'sequential' | 'dag';
   provider?: LLMProviderId;
   model?: string;
   steps: Array<{
@@ -39,6 +41,8 @@ export interface PersonaExecutionRecord {
     outputKey?: string;
     outputPreview?: string;
     error?: string;
+    /** DAG: step IDs this step depends on */
+    dependsOn?: string[];
     // KPI tracking
     latencyMs?: number;
     tokenCost?: number;
@@ -46,6 +50,8 @@ export interface PersonaExecutionRecord {
     handoffValid?: boolean;
     handoffWarnings?: string[];
   }>;
+  /** DAG edges (when executionMode === 'dag') */
+  edges?: Array<{ from: string; to: string; condition?: string }>;
   outputs: Record<string, string>;
   inputs: Record<string, unknown>;
   startedAt: string;
@@ -62,9 +68,82 @@ export interface PersonaExecutionRecord {
 // ---------------------------------------------------------------------------
 
 const executions = new Map<string, PersonaExecutionRecord>();
+const afterActionReports = new Map<string, AfterActionReport>();
+const retrainingFlags = new Map<string, RetrainingFlag>();
 let backingStore: Store | null = null;
 const EXEC_TABLE = 'persona_executions';
 const KPI_TABLE = 'agent_kpis';
+const AAR_TABLE = 'after_action_reports';
+const RETRAIN_TABLE = 'retraining_flags';
+
+// ---------------------------------------------------------------------------
+// After-Action Report type
+// ---------------------------------------------------------------------------
+
+export interface AfterActionReport {
+  id: string;
+  executionId: string;
+  persona: string;
+  skillName: string;
+  generatedAt: string;
+  /** Overall execution status */
+  outcome: 'success' | 'partial' | 'failure';
+  /** How long the entire execution took */
+  totalDurationMs: number;
+  /** Total token cost across all steps */
+  totalTokenCost: number;
+  /** Summary paragraph */
+  summary: string;
+  /** Per-agent breakdown */
+  agentPerformance: Array<{
+    agentId: string;
+    callSign: string;
+    rank: string;
+    stepName: string;
+    status: string;
+    durationMs: number;
+    qualityScore: number;
+    tokenCost: number;
+    handoffValid: boolean;
+    handoffWarnings: string[];
+    /** Whether the agent was swapped via adaptive routing */
+    wasRouted: boolean;
+  }>;
+  /** Handoff chain analysis */
+  handoffChain: Array<{
+    from: string;
+    to: string;
+    valid: boolean;
+    missingFields: string[];
+  }>;
+  /** Flagged issues */
+  issues: string[];
+  /** Recommendations for improvement */
+  recommendations: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Retraining Flag type
+// ---------------------------------------------------------------------------
+
+export interface RetrainingFlag {
+  agentId: string;
+  callSign: string;
+  persona: string;
+  flaggedAt: string;
+  reason: 'low_quality' | 'handoff_failures' | 'high_latency' | 'high_cost';
+  severity: 'warning' | 'critical';
+  /** Current metric value */
+  currentValue: number;
+  /** Threshold that was breached */
+  threshold: number;
+  /** Number of consecutive executions below threshold */
+  consecutiveFailures: number;
+  /** Suggested action */
+  suggestedAction: string;
+  /** Whether a human has acknowledged this flag */
+  acknowledged: boolean;
+}
 
 /** Initialize persistence — call from server.ts with the gateway store */
 export function initPersonaStore(store: Store): void {
@@ -81,10 +160,23 @@ export function initPersonaStore(store: Store): void {
     const kpi = row as unknown as AgentKPI;
     if (kpi.agentId) agentKPIs.set(kpi.agentId, kpi);
   }
+  // Restore after-action reports
+  const savedAARs = store.all(AAR_TABLE);
+  for (const row of savedAARs) {
+    const aar = row as unknown as AfterActionReport;
+    if (aar.id) afterActionReports.set(aar.id, aar);
+  }
+  // Restore retraining flags
+  const savedFlags = store.all(RETRAIN_TABLE);
+  for (const row of savedFlags) {
+    const flag = row as unknown as RetrainingFlag;
+    if (flag.agentId) retrainingFlags.set(flag.agentId, flag);
+  }
+
   const execCount = executions.size;
   const kpiCount = agentKPIs.size;
   if (execCount > 0 || kpiCount > 0) {
-    console.log(`[persona-api] Restored ${execCount} executions and ${kpiCount} agent KPIs from persistent store`);
+    console.log(`[persona-api] Restored ${execCount} executions, ${kpiCount} agent KPIs, ${afterActionReports.size} AARs, ${retrainingFlags.size} retraining flags`);
   }
 
   // Wire agent memory persistence
@@ -113,6 +205,32 @@ function persistKPI(agentId: string, kpi: AgentKPI): void {
       backingStore.update(KPI_TABLE, agentId, kpi as unknown as Record<string, unknown>);
     } else {
       backingStore.insert(KPI_TABLE, agentId, kpi as unknown as Record<string, unknown>);
+    }
+  }
+}
+
+/** Persist an after-action report */
+function persistAAR(aar: AfterActionReport): void {
+  afterActionReports.set(aar.id, aar);
+  if (backingStore) {
+    const existing = backingStore.get(AAR_TABLE, aar.id);
+    if (existing) {
+      backingStore.update(AAR_TABLE, aar.id, aar as unknown as Record<string, unknown>);
+    } else {
+      backingStore.insert(AAR_TABLE, aar.id, aar as unknown as Record<string, unknown>);
+    }
+  }
+}
+
+/** Persist a retraining flag */
+function persistRetrainingFlag(flag: RetrainingFlag): void {
+  retrainingFlags.set(flag.agentId, flag);
+  if (backingStore) {
+    const existing = backingStore.get(RETRAIN_TABLE, flag.agentId);
+    if (existing) {
+      backingStore.update(RETRAIN_TABLE, flag.agentId, flag as unknown as Record<string, unknown>);
+    } else {
+      backingStore.insert(RETRAIN_TABLE, flag.agentId, flag as unknown as Record<string, unknown>);
     }
   }
 }
@@ -858,100 +976,96 @@ async function processSkillSteps(
   if (!exec) return;
 
   exec.status = 'running';
+
+  // Determine execution mode: if skill has edges or steps have dependsOn, use DAG
+  const hasEdges = skill.edges && skill.edges.length > 0;
+  const hasDependsOn = skill.steps.some(s => s.dependsOn && s.dependsOn.length > 0);
+  if (hasEdges || hasDependsOn) {
+    exec.executionMode = 'dag';
+    if (hasEdges) exec.edges = skill.edges;
+    // Populate dependsOn on step records from skill steps
+    for (let i = 0; i < skill.steps.length; i++) {
+      const ss = skill.steps[i];
+      const sr = exec.steps[i];
+      if (ss?.dependsOn && sr) sr.dependsOn = ss.dependsOn;
+    }
+    // If edges are defined but dependsOn is not, derive dependsOn from edges
+    if (hasEdges && !hasDependsOn) {
+      for (const edge of skill.edges!) {
+        const sr = exec.steps.find(s => s.stepId === edge.to);
+        if (sr) {
+          sr.dependsOn = sr.dependsOn ?? [];
+          if (!sr.dependsOn.includes(edge.from)) sr.dependsOn.push(edge.from);
+        }
+      }
+    }
+  }
+
   persistExec(exec);
 
   const previousOutputs: Record<string, string> = {};
   let totalTokenCost = 0;
   let totalLatencyMs = 0;
-  let qualityScores: number[] = [];
+  const qualityScores: number[] = [];
+  /** Track which agents were swapped via adaptive routing */
+  const routedAgents = new Set<string>();
 
-  for (let i = 0; i < skill.steps.length; i++) {
-    const skillStep = skill.steps[i];
-    const stepRecord = exec.steps[i];
+  if (exec.executionMode === 'dag') {
+    // ─── DAG Execution: parallel steps with dependency resolution ───
+    await processDAGSteps(exec, skill, persona, inputs, simulate, customPrompt, provider, modelId, previousOutputs, qualityScores, routedAgents);
+    totalTokenCost = exec.steps.reduce((s, st) => s + (st.tokenCost ?? 0), 0);
+    totalLatencyMs = exec.steps.reduce((s, st) => s + (st.latencyMs ?? 0), 0);
+  } else {
+    // ─── Sequential Execution: step-by-step with handoff enforcement ───
+    for (let i = 0; i < skill.steps.length; i++) {
+      const skillStep = skill.steps[i];
+      const stepRecord = exec.steps[i];
+      if (!skillStep || !stepRecord) continue;
 
-    if (!skillStep || !stepRecord) continue;
+      const result = await executeSingleStep(
+        exec, persona, skill.name, skillStep, stepRecord, inputs, previousOutputs,
+        simulate, customPrompt, provider, modelId, routedAgents
+      );
 
-    // Adaptive agent routing — select best performer for this role
-    const resolvedAgentId = selectBestAgent(skillStep.agent, persona);
-    const agentIdentity = getAgentIdentity(resolvedAgentId);
-    if (agentIdentity) {
-      stepRecord.agent = resolvedAgentId;
-      stepRecord.agentCallSign = agentIdentity.callSign;
-      stepRecord.agentRank = agentIdentity.rank;
-    }
+      totalTokenCost += result.tokenCost;
+      totalLatencyMs += result.latencyMs;
+      if (result.qualityScore !== undefined) qualityScores.push(result.qualityScore);
 
-    // Mark step as running
-    stepRecord.status = 'running';
-    stepRecord.startedAt = new Date().toISOString();
-    persistExec(exec);
-
-    const stepStart = Date.now();
-
-    try {
-      let output: string;
-      let llmResponse: LLMResponse | undefined;
-
-      if (simulate) {
-        await new Promise((r) => setTimeout(r, 600 + Math.random() * 800));
-        output = generateSandboxOutput(persona, skill.name, skillStep, inputs, previousOutputs);
-      } else {
-        const { system, user } = buildStepPrompt(persona, skill.name, skillStep, inputs, previousOutputs, customPrompt, agentIdentity);
-        llmResponse = await callLLMUnified(system, user, provider, modelId);
-        output = llmResponse.content;
-      }
-
-      // Handoff validation — check if output meets contract with next agent
-      if (i < skill.steps.length - 1) {
+      // ── Handoff Enforcement ──
+      // If this step failed handoff validation, attempt a single retry with explicit instructions
+      if (i < skill.steps.length - 1 && stepRecord.status === 'completed') {
         const nextStep = skill.steps[i + 1];
         if (nextStep) {
-          const handoffResult = validateHandoff(skillStep.agent, nextStep.agent, output);
+          const handoffResult = validateHandoff(skillStep.agent, nextStep.agent, previousOutputs[skillStep.outputKey] ?? '');
           stepRecord.handoffValid = handoffResult.valid;
           stepRecord.handoffWarnings = handoffResult.warnings;
-          if (!handoffResult.valid) {
-            console.warn(`[persona-api] Handoff warning: ${skillStep.agent} → ${nextStep.agent} missing fields: ${handoffResult.missingFields.join(', ')}`);
+
+          if (!handoffResult.valid && !simulate) {
+            console.warn(`[handoff-enforcement] ${skillStep.agent} → ${nextStep.agent} FAILED — missing: ${handoffResult.missingFields.join(', ')}. Retrying with explicit instructions.`);
+            // Retry once with explicit handoff instructions
+            const retryResult = await retryStepWithHandoffInstructions(
+              exec, persona, skill.name, skillStep, stepRecord, inputs, previousOutputs,
+              handoffResult.missingFields, provider, modelId
+            );
+            if (retryResult) {
+              const recheck = validateHandoff(skillStep.agent, nextStep.agent, retryResult.output);
+              stepRecord.handoffValid = recheck.valid;
+              stepRecord.handoffWarnings = recheck.warnings;
+              if (recheck.valid) {
+                console.log(`[handoff-enforcement] Retry succeeded for ${skillStep.agent} → ${nextStep.agent}`);
+              } else {
+                console.warn(`[handoff-enforcement] Retry still failed for ${skillStep.agent} → ${nextStep.agent} — proceeding with warnings`);
+              }
+            }
           }
         }
       }
 
-      previousOutputs[skillStep.outputKey] = output;
-      exec.outputs[skillStep.outputKey] = output;
+      // Stop on failure
+      if (stepRecord.status === 'failed') break;
 
-      // KPI tracking
-      const latencyMs = Date.now() - stepStart;
-      stepRecord.latencyMs = latencyMs;
-      totalLatencyMs += latencyMs;
-
-      if (llmResponse) {
-        stepRecord.tokenCost = llmResponse.cost;
-        totalTokenCost += llmResponse.cost;
-        exec.provider = llmResponse.provider;
-        exec.model = llmResponse.model;
-      }
-
-      // Quality heuristic: based on output length, section coverage, and completeness
-      const qualityScore = computeQualityScore(output, agentIdentity);
-      stepRecord.qualityScore = qualityScore;
-      qualityScores.push(qualityScore);
-
-      // Agent memory — extract and store learnings from this execution
-      if (agentIdentity) {
-        extractAndStoreMemory(agentIdentity.id, exec.id, skillStep.name, output);
-      }
-
-      stepRecord.status = skillStep.requiresApproval ? 'approval_required' : 'completed';
-      stepRecord.completedAt = new Date().toISOString();
-      stepRecord.outputKey = skillStep.outputKey;
-      stepRecord.outputPreview = output.slice(0, 300);
-
-    } catch (err) {
-      stepRecord.status = 'failed';
-      stepRecord.completedAt = new Date().toISOString();
-      stepRecord.latencyMs = Date.now() - stepStart;
-      stepRecord.error = err instanceof Error ? err.message : 'Step failed';
-      console.error(`[persona-api] Step ${skillStep.id} failed:`, err);
+      persistExec(exec);
     }
-
-    persistExec(exec);
   }
 
   // Aggregate metrics
@@ -968,6 +1082,410 @@ async function processSkillSteps(
 
   // Record to KPI store
   recordExecutionMetrics(exec);
+
+  // Generate After-Action Report
+  generateAfterActionReport(exec, routedAgents);
+
+  // Check for retraining triggers
+  checkRetrainingTriggers(exec);
+}
+
+// ---------------------------------------------------------------------------
+// DAG Execution Engine — parallel step execution with dependency resolution
+// ---------------------------------------------------------------------------
+
+async function processDAGSteps(
+  exec: PersonaExecutionRecord,
+  skill: PersonaSkillDef,
+  persona: 'engineering' | 'product' | 'hr' | 'marketing',
+  inputs: Record<string, unknown>,
+  simulate: boolean,
+  customPrompt: string | undefined,
+  provider: LLMProviderId | undefined,
+  modelId: string | undefined,
+  previousOutputs: Record<string, string>,
+  qualityScores: number[],
+  routedAgents: Set<string>
+): Promise<void> {
+  const completedSteps = new Set<string>();
+  const failedSteps = new Set<string>();
+  const MAX_ITERATIONS = skill.steps.length + 1; // safety bound
+
+  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+    // Find ready steps: not yet completed/failed, all dependencies satisfied
+    const readySteps: Array<{ skillStep: typeof skill.steps[0]; stepRecord: typeof exec.steps[0] }> = [];
+
+    for (let i = 0; i < skill.steps.length; i++) {
+      const ss = skill.steps[i]!;
+      const sr = exec.steps[i]!;
+      if (completedSteps.has(ss.id) || failedSteps.has(ss.id)) continue;
+      if (sr.status === 'running') continue;
+
+      const deps = sr.dependsOn ?? [];
+      const allDepsMet = deps.every(d => completedSteps.has(d));
+      const anyDepFailed = deps.some(d => failedSteps.has(d));
+
+      if (anyDepFailed) {
+        sr.status = 'skipped';
+        sr.completedAt = new Date().toISOString();
+        sr.error = 'Skipped — upstream dependency failed';
+        failedSteps.add(ss.id);
+        persistExec(exec);
+        continue;
+      }
+
+      if (allDepsMet) {
+        readySteps.push({ skillStep: ss, stepRecord: sr });
+      }
+    }
+
+    if (readySteps.length === 0) break; // all done or deadlocked
+
+    // Execute all ready steps in parallel
+    await Promise.all(
+      readySteps.map(async ({ skillStep, stepRecord }) => {
+        const result = await executeSingleStep(
+          exec, persona, skill.name, skillStep, stepRecord, inputs, previousOutputs,
+          simulate, customPrompt, provider, modelId, routedAgents
+        );
+        if (result.qualityScore !== undefined) qualityScores.push(result.qualityScore);
+
+        if (stepRecord.status === 'completed' || stepRecord.status === 'approval_required') {
+          completedSteps.add(skillStep.id);
+        } else {
+          failedSteps.add(skillStep.id);
+        }
+      })
+    );
+
+    persistExec(exec);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Single Step Executor — shared between sequential and DAG modes
+// ---------------------------------------------------------------------------
+
+interface StepResult {
+  tokenCost: number;
+  latencyMs: number;
+  qualityScore?: number;
+}
+
+async function executeSingleStep(
+  exec: PersonaExecutionRecord,
+  persona: 'engineering' | 'product' | 'hr' | 'marketing',
+  skillName: string,
+  skillStep: { id: string; name: string; agent: string; tool?: string; outputKey: string; requiresApproval?: boolean },
+  stepRecord: PersonaExecutionRecord['steps'][0],
+  inputs: Record<string, unknown>,
+  previousOutputs: Record<string, string>,
+  simulate: boolean,
+  customPrompt?: string,
+  provider?: LLMProviderId,
+  modelId?: string,
+  routedAgents?: Set<string>
+): Promise<StepResult> {
+  // Adaptive agent routing
+  const resolvedAgentId = selectBestAgent(skillStep.agent, persona);
+  const agentIdentity = getAgentIdentity(resolvedAgentId);
+  const wasRouted = resolvedAgentId !== skillStep.agent;
+  if (wasRouted && routedAgents) routedAgents.add(resolvedAgentId);
+
+  if (agentIdentity) {
+    stepRecord.agent = resolvedAgentId;
+    stepRecord.agentCallSign = agentIdentity.callSign;
+    stepRecord.agentRank = agentIdentity.rank;
+  }
+
+  stepRecord.status = 'running';
+  stepRecord.startedAt = new Date().toISOString();
+  persistExec(exec);
+
+  const stepStart = Date.now();
+
+  try {
+    let output: string;
+    let llmResponse: LLMResponse | undefined;
+
+    if (simulate) {
+      await new Promise((r) => setTimeout(r, 600 + Math.random() * 800));
+      output = generateSandboxOutput(persona, skillName, skillStep as any, inputs, previousOutputs);
+    } else {
+      const { system, user } = buildStepPrompt(persona, skillName, skillStep as any, inputs, previousOutputs, customPrompt, agentIdentity);
+      llmResponse = await callLLMUnified(system, user, provider, modelId);
+      output = llmResponse.content;
+    }
+
+    previousOutputs[skillStep.outputKey] = output;
+    exec.outputs[skillStep.outputKey] = output;
+
+    const latencyMs = Date.now() - stepStart;
+    stepRecord.latencyMs = latencyMs;
+    const tokenCost = llmResponse?.cost ?? 0;
+    stepRecord.tokenCost = tokenCost;
+
+    if (llmResponse) {
+      exec.provider = llmResponse.provider;
+      exec.model = llmResponse.model;
+    }
+
+    const qualityScore = computeQualityScore(output, agentIdentity);
+    stepRecord.qualityScore = qualityScore;
+
+    if (agentIdentity) {
+      extractAndStoreMemory(agentIdentity.id, exec.id, skillStep.name, output);
+    }
+
+    stepRecord.status = skillStep.requiresApproval ? 'approval_required' : 'completed';
+    stepRecord.completedAt = new Date().toISOString();
+    stepRecord.outputKey = skillStep.outputKey;
+    stepRecord.outputPreview = output.slice(0, 300);
+
+    return { tokenCost, latencyMs, qualityScore };
+
+  } catch (err) {
+    stepRecord.status = 'failed';
+    stepRecord.completedAt = new Date().toISOString();
+    stepRecord.latencyMs = Date.now() - stepStart;
+    stepRecord.error = err instanceof Error ? err.message : 'Step failed';
+    console.error(`[persona-api] Step ${skillStep.id} failed:`, err);
+    return { tokenCost: 0, latencyMs: Date.now() - stepStart };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Handoff Enforcement — retry step with explicit schema instructions
+// ---------------------------------------------------------------------------
+
+async function retryStepWithHandoffInstructions(
+  exec: PersonaExecutionRecord,
+  persona: 'engineering' | 'product' | 'hr' | 'marketing',
+  skillName: string,
+  skillStep: { id: string; name: string; agent: string; outputKey: string },
+  stepRecord: PersonaExecutionRecord['steps'][0],
+  inputs: Record<string, unknown>,
+  previousOutputs: Record<string, string>,
+  missingFields: string[],
+  provider?: LLMProviderId,
+  modelId?: string
+): Promise<{ output: string } | null> {
+  const agentIdentity = getAgentIdentity(stepRecord.agent);
+  const originalOutput = previousOutputs[skillStep.outputKey] ?? '';
+
+  const fixPrompt = `Your previous output is missing required sections for the downstream agent handoff.
+
+Missing sections: ${missingFields.join(', ')}
+
+Your original output (for reference):
+${originalOutput.slice(0, 2000)}
+
+Please rewrite your output to explicitly include ALL of these sections: ${missingFields.join(', ')}.
+Keep everything else from your original output that was good.`;
+
+  try {
+    const systemPrompt = agentIdentity?.systemPrompt ?? `You are an expert ${persona} professional.`;
+    const llmResponse = await callLLMUnified(
+      systemPrompt + '\n\nIMPORTANT: You are retrying a step because your previous output was missing required handoff sections.',
+      fixPrompt, provider, modelId
+    );
+
+    previousOutputs[skillStep.outputKey] = llmResponse.content;
+    exec.outputs[skillStep.outputKey] = llmResponse.content;
+    stepRecord.outputPreview = llmResponse.content.slice(0, 300);
+
+    if (llmResponse.cost) {
+      stepRecord.tokenCost = (stepRecord.tokenCost ?? 0) + llmResponse.cost;
+    }
+
+    return { output: llmResponse.content };
+  } catch (err) {
+    console.error(`[handoff-enforcement] Retry failed for ${skillStep.id}:`, err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// After-Action Report Generator
+// ---------------------------------------------------------------------------
+
+function generateAfterActionReport(exec: PersonaExecutionRecord, routedAgents: Set<string>): void {
+  const totalDuration = exec.completedAt && exec.startedAt
+    ? new Date(exec.completedAt).getTime() - new Date(exec.startedAt).getTime()
+    : exec.totalLatencyMs ?? 0;
+
+  const completedSteps = exec.steps.filter(s => s.status === 'completed' || s.status === 'approval_required');
+  const failedSteps = exec.steps.filter(s => s.status === 'failed');
+  const skippedSteps = exec.steps.filter(s => s.status === 'skipped');
+
+  // Determine outcome
+  let outcome: AfterActionReport['outcome'];
+  if (failedSteps.length === 0 && skippedSteps.length === 0) outcome = 'success';
+  else if (completedSteps.length > 0) outcome = 'partial';
+  else outcome = 'failure';
+
+  // Build agent performance breakdown
+  const agentPerformance = exec.steps.map(step => ({
+    agentId: step.agent,
+    callSign: step.agentCallSign ?? step.agent,
+    rank: step.agentRank ?? 'unknown',
+    stepName: step.stepName,
+    status: step.status,
+    durationMs: step.latencyMs ?? 0,
+    qualityScore: step.qualityScore ?? 0,
+    tokenCost: step.tokenCost ?? 0,
+    handoffValid: step.handoffValid !== false,
+    handoffWarnings: step.handoffWarnings ?? [],
+    wasRouted: routedAgents.has(step.agent),
+  }));
+
+  // Build handoff chain
+  const handoffChain: AfterActionReport['handoffChain'] = [];
+  for (let i = 0; i < exec.steps.length - 1; i++) {
+    const from = exec.steps[i]!;
+    const to = exec.steps[i + 1]!;
+    handoffChain.push({
+      from: from.agentCallSign ?? from.agent,
+      to: to.agentCallSign ?? to.agent,
+      valid: from.handoffValid !== false,
+      missingFields: from.handoffWarnings?.filter(w => w.includes('Missing')) ? [] : [],
+    });
+  }
+
+  // Identify issues
+  const issues: string[] = [];
+  for (const step of failedSteps) {
+    issues.push(`Step "${step.stepName}" failed: ${step.error ?? 'Unknown error'}`);
+  }
+  for (const step of exec.steps) {
+    if (step.handoffValid === false) {
+      issues.push(`Handoff from ${step.agentCallSign ?? step.agent} failed validation — ${(step.handoffWarnings ?? []).join('; ')}`);
+    }
+    if (step.qualityScore !== undefined && step.qualityScore < 5) {
+      issues.push(`Low quality output from ${step.agentCallSign ?? step.agent} (score: ${step.qualityScore}/10)`);
+    }
+    if (step.latencyMs && step.latencyMs > 30000) {
+      issues.push(`Slow step: "${step.stepName}" took ${(step.latencyMs / 1000).toFixed(1)}s`);
+    }
+  }
+
+  // Recommendations
+  const recommendations: string[] = [];
+  if (failedSteps.length > 0) {
+    recommendations.push('Review failed steps for prompt improvements or tool connectivity issues');
+  }
+  const slowSteps = exec.steps.filter(s => (s.latencyMs ?? 0) > 20000);
+  if (slowSteps.length > 0) {
+    recommendations.push(`Consider using a faster model for ${slowSteps.map(s => s.stepName).join(', ')}`);
+  }
+  if (exec.steps.some(s => s.handoffValid === false)) {
+    recommendations.push('Refine handoff contracts — some agents are not producing expected output sections');
+  }
+  if (routedAgents.size > 0) {
+    recommendations.push(`${routedAgents.size} agent(s) were auto-swapped via adaptive routing — review KPIs of original agents`);
+  }
+  if (exec.avgQualityScore !== undefined && exec.avgQualityScore >= 8) {
+    recommendations.push('Excellent quality — consider using this execution as a training exemplar');
+  }
+
+  // Summary
+  const summary = `${exec.skillName} execution ${outcome === 'success' ? 'completed successfully' : outcome === 'partial' ? 'partially completed' : 'failed'}. ` +
+    `${completedSteps.length}/${exec.steps.length} steps completed in ${(totalDuration / 1000).toFixed(1)}s. ` +
+    `Average quality: ${exec.avgQualityScore?.toFixed(1) ?? 'N/A'}/10. ` +
+    `Total cost: $${(exec.totalTokenCost ?? 0).toFixed(4)}.` +
+    (issues.length > 0 ? ` ${issues.length} issue(s) identified.` : '');
+
+  const aar: AfterActionReport = {
+    id: `aar-${exec.id}`,
+    executionId: exec.id,
+    persona: exec.persona,
+    skillName: exec.skillName,
+    generatedAt: new Date().toISOString(),
+    outcome,
+    totalDurationMs: totalDuration,
+    totalTokenCost: exec.totalTokenCost ?? 0,
+    summary,
+    agentPerformance,
+    handoffChain,
+    issues,
+    recommendations,
+  };
+
+  persistAAR(aar);
+  console.log(`[aar] Generated After-Action Report ${aar.id} for ${exec.id}: ${outcome}`);
+}
+
+// ---------------------------------------------------------------------------
+// Retraining Triggers — flag agents with sustained poor performance
+// ---------------------------------------------------------------------------
+
+const RETRAIN_THRESHOLDS = {
+  quality: { value: 5.0, label: 'low_quality' as const, severity: 'critical' as const },
+  handoff: { value: 70, label: 'handoff_failures' as const, severity: 'warning' as const },
+  latency: { value: 30000, label: 'high_latency' as const, severity: 'warning' as const },
+  cost: { value: 0.50, label: 'high_cost' as const, severity: 'warning' as const },
+};
+
+function checkRetrainingTriggers(exec: PersonaExecutionRecord): void {
+  for (const step of exec.steps) {
+    if (step.status !== 'completed' && step.status !== 'approval_required') continue;
+
+    const agentId = step.agent;
+    const kpi = agentKPIs.get(agentId);
+    if (!kpi || kpi.totalExecutions < 5) continue; // need enough data
+
+    const identity = getAgentIdentity(agentId);
+    const callSign = identity?.callSign ?? agentId;
+    const persona = identity?.persona ?? exec.persona;
+
+    // Quality check
+    if (kpi.avgQualityScore < RETRAIN_THRESHOLDS.quality.value) {
+      flagAgent(agentId, callSign, persona, 'low_quality', kpi.avgQualityScore, RETRAIN_THRESHOLDS.quality.value, 'critical',
+        `Prompt refinement needed — average quality ${kpi.avgQualityScore.toFixed(1)}/10 is below threshold. Review system prompt and quality gates.`);
+    }
+
+    // Handoff success rate check
+    if (kpi.handoffSuccessRate < RETRAIN_THRESHOLDS.handoff.value) {
+      flagAgent(agentId, callSign, persona, 'handoff_failures', kpi.handoffSuccessRate, RETRAIN_THRESHOLDS.handoff.value, 'warning',
+        `Handoff success rate ${kpi.handoffSuccessRate.toFixed(0)}% is below ${RETRAIN_THRESHOLDS.handoff.value}%. Review handoff output schema and add explicit section headers to system prompt.`);
+    }
+
+    // Latency check
+    if (kpi.avgLatencyMs > RETRAIN_THRESHOLDS.latency.value) {
+      flagAgent(agentId, callSign, persona, 'high_latency', kpi.avgLatencyMs, RETRAIN_THRESHOLDS.latency.value, 'warning',
+        `Average latency ${(kpi.avgLatencyMs / 1000).toFixed(1)}s exceeds ${RETRAIN_THRESHOLDS.latency.value / 1000}s. Consider shorter prompts or a faster model.`);
+    }
+
+    // Cost check
+    if (kpi.avgTokenCost > RETRAIN_THRESHOLDS.cost.value) {
+      flagAgent(agentId, callSign, persona, 'high_cost', kpi.avgTokenCost, RETRAIN_THRESHOLDS.cost.value, 'warning',
+        `Average cost $${kpi.avgTokenCost.toFixed(3)}/execution is high. Consider using a cheaper model or reducing prompt length.`);
+    }
+  }
+}
+
+function flagAgent(
+  agentId: string, callSign: string, persona: string,
+  reason: RetrainingFlag['reason'], currentValue: number, threshold: number,
+  severity: RetrainingFlag['severity'], suggestedAction: string
+): void {
+  const existing = retrainingFlags.get(agentId);
+  if (existing && existing.reason === reason && existing.acknowledged) return; // already acknowledged
+
+  const flag: RetrainingFlag = {
+    agentId, callSign, persona,
+    flaggedAt: new Date().toISOString(),
+    reason, severity, currentValue, threshold,
+    consecutiveFailures: (existing?.reason === reason ? existing.consecutiveFailures + 1 : 1),
+    suggestedAction,
+    acknowledged: false,
+  };
+
+  // Escalate to critical if consecutive failures ≥ 5
+  if (flag.consecutiveFailures >= 5) flag.severity = 'critical';
+
+  persistRetrainingFlag(flag);
+  console.log(`[retraining] Flagged ${callSign} (${agentId}): ${reason} — ${suggestedAction}`);
 }
 
 /** Compute a quality score (0-10) for agent output based on heuristics */
@@ -1096,6 +1614,7 @@ export function createPersonaExecution(
     skillId: skill.id,
     skillName: skill.name,
     status: 'queued',
+    executionMode: 'sequential',
     provider,
     steps,
     outputs: {},
@@ -1184,4 +1703,61 @@ export function approvePersonaStep(execId: string, stepId: string): { success: b
   step.status = 'completed';
   persistExec(exec);
   return { success: true, message: 'Step approved' };
+}
+
+// ---------------------------------------------------------------------------
+// After-Action Report Public API
+// ---------------------------------------------------------------------------
+
+/** Get AAR for a specific execution */
+export function getAfterActionReport(executionId: string): AfterActionReport | undefined {
+  return afterActionReports.get(`aar-${executionId}`);
+}
+
+/** List all AARs, optionally filtered by persona */
+export function listAfterActionReports(persona?: string, limit = 20): AfterActionReport[] {
+  let all = Array.from(afterActionReports.values());
+  if (persona) all = all.filter(a => a.persona === persona);
+  return all
+    .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+    .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
+// Retraining Flags Public API
+// ---------------------------------------------------------------------------
+
+/** Get all retraining flags */
+export function getRetrainingFlags(): RetrainingFlag[] {
+  return Array.from(retrainingFlags.values())
+    .sort((a, b) => {
+      // Critical first, then by date
+      if (a.severity !== b.severity) return a.severity === 'critical' ? -1 : 1;
+      return new Date(b.flaggedAt).getTime() - new Date(a.flaggedAt).getTime();
+    });
+}
+
+/** Get retraining flag for a specific agent */
+export function getRetrainingFlag(agentId: string): RetrainingFlag | undefined {
+  return retrainingFlags.get(agentId);
+}
+
+/** Acknowledge a retraining flag (marks it as reviewed by a human) */
+export function acknowledgeRetrainingFlag(agentId: string): { success: boolean; message: string } {
+  const flag = retrainingFlags.get(agentId);
+  if (!flag) return { success: false, message: 'No retraining flag for this agent' };
+  flag.acknowledged = true;
+  persistRetrainingFlag(flag);
+  return { success: true, message: `Acknowledged retraining flag for ${flag.callSign}` };
+}
+
+/** Dismiss (remove) a retraining flag */
+export function dismissRetrainingFlag(agentId: string): { success: boolean; message: string } {
+  const flag = retrainingFlags.get(agentId);
+  if (!flag) return { success: false, message: 'No retraining flag for this agent' };
+  retrainingFlags.delete(agentId);
+  if (backingStore) {
+    try { backingStore.delete(RETRAIN_TABLE, agentId); } catch { /* ignore */ }
+  }
+  return { success: true, message: `Dismissed retraining flag for ${flag.callSign}` };
 }

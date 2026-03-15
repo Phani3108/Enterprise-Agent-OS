@@ -10,33 +10,56 @@ BASE_URL = "http://localhost:3010"
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "docs", "screenshots")
 
 SCREENS = [
-    ("home",         "01-home-command-center",  "Command Center"),
-    ("personas",     "02-personas",             "Personas"),
-    ("marketplace",  "03-skill-marketplace",    "Marketplace"),
-    ("builder",      "04-skill-builder",        "Skill Builder"),
-    ("agents",       "05-agents",               "Agents"),
-    ("workflows",    "06-workflows",            "Workflows"),
-    ("tools",        "07-tools-registry",       "Tools"),
-    ("prompts",      "08-prompt-library",       "Prompt Library"),
-    ("knowledge",    "09-knowledge-explorer",   "Knowledge"),
-    ("control",      "10-control-plane",        "Control Plane"),
-    ("memory",       "11-memory-graph",         "Memory Graph"),
-    ("acp",          "12-agent-collaboration",  "Agent Collab"),
-    ("governance",   "13-governance",           "Governance"),
-    ("observability","14-observability",        "Observability"),
-    ("learning",     "15-learning-hub",         "Learning"),
-    ("scheduler",    "16-scheduler",            "Scheduler"),
-    ("settings",     "17-settings",             "Settings"),
+    # (sidebar-section,         filename,                           sidebar-label)
+    # Home
+    ("home",                    "01-home-command-center",            "Home"),
+    # C-Suite
+    ("csuite-command",          "02-csuite-command-center",          "Command Center"),
+    ("csuite-vision",           "03-vision-dashboard",               "Vision & Strategy"),
+    # Workspaces
+    ("ws-marketing",            "04-marketing-hub",                  "Marketing"),
+    ("ws-engineering",          "05-engineering-hub",                 "Engineering"),
+    ("ws-product",              "06-product-hub",                    "Product"),
+    ("ws-hr",                   "07-hr-hub",                         "HR & Talent"),
+    # Platform
+    ("platform-agents",         "08-agents-panel",                   "Agents"),
+    ("platform-courses",        "09-ai-courses-hub",                 "Courses"),
+    ("platform-innovation",     "10-innovation-labs",                "Innovation Labs"),
+    ("platform-budget",         "11-budget-intelligence",            "Budget Intelligence"),
+    ("platform-improvement",    "12-agent-improvement",              "Agent Improvement"),
+    # Operations
+    ("ops-integrations",        "13-tools-registry",                 "Tool Registry"),
+    ("ops-notifications",       "14-notification-center",            "Notifications"),
+    ("ops-executions",          "15-executions",                     "Executions"),
+    ("ops-discussions",         "16-discussion-forum",               "Discussions"),
+    ("ops-blog",                "17-blog-editor",                    "Blog"),
+    # Admin
+    ("admin-governance",        "18-governance",                     "Governance"),
+    ("admin-usage",             "19-usage-analytics",                "Usage & Analytics"),
+    ("admin-settings",          "20-settings",                       "Settings"),
 ]
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
-CLICK_JS = """
-(label) => {
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const target = buttons.find(b => b.textContent.includes(label));
-    if (target) { target.click(); return target.textContent.trim(); }
-    return null;
+NAVIGATE_JS = """
+(sectionId) => {
+    // Use the Zustand store directly via window to navigate
+    const buttons = Array.from(document.querySelectorAll('button, a, [role="button"]'));
+    // First try: find sidebar item whose data-section or text matches
+    for (const btn of buttons) {
+        const text = btn.textContent.trim();
+        const section = btn.getAttribute('data-section');
+        if (section === sectionId) { btn.click(); return 'data-section:' + text; }
+    }
+    // Second try: match by label text
+    for (const btn of buttons) {
+        const text = btn.textContent.trim();
+        if (text === sectionId) { btn.click(); return 'text:' + text; }
+    }
+    // Third try: use URL navigation
+    window.history.pushState(null, '', '/' + sectionId);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    return 'url:' + sectionId;
 }
 """
 
@@ -72,22 +95,19 @@ def take_screenshots():
             print(f"  Modal dismissed ({modal_result})")
             time.sleep(0.8)
 
-        for _section, filename, label in SCREENS:
+        for section, filename, label in SCREENS:
             # Dismiss any modal before each click
             page.evaluate(DISMISS_MODAL_JS)
 
-            print(f"  Navigating to '{label}' -> {filename}.png", end="", flush=True)
-            clicked = page.evaluate(CLICK_JS, label)
-            if clicked:
-                print(f" [clicked: {clicked[:30]}]")
-            else:
-                print(f" [WARNING: not found]")
+            print(f"  Navigating to '{label}' ({section}) -> {filename}.png", end="", flush=True)
 
-            time.sleep(1.8)
+            # Navigate using URL-based routing (most reliable)
+            page.goto(f"{BASE_URL}/{section}", wait_until="networkidle", timeout=15000)
+            time.sleep(2.5)
 
             # Dismiss any modal that may have appeared
             page.evaluate(DISMISS_MODAL_JS)
-            time.sleep(0.3)
+            time.sleep(0.5)
 
             out_path = os.path.join(OUT_DIR, f"{filename}.png")
             page.screenshot(path=out_path, full_page=False)

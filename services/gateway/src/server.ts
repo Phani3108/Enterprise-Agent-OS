@@ -13,7 +13,8 @@
 
 import { InMemoryStore, SessionRepository, ExecutionRepository, executeQuery, classifyIntent } from './core.js';
 import { PersistentStore, PostgresStore } from './db.js';
-import { authenticateRequest } from './auth.js';
+import { authenticateRequest, requirePersonaAccess, requireRole, generateJWT } from './auth.js';
+import type { AuthUser } from './auth.js';
 import { PromptStore } from './prompt-library-data.js';
 import { CapabilityGraph } from './capability-graph.js';
 import { PersonaSystem, LicenseStore } from './persona-system.js';
@@ -34,12 +35,21 @@ import { getNotificationConfig, setNotificationConfig } from './marketing-notifi
 import { ENGINEERING_SKILLS, getEngineeringSkill, getEngineeringSkillsByCluster } from './engineering-skills-data.js';
 import { PRODUCT_SKILLS, getProductSkill, getProductSkillsByCluster } from './product-skills-data.js';
 import { HR_SKILLS, getHRSkill, getHRSkillsByCluster } from './hr-skills-data.js';
-import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep, getAgentKPIs, getAgentKPI, initPersonaStore, getExecutionStats, getAllExecutions } from './persona-api.js';
+import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep, getAgentKPIs, getAgentKPI, initPersonaStore, getExecutionStats, getAllExecutions, getAfterActionReport, listAfterActionReports, getRetrainingFlags, getRetrainingFlag, acknowledgeRetrainingFlag, dismissRetrainingFlag } from './persona-api.js';
+import type { AfterActionReport, RetrainingFlag } from './persona-api.js';
 import { getAvailableProviders, getDefaultProvider } from './llm-provider.js';
-import { getFullRegistry, getAgentIdentity, getAgentsByPersona } from './agent-registry.js';
+import { getFullRegistry, getAgentIdentity, getAgentsByPersona, getCSuiteAgents, getAllCSuiteProfiles, getCSuiteProfile, getChainOfCommand, getOrgTree } from './agent-registry.js';
 import { processCognitivePipeline, decompose, reason, reflect, groundCheck, getCognitiveResult, getCognitiveTrace, type CognitiveRequest } from './cognitive-pipeline.js';
 import { eventBus } from './event-bus.js';
 import { submitGoal, getGoalExecution, listGoalExecutions, cancelGoal } from './gateway-orchestrator.js';
+import { createVision, getVision, listVisions, decomposeVision, cascadeToRegiment, createProgram, getProgram, listPrograms, updateProgram, generatePMOStatusReport, getVisionStatus, initVisionStore } from './vision-api.js';
+import type { VisionStatement, ProgramRecord } from './vision-api.js';
+import { createChannel, getChannel, listChannels, updateChannel, deleteChannel, createRule, getRule, listRules, updateRule, deleteRule, dispatch, dispatchByTrigger, getDeliveryLog, getDelivery, getDeliveryStats, initNotificationStore } from './notification-dispatch.js';
+import { createEndpoint, getEndpoint, listEndpoints, deleteEndpoint, createSubscription, getSubscription, listSubscriptions, deleteSubscription, receiveWebhook, getInboundLog, initWebhookStore } from './webhook-connector.js';
+import { wireNotificationBridge } from './notification-bridge.js';
+import { createExperiment, getExperiment, listExperiments, updateExperiment, transitionExperiment, addExperimentResult, scoreExperiment, deleteExperiment, createHackathon, getHackathon, listHackathons, startHackathon, completeHackathon, addExperimentToHackathon, requestGraduation, reviewGraduation, listGraduations, getInnovationBacklog, initInnovationStore } from './innovation-labs.js';
+import { setBudget, getBudget, listBudgets, deleteBudget, recordSpend, getSpendLog, getBurnRate, listAlerts as listCostAlerts, acknowledgeAlert, getCFODashboard, initBudgetStore } from './budget-intelligence.js';
+import { createReview, getReview, listReviews, createPlan, getPlan, listPlans, updatePlanStatus, updateObjective, submitFeedback, listFeedback, getFeedbackSummary, addExemplar, listExemplars, deleteExemplar, getAgentHealthReport, initImprovementStore } from './agent-improvement.js';
 import { registerStore, initGatewayPersistence, flushGatewayPersistence } from './gateway-persistence.js';
 import { getAgentMemory, getAllAgentMemorySnapshots, recordAgentMemory, _exportData as exportAgentMemory, _importData as importAgentMemory } from './agent-memory.js';
 // Workflow engine available as library but not exposed as API routes
@@ -57,6 +67,13 @@ const store = usePostgres ? new PostgresStore() : useInMemory ? new InMemoryStor
 const sessions = new SessionRepository(store);
 const executions = new ExecutionRepository(store);
 initPersonaStore(store); // Wire persona executions & KPIs to persistent backing store
+initVisionStore(store); // Wire vision statements, programs & OKRs to persistent store
+initNotificationStore(store); // Wire notification channels, rules & delivery log
+initWebhookStore(store); // Wire webhook endpoints & subscriptions (also re-wires outbound subscriptions to event bus)
+wireNotificationBridge(); // Wire event bus patterns → notification dispatch
+initInnovationStore(store); // Wire innovation labs experiments, hackathons & graduations
+initBudgetStore(store); // Wire agent budgets, spend log & cost alerts
+initImprovementStore(store); // Wire performance reviews, improvement plans & feedback
 const promptStore = new PromptStore();
 const capabilityGraph = new CapabilityGraph();
 const personaSystem = new PersonaSystem();
@@ -199,22 +216,137 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     }
 
     const userId = auth.user?.id ?? 'anonymous';
+    const authUser = auth.user;
 
     try {
         // Health — with real system status
         if (path === '/api/health' && method === 'GET') {
             sendJSON(res, 200, {
                 status: 'healthy',
-                version: '0.1.0',
+                version: '0.2.0',
                 services: { gateway: 'up', skills: 'up', workers: 'up', orchestrator: 'up' },
                 uptime: process.uptime(),
                 timestamp: new Date().toISOString(),
                 llmConfigured: !!process.env.ANTHROPIC_API_KEY,
                 githubConfigured: !!process.env.GITHUB_TOKEN,
-                persistenceEnabled: usePostgres ? 'postgres' : usePersistence,
+                persistenceEnabled: usePostgres ? 'postgres' : useInMemory ? 'in-memory' : 'file-backed',
                 wsClients: getWSClientCount(),
                 storeStats: 'stats' in store ? (store as PersistentStore).stats() : { tables: 0, totalRows: 0 },
             });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Auth routes — token issuance + user info
+        // -----------------------------------------------------------------
+
+        // POST /api/auth/token — issue JWT from API key or credentials
+        if (path === '/api/auth/token' && method === 'POST') {
+            if (!authUser) { sendJSON(res, 401, { error: 'Authentication required to issue token' }); return; }
+            try {
+                const body = await readBody(req);
+                const expiresIn = typeof body.expiresIn === 'number' ? body.expiresIn : 86400;
+                const token = generateJWT(authUser, expiresIn);
+                sendJSON(res, 200, { token, expiresIn, user: { id: authUser.id, email: authUser.email, name: authUser.name, role: authUser.role, teams: authUser.teams, personaScopes: authUser.personaScopes } });
+            } catch (err) {
+                sendJSON(res, 500, { error: 'JWT_SECRET not configured — cannot issue tokens' });
+            }
+            return;
+        }
+
+        // GET /api/auth/me — return current user info from token
+        if (path === '/api/auth/me' && method === 'GET') {
+            if (!authUser) { sendJSON(res, 401, { error: 'Not authenticated' }); return; }
+            sendJSON(res, 200, { user: { id: authUser.id, email: authUser.email, name: authUser.name, role: authUser.role, teams: authUser.teams, personaScopes: authUser.personaScopes } });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Unified Execution API — single endpoint for all personas
+        // POST /api/execute — unified skill/workflow execution
+        // GET  /api/executions — list all executions (filtered)
+        // GET  /api/executions/:id — get single execution
+        // POST /api/executions/:id/approve/:stepId — approve a step
+        // -----------------------------------------------------------------
+
+        if (path === '/api/execute' && method === 'POST') {
+            const body = await readBody(req);
+            const { persona, skillId, inputs, simulate, customPrompt, provider, modelId } = body as {
+                persona?: string; skillId?: string; inputs?: Record<string, unknown>;
+                simulate?: boolean; customPrompt?: string; provider?: string; modelId?: string;
+            };
+            if (!persona || !skillId) { sendJSON(res, 400, { error: 'persona and skillId required' }); return; }
+
+            // Persona access check
+            if (authUser && !requirePersonaAccess(authUser, persona)) {
+                sendJSON(res, 403, { error: `Access denied for persona: ${persona}` });
+                return;
+            }
+
+            // Resolve skill from persona catalog
+            let skill;
+            if (persona === 'engineering') skill = getEngineeringSkill(skillId);
+            else if (persona === 'product') skill = getProductSkill(skillId);
+            else if (persona === 'hr') skill = getHRSkill(skillId);
+            else if (persona === 'marketing') {
+                // Marketing uses workflow execution (separate path for now)
+                try {
+                    const exec = marketingApi.createMarketingExecution(skillId, inputs ?? {}, userId, simulate === true, customPrompt, provider as any, modelId);
+                    recordAudit(userId, 'skill.execute', `Marketing / ${exec.workflowName}`);
+                    broadcastEvent(exec.id, 'session.started', { persona: 'marketing', skillId, simulate, provider });
+                    sendJSON(res, 201, { execution: exec });
+                } catch (err) { sendJSON(res, 400, { error: (err as Error).message }); }
+                return;
+            }
+
+            if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
+
+            const exec = createPersonaExecution(persona as any, skill, inputs ?? {}, userId, simulate, customPrompt, provider as any, modelId);
+            recordAudit(userId, 'skill.execute', `${persona} / ${skill.name}`);
+            broadcastEvent(exec.id, 'session.started', { persona, skillId, simulate, provider });
+            sendJSON(res, 201, { execution: exec });
+            return;
+        }
+
+        if (path === '/api/executions' && method === 'GET') {
+            const persona = url.searchParams.get('persona') ?? undefined;
+            const status = url.searchParams.get('status') ?? undefined;
+            const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
+
+            // Persona access check
+            if (persona && authUser && !requirePersonaAccess(authUser, persona)) {
+                sendJSON(res, 403, { error: `Access denied for persona: ${persona}` });
+                return;
+            }
+
+            let execs;
+            if (persona) {
+                execs = listPersonaExecutions(persona as any, limit);
+            } else {
+                execs = getAllExecutions()
+                    .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+                    .slice(0, limit);
+            }
+            if (status) { execs = execs.filter(e => e.status === status); }
+            sendJSON(res, 200, { executions: execs, total: execs.length });
+            return;
+        }
+
+        if (path.match(/^\/api\/executions\/[^/]+$/) && method === 'GET') {
+            const execId = path.split('/').pop()!;
+            const exec = getPersonaExecution(execId) ?? marketingApi.getMarketingExecution(execId);
+            if (!exec) { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            const aar = getAfterActionReport(execId);
+            sendJSON(res, 200, { execution: exec, afterActionReport: aar ?? null });
+            return;
+        }
+
+        if (path.match(/^\/api\/executions\/[^/]+\/approve\/[^/]+$/) && method === 'POST') {
+            const parts = path.split('/');
+            const execId = parts[3]!;
+            const stepId = parts[5]!;
+            const result = approvePersonaStep(execId, stepId);
+            sendJSON(res, result.success ? 200 : 400, result);
             return;
         }
 
@@ -1276,8 +1408,12 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         // -----------------------------------------------------------------------
-        // Marketing Module API
+        // Marketing Module API (persona-gated)
         // -----------------------------------------------------------------------
+
+        if (path.startsWith('/api/marketing/') && authUser && !requirePersonaAccess(authUser, 'marketing')) {
+            sendJSON(res, 403, { error: 'Access denied for persona: marketing' }); return;
+        }
 
         if (path === '/api/marketing/workflows' && method === 'GET') {
             const workflows = marketingApi.getMarketingWorkflows();
@@ -1459,6 +1595,538 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         // -----------------------------------------------------------------------
+        // Notification Dispatch — channels, rules, delivery log
+
+        // Channels CRUD
+        if (path === '/api/notifications/channels' && method === 'GET') {
+            sendJSON(res, 200, { channels: listChannels() });
+            return;
+        }
+        if (path === '/api/notifications/channels' && method === 'POST') {
+            const body = await readBody(req) as { channel: string; name: string; config: unknown };
+            const ch = createChannel(body.channel as Parameters<typeof createChannel>[0], body.name, body.config as Parameters<typeof createChannel>[2]);
+            recordAudit(userId, 'notification.channel.create', ch.id);
+            sendJSON(res, 201, ch);
+            return;
+        }
+        if (path.match(/^\/api\/notifications\/channels\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const ch = getChannel(id);
+            if (!ch) { sendJSON(res, 404, { error: 'Channel not found' }); return; }
+            sendJSON(res, 200, ch);
+            return;
+        }
+        if (path.match(/^\/api\/notifications\/channels\/[^/]+$/) && method === 'PUT') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req);
+            const ch = updateChannel(id, body as Parameters<typeof updateChannel>[1]);
+            if (!ch) { sendJSON(res, 404, { error: 'Channel not found' }); return; }
+            recordAudit(userId, 'notification.channel.update', id);
+            sendJSON(res, 200, ch);
+            return;
+        }
+        if (path.match(/^\/api\/notifications\/channels\/[^/]+$/) && method === 'DELETE') {
+            const id = path.split('/')[4]!;
+            const ok = deleteChannel(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Channel not found' }); return; }
+            recordAudit(userId, 'notification.channel.delete', id);
+            sendJSON(res, 204, null);
+            return;
+        }
+
+        // Rules CRUD
+        if (path === '/api/notifications/rules' && method === 'GET') {
+            sendJSON(res, 200, { rules: listRules() });
+            return;
+        }
+        if (path === '/api/notifications/rules' && method === 'POST') {
+            const body = await readBody(req) as { name: string; trigger: string; channelId: string; eventPattern?: string; template?: string; recipientOverride?: string };
+            const rule = createRule(body.name, body.trigger as Parameters<typeof createRule>[1], body.channelId, { eventPattern: body.eventPattern, template: body.template, recipientOverride: body.recipientOverride });
+            recordAudit(userId, 'notification.rule.create', rule.id);
+            sendJSON(res, 201, rule);
+            return;
+        }
+        if (path.match(/^\/api\/notifications\/rules\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const rule = getRule(id);
+            if (!rule) { sendJSON(res, 404, { error: 'Rule not found' }); return; }
+            sendJSON(res, 200, rule);
+            return;
+        }
+        if (path.match(/^\/api\/notifications\/rules\/[^/]+$/) && method === 'PUT') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req);
+            const rule = updateRule(id, body as Parameters<typeof updateRule>[1]);
+            if (!rule) { sendJSON(res, 404, { error: 'Rule not found' }); return; }
+            recordAudit(userId, 'notification.rule.update', id);
+            sendJSON(res, 200, rule);
+            return;
+        }
+        if (path.match(/^\/api\/notifications\/rules\/[^/]+$/) && method === 'DELETE') {
+            const id = path.split('/')[4]!;
+            const ok = deleteRule(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Rule not found' }); return; }
+            recordAudit(userId, 'notification.rule.delete', id);
+            sendJSON(res, 204, null);
+            return;
+        }
+
+        // Manual dispatch
+        if (path === '/api/notifications/dispatch' && method === 'POST') {
+            const body = await readBody(req) as { channelId: string; subject: string; body: string; recipient: string; metadata?: Record<string, unknown> };
+            const result = await dispatch(body.channelId, body.subject, body.body, body.recipient, { metadata: body.metadata });
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        // Delivery log
+        if (path === '/api/notifications/deliveries/stats' && method === 'GET') {
+            sendJSON(res, 200, getDeliveryStats());
+            return;
+        }
+        if (path === '/api/notifications/deliveries' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const channelId = u.searchParams.get('channelId') ?? undefined;
+            const limit = parseInt(u.searchParams.get('limit') ?? '50', 10);
+            sendJSON(res, 200, { deliveries: getDeliveryLog(limit, channelId) });
+            return;
+        }
+        if (path.match(/^\/api\/notifications\/deliveries\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const d = getDelivery(id);
+            if (!d) { sendJSON(res, 404, { error: 'Delivery not found' }); return; }
+            sendJSON(res, 200, d);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Webhook Connector — endpoints, subscriptions, inbound receiver
+
+        // Endpoints CRUD
+        if (path === '/api/webhooks/endpoints' && method === 'GET') {
+            sendJSON(res, 200, { endpoints: listEndpoints() });
+            return;
+        }
+        if (path === '/api/webhooks/endpoints' && method === 'POST') {
+            const body = await readBody(req) as { name: string; source: string; eventPrefix?: string };
+            const ep = createEndpoint(body.name, body.source, body.eventPrefix);
+            recordAudit(userId, 'webhook.endpoint.create', ep.id);
+            sendJSON(res, 201, ep);
+            return;
+        }
+        if (path.match(/^\/api\/webhooks\/endpoints\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const ep = getEndpoint(id);
+            if (!ep) { sendJSON(res, 404, { error: 'Endpoint not found' }); return; }
+            sendJSON(res, 200, ep);
+            return;
+        }
+        if (path.match(/^\/api\/webhooks\/endpoints\/[^/]+$/) && method === 'DELETE') {
+            const id = path.split('/')[4]!;
+            const ok = deleteEndpoint(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Endpoint not found' }); return; }
+            recordAudit(userId, 'webhook.endpoint.delete', id);
+            sendJSON(res, 204, null);
+            return;
+        }
+
+        // Subscriptions CRUD
+        if (path === '/api/webhooks/subscriptions' && method === 'GET') {
+            sendJSON(res, 200, { subscriptions: listSubscriptions() });
+            return;
+        }
+        if (path === '/api/webhooks/subscriptions' && method === 'POST') {
+            const body = await readBody(req) as { name: string; eventPattern: string; targetUrl: string; headers?: Record<string, string> };
+            const sub = createSubscription(body.name, body.eventPattern, body.targetUrl, { headers: body.headers });
+            recordAudit(userId, 'webhook.subscription.create', sub.id);
+            sendJSON(res, 201, sub);
+            return;
+        }
+        if (path.match(/^\/api\/webhooks\/subscriptions\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const sub = getSubscription(id);
+            if (!sub) { sendJSON(res, 404, { error: 'Subscription not found' }); return; }
+            sendJSON(res, 200, sub);
+            return;
+        }
+        if (path.match(/^\/api\/webhooks\/subscriptions\/[^/]+$/) && method === 'DELETE') {
+            const id = path.split('/')[4]!;
+            const ok = deleteSubscription(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Subscription not found' }); return; }
+            recordAudit(userId, 'webhook.subscription.delete', id);
+            sendJSON(res, 204, null);
+            return;
+        }
+
+        // Inbound webhook receiver (no auth — uses HMAC signature verification)
+        if (path.match(/^\/api\/webhooks\/receive\/[^/]+$/) && method === 'POST') {
+            const endpointId = path.split('/')[4]!;
+            const rawBody = await readBody(req);
+            const signature = (req.headers['x-webhook-signature'] ?? req.headers['x-hub-signature-256'] ?? '') as string;
+            const result = await receiveWebhook(endpointId, JSON.stringify(rawBody), signature);
+            if (!result.accepted) { sendJSON(res, 401, { error: 'Signature verification failed' }); return; }
+            sendJSON(res, 200, { accepted: true, eventId: result.eventId });
+            return;
+        }
+
+        // Inbound event log
+        if (path === '/api/webhooks/events' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const endpointId = u.searchParams.get('endpointId') ?? undefined;
+            const limit = parseInt(u.searchParams.get('limit') ?? '50', 10);
+            sendJSON(res, 200, { events: getInboundLog(endpointId, limit) });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Innovation Labs — experiments, hackathons, graduation pipeline
+
+        // Experiments CRUD
+        if (path === '/api/innovation/experiments' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const status = u.searchParams.get('status') as Parameters<typeof listExperiments>[0] extends undefined ? never : string | undefined;
+            const category = u.searchParams.get('category') ?? undefined;
+            const hackathonId = u.searchParams.get('hackathonId') ?? undefined;
+            sendJSON(res, 200, { experiments: listExperiments({ status: status as any, category: category as any, hackathonId }) });
+            return;
+        }
+        if (path === '/api/innovation/experiments' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof createExperiment>[0];
+            const exp = createExperiment(body);
+            recordAudit(userId, 'innovation.experiment.create', exp.id);
+            sendJSON(res, 201, exp);
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/experiments\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const exp = getExperiment(id);
+            if (!exp) { sendJSON(res, 404, { error: 'Experiment not found' }); return; }
+            sendJSON(res, 200, exp);
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/experiments\/[^/]+$/) && method === 'PUT') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req);
+            try {
+                const exp = updateExperiment(id, body as Parameters<typeof updateExperiment>[1]);
+                recordAudit(userId, 'innovation.experiment.update', id);
+                sendJSON(res, 200, exp);
+            } catch (e: any) { sendJSON(res, 404, { error: e.message }); }
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/experiments\/[^/]+$/) && method === 'DELETE') {
+            const id = path.split('/')[4]!;
+            const ok = deleteExperiment(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Experiment not found' }); return; }
+            recordAudit(userId, 'innovation.experiment.delete', id);
+            sendJSON(res, 204, null);
+            return;
+        }
+        // Transition experiment status
+        if (path.match(/^\/api\/innovation\/experiments\/[^/]+\/transition$/) && method === 'POST') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req) as { status: string };
+            try {
+                const exp = transitionExperiment(id, body.status as any);
+                recordAudit(userId, 'innovation.experiment.transition', id, 'success', body.status);
+                sendJSON(res, 200, exp);
+            } catch (e: any) { sendJSON(res, 400, { error: e.message }); }
+            return;
+        }
+        // Add result to experiment
+        if (path.match(/^\/api\/innovation\/experiments\/[^/]+\/results$/) && method === 'POST') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req) as { metric: string; value: number; unit: string; notes?: string };
+            try {
+                const exp = addExperimentResult(id, body);
+                sendJSON(res, 200, exp);
+            } catch (e: any) { sendJSON(res, 404, { error: e.message }); }
+            return;
+        }
+        // Score experiment
+        if (path.match(/^\/api\/innovation\/experiments\/[^/]+\/score$/) && method === 'POST') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req) as { score: number };
+            try {
+                const exp = scoreExperiment(id, body.score);
+                sendJSON(res, 200, exp);
+            } catch (e: any) { sendJSON(res, 404, { error: e.message }); }
+            return;
+        }
+
+        // Hackathons
+        if (path === '/api/innovation/hackathons' && method === 'GET') {
+            sendJSON(res, 200, { hackathons: listHackathons() });
+            return;
+        }
+        if (path === '/api/innovation/hackathons' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof createHackathon>[0];
+            const h = createHackathon(body);
+            recordAudit(userId, 'innovation.hackathon.create', h.id);
+            sendJSON(res, 201, h);
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/hackathons\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const h = getHackathon(id);
+            if (!h) { sendJSON(res, 404, { error: 'Hackathon not found' }); return; }
+            sendJSON(res, 200, h);
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/hackathons\/[^/]+\/start$/) && method === 'POST') {
+            const id = path.split('/')[4]!;
+            try {
+                const h = startHackathon(id);
+                recordAudit(userId, 'innovation.hackathon.start', id);
+                sendJSON(res, 200, h);
+            } catch (e: any) { sendJSON(res, 400, { error: e.message }); }
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/hackathons\/[^/]+\/complete$/) && method === 'POST') {
+            const id = path.split('/')[4]!;
+            try {
+                const h = completeHackathon(id);
+                recordAudit(userId, 'innovation.hackathon.complete', id);
+                sendJSON(res, 200, h);
+            } catch (e: any) { sendJSON(res, 400, { error: e.message }); }
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/hackathons\/[^/]+\/experiments$/) && method === 'POST') {
+            const hackId = path.split('/')[4]!;
+            const body = await readBody(req) as { experimentId: string };
+            try {
+                const h = addExperimentToHackathon(hackId, body.experimentId);
+                sendJSON(res, 200, h);
+            } catch (e: any) { sendJSON(res, 400, { error: e.message }); }
+            return;
+        }
+
+        // Graduations
+        if (path === '/api/innovation/graduations' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const status = u.searchParams.get('status') ?? undefined;
+            sendJSON(res, 200, { graduations: listGraduations(status as any) });
+            return;
+        }
+        if (path === '/api/innovation/graduations' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof requestGraduation>[0];
+            const g = requestGraduation(body);
+            recordAudit(userId, 'innovation.graduation.request', g.id);
+            sendJSON(res, 201, g);
+            return;
+        }
+        if (path.match(/^\/api\/innovation\/graduations\/[^/]+\/review$/) && method === 'POST') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req) as { decision: 'approved' | 'rejected'; reviewedBy: string; notes?: string };
+            try {
+                const g = reviewGraduation(id, body.decision, body.reviewedBy, body.notes);
+                recordAudit(userId, 'innovation.graduation.review', id, 'success', body.decision);
+                sendJSON(res, 200, g);
+            } catch (e: any) { sendJSON(res, 400, { error: e.message }); }
+            return;
+        }
+
+        // Innovation Backlog (C-Suite overview)
+        if (path === '/api/innovation/backlog' && method === 'GET') {
+            sendJSON(res, 200, getInnovationBacklog());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Budget Intelligence — budgets, spend tracking, burn rate, alerts
+
+        if (path === '/api/budget/agents' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const regiment = u.searchParams.get('regiment') ?? undefined;
+            sendJSON(res, 200, { budgets: listBudgets(regiment) });
+            return;
+        }
+        if (path === '/api/budget/agents' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof setBudget>[0];
+            const b = setBudget(body);
+            recordAudit(userId, 'budget.set', b.agentId);
+            sendJSON(res, 200, b);
+            return;
+        }
+        if (path.match(/^\/api\/budget\/agents\/[^/]+$/) && method === 'GET') {
+            const agentId = path.split('/')[4]!;
+            const b = getBudget(agentId);
+            if (!b) { sendJSON(res, 404, { error: 'Budget not found' }); return; }
+            sendJSON(res, 200, b);
+            return;
+        }
+        if (path.match(/^\/api\/budget\/agents\/[^/]+$/) && method === 'DELETE') {
+            const agentId = path.split('/')[4]!;
+            const ok = deleteBudget(agentId);
+            if (!ok) { sendJSON(res, 404, { error: 'Budget not found' }); return; }
+            recordAudit(userId, 'budget.delete', agentId);
+            sendJSON(res, 204, null);
+            return;
+        }
+        if (path.match(/^\/api\/budget\/agents\/[^/]+\/burn-rate$/) && method === 'GET') {
+            const agentId = path.split('/')[4]!;
+            sendJSON(res, 200, getBurnRate(agentId));
+            return;
+        }
+
+        // Spend log
+        if (path === '/api/budget/spend' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof recordSpend>[0];
+            const entry = recordSpend(body);
+            sendJSON(res, 201, entry);
+            return;
+        }
+        if (path === '/api/budget/spend' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const agentId = u.searchParams.get('agentId') ?? undefined;
+            const limit = parseInt(u.searchParams.get('limit') ?? '100', 10);
+            sendJSON(res, 200, { entries: getSpendLog({ agentId, limit }) });
+            return;
+        }
+
+        // Cost alerts
+        if (path === '/api/budget/alerts' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const agentId = u.searchParams.get('agentId') ?? undefined;
+            const severity = u.searchParams.get('severity') ?? undefined;
+            const ack = u.searchParams.get('acknowledged');
+            sendJSON(res, 200, { alerts: listCostAlerts({ agentId, severity: severity as any, acknowledged: ack === null ? undefined : ack === 'true' }) });
+            return;
+        }
+        if (path.match(/^\/api\/budget\/alerts\/[^/]+\/acknowledge$/) && method === 'POST') {
+            const id = path.split('/')[4]!;
+            const ok = acknowledgeAlert(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Alert not found' }); return; }
+            sendJSON(res, 200, { success: true });
+            return;
+        }
+
+        // CFO Dashboard
+        if (path === '/api/budget/dashboard' && method === 'GET') {
+            sendJSON(res, 200, getCFODashboard());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Agent Improvement — reviews, plans, feedback, exemplars
+
+        // Performance Reviews
+        if (path === '/api/improvement/reviews' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const agentId = u.searchParams.get('agentId') ?? undefined;
+            sendJSON(res, 200, { reviews: listReviews(agentId) });
+            return;
+        }
+        if (path === '/api/improvement/reviews' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof createReview>[0];
+            const rev = createReview(body);
+            recordAudit(userId, 'improvement.review.create', rev.id);
+            sendJSON(res, 201, rev);
+            return;
+        }
+        if (path.match(/^\/api\/improvement\/reviews\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const rev = getReview(id);
+            if (!rev) { sendJSON(res, 404, { error: 'Review not found' }); return; }
+            sendJSON(res, 200, rev);
+            return;
+        }
+
+        // Improvement Plans
+        if (path === '/api/improvement/plans' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const agentId = u.searchParams.get('agentId') ?? undefined;
+            const status = u.searchParams.get('status') ?? undefined;
+            sendJSON(res, 200, { plans: listPlans(agentId, status as any) });
+            return;
+        }
+        if (path === '/api/improvement/plans' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof createPlan>[0];
+            const plan = createPlan(body);
+            recordAudit(userId, 'improvement.plan.create', plan.id);
+            sendJSON(res, 201, plan);
+            return;
+        }
+        if (path.match(/^\/api\/improvement\/plans\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const plan = getPlan(id);
+            if (!plan) { sendJSON(res, 404, { error: 'Plan not found' }); return; }
+            sendJSON(res, 200, plan);
+            return;
+        }
+        if (path.match(/^\/api\/improvement\/plans\/[^/]+\/status$/) && method === 'PUT') {
+            const id = path.split('/')[4]!;
+            const body = await readBody(req) as { status: string };
+            try {
+                const plan = updatePlanStatus(id, body.status as any);
+                recordAudit(userId, 'improvement.plan.status', id, 'success', body.status);
+                sendJSON(res, 200, plan);
+            } catch (e: any) { sendJSON(res, 404, { error: e.message }); }
+            return;
+        }
+        if (path.match(/^\/api\/improvement\/plans\/[^/]+\/objectives\/[^/]+$/) && method === 'PUT') {
+            const parts = path.split('/');
+            const planId = parts[4]!;
+            const objectiveId = parts[6]!;
+            const body = await readBody(req) as { achieved?: boolean; notes?: string };
+            try {
+                const plan = updateObjective(planId, objectiveId, body);
+                sendJSON(res, 200, plan);
+            } catch (e: any) { sendJSON(res, 404, { error: e.message }); }
+            return;
+        }
+
+        // Feedback
+        if (path === '/api/improvement/feedback' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const agentId = u.searchParams.get('agentId') ?? undefined;
+            const type = u.searchParams.get('type') ?? undefined;
+            const limit = parseInt(u.searchParams.get('limit') ?? '100', 10);
+            sendJSON(res, 200, { feedback: listFeedback({ agentId, type: type as any, limit }) });
+            return;
+        }
+        if (path === '/api/improvement/feedback' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof submitFeedback>[0];
+            const fb = submitFeedback(body);
+            sendJSON(res, 201, fb);
+            return;
+        }
+        if (path.match(/^\/api\/improvement\/feedback\/summary\/[^/]+$/) && method === 'GET') {
+            const agentId = path.split('/')[5]!;
+            sendJSON(res, 200, getFeedbackSummary(agentId));
+            return;
+        }
+
+        // Training Exemplars
+        if (path === '/api/improvement/exemplars' && method === 'GET') {
+            const u = new URL(req.url!, `http://${req.headers.host}`);
+            const agentId = u.searchParams.get('agentId') ?? undefined;
+            const rating = u.searchParams.get('rating') ?? undefined;
+            sendJSON(res, 200, { exemplars: listExemplars({ agentId, rating: rating as any }) });
+            return;
+        }
+        if (path === '/api/improvement/exemplars' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof addExemplar>[0];
+            const ex = addExemplar(body);
+            recordAudit(userId, 'improvement.exemplar.add', ex.id);
+            sendJSON(res, 201, ex);
+            return;
+        }
+        if (path.match(/^\/api\/improvement\/exemplars\/[^/]+$/) && method === 'DELETE') {
+            const id = path.split('/')[4]!;
+            const ok = deleteExemplar(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Exemplar not found' }); return; }
+            sendJSON(res, 204, null);
+            return;
+        }
+
+        // Agent Health Report (C-Suite overview)
+        if (path === '/api/improvement/health' && method === 'GET') {
+            sendJSON(res, 200, getAgentHealthReport());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
         // Tool Connection Management — connect, disconnect, test, catalog
 
         // GET /api/tools/catalog — full marketing tool catalog
@@ -1579,7 +2247,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         // -----------------------------------------------------------------------
-        // Engineering Persona API
+        // Engineering Persona API (persona-gated)
+
+        if (path.startsWith('/api/engineering/') && authUser && !requirePersonaAccess(authUser, 'engineering')) {
+            sendJSON(res, 403, { error: 'Access denied for persona: engineering' }); return;
+        }
 
         // GET /api/engineering/skills — full skill catalog
         if (path === '/api/engineering/skills' && method === 'GET') {
@@ -1637,7 +2309,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         // -----------------------------------------------------------------------
-        // Product Persona API
+        // Product Persona API (persona-gated)
+
+        if (path.startsWith('/api/product/') && authUser && !requirePersonaAccess(authUser, 'product')) {
+            sendJSON(res, 403, { error: 'Access denied for persona: product' }); return;
+        }
 
         // GET /api/product/skills — full skill catalog
         if (path === '/api/product/skills' && method === 'GET') {
@@ -1695,7 +2371,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         // -----------------------------------------------------------------------
-        // HR & Talent Acquisition Persona API
+        // HR & Talent Acquisition Persona API (persona-gated)
+
+        if (path.startsWith('/api/hr/') && authUser && !requirePersonaAccess(authUser, 'hr')) {
+            sendJSON(res, 403, { error: 'Access denied for persona: hr' }); return;
+        }
 
         // GET /api/hr/skills — full skill catalog
         if (path === '/api/hr/skills' && method === 'GET') {
@@ -1882,6 +2562,213 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             if (!body.kind || !body.content) { sendJSON(res, 400, { error: 'kind and content required' }); return; }
             const entry = recordAgentMemory(agentId, body.kind, body.content, body.source ?? 'manual');
             sendJSON(res, 201, { entry });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // C-Suite Command Layer & Vision-Down Execution
+        // -----------------------------------------------------------------------
+
+        // GET /api/csuite — list all C-Suite officers with profiles
+        if (path === '/api/csuite' && method === 'GET') {
+            const agents = getCSuiteAgents();
+            const profiles = getAllCSuiteProfiles();
+            const officers = agents.map(a => ({
+                agent: a,
+                profile: profiles.find(p => p.agentId === a.id),
+                directReports: getChainOfCommand(a.id).length - 1,
+            }));
+            sendJSON(res, 200, { officers, total: officers.length });
+            return;
+        }
+
+        // GET /api/csuite/:agentId — get C-Suite officer detail
+        if (path.match(/^\/api\/csuite\/[^/]+$/) && method === 'GET') {
+            const agentId = decodeURIComponent(path.split('/')[3]!);
+            const agent = getAgentIdentity(agentId);
+            const profile = getCSuiteProfile(agentId);
+            if (!agent || !profile) { sendJSON(res, 404, { error: 'C-Suite officer not found' }); return; }
+            const orgTree = getOrgTree(agentId);
+            sendJSON(res, 200, { agent, profile, orgTree });
+            return;
+        }
+
+        // GET /api/csuite/:agentId/chain — get chain of command
+        if (path.match(/^\/api\/csuite\/[^/]+\/chain$/) && method === 'GET') {
+            const agentId = decodeURIComponent(path.split('/')[3]!);
+            const chain = getChainOfCommand(agentId);
+            sendJSON(res, 200, { chain });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Vision Statements — strategic vision management
+        // -----------------------------------------------------------------------
+
+        // POST /api/vision — create a new vision statement
+        if (path === '/api/vision' && method === 'POST') {
+            const body = await readBody(req);
+            const { statement } = body as { statement: string };
+            if (!statement) { sendJSON(res, 400, { error: 'statement is required' }); return; }
+            const vision = await createVision(statement, 'user');
+            sendJSON(res, 201, { vision });
+            return;
+        }
+
+        // GET /api/vision — list all vision statements
+        if (path === '/api/vision' && method === 'GET') {
+            sendJSON(res, 200, { visions: listVisions() });
+            return;
+        }
+
+        // GET /api/vision/:id — get vision detail
+        if (path.match(/^\/api\/vision\/[^/]+$/) && method === 'GET') {
+            const visionId = decodeURIComponent(path.split('/')[3]!);
+            const vision = getVision(visionId);
+            if (!vision) { sendJSON(res, 404, { error: 'Vision not found' }); return; }
+            sendJSON(res, 200, { vision });
+            return;
+        }
+
+        // POST /api/vision/:id/decompose — CEO decomposes vision into objectives
+        if (path.match(/^\/api\/vision\/[^/]+\/decompose$/) && method === 'POST') {
+            const visionId = decodeURIComponent(path.split('/')[3]!);
+            try {
+                const decomposition = await decomposeVision(visionId);
+                sendJSON(res, 200, { decomposition });
+            } catch (err) {
+                sendJSON(res, 400, { error: (err as Error).message });
+            }
+            return;
+        }
+
+        // POST /api/vision/:id/cascade/:objectiveId — cascade objective to regiment
+        if (path.match(/^\/api\/vision\/[^/]+\/cascade\/[^/]+$/) && method === 'POST') {
+            const parts = path.split('/');
+            const visionId = decodeURIComponent(parts[3]!);
+            const objectiveId = decodeURIComponent(parts[5]!);
+            try {
+                const tasks = await cascadeToRegiment(visionId, objectiveId);
+                sendJSON(res, 200, { tasks });
+            } catch (err) {
+                sendJSON(res, 400, { error: (err as Error).message });
+            }
+            return;
+        }
+
+        // GET /api/vision/:id/status — roll-up progress view
+        if (path.match(/^\/api\/vision\/[^/]+\/status$/) && method === 'GET') {
+            const visionId = decodeURIComponent(path.split('/')[3]!);
+            const status = getVisionStatus(visionId);
+            if (!status) { sendJSON(res, 404, { error: 'Vision not found' }); return; }
+            sendJSON(res, 200, status);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // PMO — Program Management Office
+        // -----------------------------------------------------------------------
+
+        // POST /api/pmo/programs — create a program
+        if (path === '/api/pmo/programs' && method === 'POST') {
+            const body = await readBody(req);
+            const { visionId, title, involvedRegiments } = body as { visionId: string; title: string; involvedRegiments: string[] };
+            if (!visionId || !title) { sendJSON(res, 400, { error: 'visionId and title are required' }); return; }
+            const program = await createProgram(visionId, title, involvedRegiments ?? []);
+            sendJSON(res, 201, { program });
+            return;
+        }
+
+        // GET /api/pmo/programs — list programs
+        if (path === '/api/pmo/programs' && method === 'GET') {
+            const visionId = url.searchParams.get('visionId') ?? undefined;
+            sendJSON(res, 200, { programs: listPrograms(visionId) });
+            return;
+        }
+
+        // GET /api/pmo/programs/:id — get program detail
+        if (path.match(/^\/api\/pmo\/programs\/[^/]+$/) && method === 'GET') {
+            const programId = decodeURIComponent(path.split('/')[4]!);
+            const program = getProgram(programId);
+            if (!program) { sendJSON(res, 404, { error: 'Program not found' }); return; }
+            sendJSON(res, 200, { program });
+            return;
+        }
+
+        // PUT /api/pmo/programs/:id — update program
+        if (path.match(/^\/api\/pmo\/programs\/[^/]+$/) && method === 'PUT') {
+            const programId = decodeURIComponent(path.split('/')[4]!);
+            const body = await readBody(req);
+            try {
+                const program = await updateProgram(programId, body as any);
+                sendJSON(res, 200, { program });
+            } catch (err) {
+                sendJSON(res, 404, { error: (err as Error).message });
+            }
+            return;
+        }
+
+        // GET /api/pmo/status — PMO status report
+        if (path === '/api/pmo/status' && method === 'GET') {
+            const visionId = url.searchParams.get('visionId') ?? undefined;
+            const report = await generatePMOStatusReport(visionId);
+            sendJSON(res, 200, { report });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // After-Action Reports (AAR) — auto-generated per execution
+        // -----------------------------------------------------------------------
+
+        // GET /api/aar — list all AARs
+        if (path === '/api/aar' && method === 'GET') {
+            const persona = url.searchParams.get('persona') ?? undefined;
+            const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
+            sendJSON(res, 200, { reports: listAfterActionReports(persona, limit) });
+            return;
+        }
+
+        // GET /api/aar/:executionId — get AAR for a specific execution
+        if (path.match(/^\/api\/aar\/[^/]+$/) && method === 'GET') {
+            const executionId = decodeURIComponent(path.split('/')[3]!);
+            const aar = getAfterActionReport(executionId);
+            if (!aar) { sendJSON(res, 404, { error: 'No After-Action Report for this execution' }); return; }
+            sendJSON(res, 200, { report: aar });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Retraining Flags — agent performance alerts
+        // -----------------------------------------------------------------------
+
+        // GET /api/retraining — list all retraining flags
+        if (path === '/api/retraining' && method === 'GET') {
+            sendJSON(res, 200, { flags: getRetrainingFlags() });
+            return;
+        }
+
+        // GET /api/retraining/:agentId — get flag for specific agent
+        if (path.match(/^\/api\/retraining\/[^/]+$/) && method === 'GET') {
+            const agentId = decodeURIComponent(path.split('/')[3]!);
+            const flag = getRetrainingFlag(agentId);
+            if (!flag) { sendJSON(res, 404, { error: 'No retraining flag for this agent' }); return; }
+            sendJSON(res, 200, { flag });
+            return;
+        }
+
+        // POST /api/retraining/:agentId/acknowledge — mark flag as reviewed
+        if (path.match(/^\/api\/retraining\/[^/]+\/acknowledge$/) && method === 'POST') {
+            const agentId = decodeURIComponent(path.split('/')[3]!);
+            const result = acknowledgeRetrainingFlag(agentId);
+            sendJSON(res, result.success ? 200 : 404, result);
+            return;
+        }
+
+        // DELETE /api/retraining/:agentId — dismiss a retraining flag
+        if (path.match(/^\/api\/retraining\/[^/]+$/) && method === 'DELETE') {
+            const agentId = decodeURIComponent(path.split('/')[3]!);
+            const result = dismissRetrainingFlag(agentId);
+            sendJSON(res, result.success ? 200 : 404, result);
             return;
         }
 

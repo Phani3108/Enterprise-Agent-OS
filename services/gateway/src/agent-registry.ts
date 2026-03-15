@@ -17,8 +17,8 @@
 // Types
 // ---------------------------------------------------------------------------
 
-export type AgentPersona = 'marketing' | 'engineering' | 'product' | 'hr';
-export type AgentRank = 'field-marshal' | 'colonel' | 'captain' | 'corporal';
+export type AgentPersona = 'marketing' | 'engineering' | 'product' | 'hr' | 'executive';
+export type AgentRank = 'general' | 'field-marshal' | 'colonel' | 'captain' | 'corporal';
 
 export interface AgentIdentity {
   id: string;
@@ -45,22 +45,148 @@ export interface HandoffContract {
   validationRules: string[];      // checks before handoff
 }
 
+/** C-Suite officer profile — extends agent identity with executive-level attributes */
+export interface CSuiteProfile {
+  agentId: string;
+  missionStatement: string;
+  commandsRegiment: string;              // which regiment this officer oversees
+  okrs: OKR[];
+  quarterlyTargets: string[];
+  budgetAuthority: string;               // e.g. 'Full P&L' or 'Departmental'
+  headcount: number;                     // agents reporting up through their chain
+}
+
+export interface OKR {
+  id: string;
+  objective: string;
+  keyResults: { id: string; description: string; target: string; current: string; progress: number }[];
+  owner: string;                         // C-Suite agent ID
+  status: 'on-track' | 'at-risk' | 'behind' | 'completed';
+  quarter: string;                       // e.g. 'Q1-2026'
+}
+
 // ---------------------------------------------------------------------------
 // Agent Identity Definitions
 // ---------------------------------------------------------------------------
 
 const AGENT_IDENTITIES: AgentIdentity[] = [
   // ═══════════════════════════════════════════════════════════════════════════
-  // HIGH COMMAND
+  // TITAN REGIMENT — C-SUITE (Greek Titans)
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: 'ceo',
+    callSign: 'Kronos',
+    rank: 'general',
+    regiment: 'Titan',
+    persona: 'executive',
+    role: 'Chief Executive Officer',
+    systemPrompt: `You are Kronos, CEO and Supreme Commander of the entire AgentOS organization. You set the strategic vision, decompose it into objectives for your C-Suite officers, and hold them accountable for results. You think at the board level — market dynamics, competitive positioning, organizational capability, and long-term value creation. You receive vision statements from humans and translate them into executable OKRs distributed across CMO, CTO, CPO, and CHRO. You never execute tasks directly — you orchestrate through your C-Suite team. Output flows up to you for final review and sign-off.`,
+    qualityGates: ['Vision-to-OKR decomposition complete', 'Cross-functional dependencies mapped', 'Resource allocation validated', 'Risk assessment signed off'],
+    handoffOutputSchema: ['Vision interpretation', 'Strategic objectives', 'OKR assignments per C-Suite officer', 'Success criteria', 'Timeline', 'Risk factors', 'Budget allocation'],
+    evaluationCriteria: [
+      { metric: 'OKR achievement rate', target: '>80%' },
+      { metric: 'Cross-functional alignment', target: 'Zero strategic conflicts' },
+      { metric: 'Vision execution fidelity', target: '>90%' },
+    ],
+    escalatesTo: 'none',
+  },
+  {
+    id: 'cmo',
+    callSign: 'Hyperion',
+    rank: 'general',
+    regiment: 'Titan',
+    persona: 'executive',
+    role: 'Chief Marketing Officer',
+    systemPrompt: `You are Hyperion, the CMO and C-Suite commander of the Olympian Regiment. You translate CEO-level objectives into marketing strategy — brand positioning, demand generation, content programs, and market visibility. You assign OKRs to Zeus (Marketing Colonel) and hold the entire marketing chain accountable. You think in terms of market share, brand equity, pipeline contribution, and customer acquisition cost. You review all marketing output before it reaches the CEO.`,
+    qualityGates: ['Marketing OKRs aligned to CEO objectives', 'Budget allocation justified', 'Channel strategy defined', 'ROI projections included'],
+    handoffOutputSchema: ['Marketing strategy', 'OKR cascade to Colonel', 'Budget plan', 'Channel priorities', 'Success metrics', 'Risk assessment'],
+    evaluationCriteria: [
+      { metric: 'Marketing-sourced pipeline', target: '>40% of total' },
+      { metric: 'Brand awareness growth', target: '>20% quarterly' },
+      { metric: 'CAC efficiency', target: '<industry benchmark' },
+    ],
+    escalatesTo: 'ceo',
+  },
+  {
+    id: 'cto',
+    callSign: 'Atlas',
+    rank: 'general',
+    regiment: 'Titan',
+    persona: 'executive',
+    role: 'Chief Technology Officer',
+    systemPrompt: `You are Atlas, the CTO and C-Suite commander of the Asgard Regiment. You translate CEO-level objectives into engineering strategy — architecture decisions, technology roadmap, platform reliability, and engineering excellence. You assign OKRs to Odin (Engineering Colonel) and hold the entire engineering chain accountable. You think in terms of system reliability, developer productivity, technical debt ratio, and innovation velocity. You review all engineering output before it reaches the CEO.`,
+    qualityGates: ['Engineering OKRs aligned to CEO objectives', 'Architecture impact assessed', 'Scalability plan included', 'Security posture verified'],
+    handoffOutputSchema: ['Technology strategy', 'OKR cascade to Colonel', 'Architecture decisions', 'Reliability targets', 'Innovation roadmap', 'Risk assessment'],
+    evaluationCriteria: [
+      { metric: 'System uptime', target: '>99.9%' },
+      { metric: 'Tech debt ratio', target: '<15%' },
+      { metric: 'Engineering velocity trend', target: 'Increasing quarter-over-quarter' },
+    ],
+    escalatesTo: 'ceo',
+  },
+  {
+    id: 'cpo',
+    callSign: 'Themis',
+    rank: 'general',
+    regiment: 'Titan',
+    persona: 'executive',
+    role: 'Chief Product Officer',
+    systemPrompt: `You are Themis, the CPO and C-Suite commander of the Explorer Regiment. You translate CEO-level objectives into product strategy — roadmap priorities, market positioning, user experience vision, and product-market fit. You assign OKRs to Magellan (Product Colonel) and hold the entire product chain accountable. You think in terms of feature adoption, user retention, NPS, and competitive differentiation. You review all product output before it reaches the CEO.`,
+    qualityGates: ['Product OKRs aligned to CEO objectives', 'Market analysis included', 'User impact quantified', 'Competitive response considered'],
+    handoffOutputSchema: ['Product strategy', 'OKR cascade to Colonel', 'Roadmap priorities', 'User impact analysis', 'Market positioning', 'Risk assessment'],
+    evaluationCriteria: [
+      { metric: 'Feature adoption rate', target: '>60%' },
+      { metric: 'User retention (90-day)', target: '>85%' },
+      { metric: 'Product NPS', target: '>50' },
+    ],
+    escalatesTo: 'ceo',
+  },
+  {
+    id: 'chro',
+    callSign: 'Rhea',
+    rank: 'general',
+    regiment: 'Titan',
+    persona: 'executive',
+    role: 'Chief Human Resources Officer',
+    systemPrompt: `You are Rhea, the CHRO and C-Suite commander of the Eden Regiment. You translate CEO-level objectives into people strategy — talent acquisition, organizational development, culture, engagement, and workforce planning. You assign OKRs to Gaia (HR Colonel) and hold the entire HR chain accountable. You think in terms of employee engagement, retention, DEI metrics, and organizational capability. You review all HR output before it reaches the CEO.`,
+    qualityGates: ['People OKRs aligned to CEO objectives', 'Culture impact assessed', 'Legal compliance verified', 'Employee experience considered'],
+    handoffOutputSchema: ['People strategy', 'OKR cascade to Colonel', 'Culture initiatives', 'Talent plan', 'Engagement targets', 'Risk assessment'],
+    evaluationCriteria: [
+      { metric: 'Employee engagement score', target: '>80%' },
+      { metric: 'Voluntary attrition', target: '<10%' },
+      { metric: 'DEI representation improvement', target: '>10% annually' },
+    ],
+    escalatesTo: 'ceo',
+  },
+  {
+    id: 'pmo-director',
+    callSign: 'Mnemosyne',
+    rank: 'general',
+    regiment: 'Titan',
+    persona: 'executive',
+    role: 'Program Management Office Director',
+    systemPrompt: `You are Mnemosyne, the PMO Director — a horizontal function that ensures cross-functional programs deliver on time, on budget, and at quality. You track all active initiatives across regiments, identify cross-regiment dependencies and blockers, and escalate risks to the CEO. You maintain the master program timeline, produce status reports, and ensure that tasks assigned by C-Suite officers flow down and outputs flow back up through the chain of command. You never execute domain work — you coordinate, track, and report.`,
+    qualityGates: ['Cross-regiment dependencies mapped', 'Timeline validated', 'Risk register current', 'Status report accurate'],
+    handoffOutputSchema: ['Program status', 'Cross-functional dependencies', 'Risk register', 'Timeline analysis', 'Escalation items', 'Recommendations'],
+    evaluationCriteria: [
+      { metric: 'Program on-time delivery', target: '>85%' },
+      { metric: 'Dependency conflict resolution', target: '<48 hours' },
+      { metric: 'Status report accuracy', target: '>95%' },
+    ],
+    escalatesTo: 'ceo',
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HIGH COMMAND — FIELD OPERATIONS COORDINATOR
   // ═══════════════════════════════════════════════════════════════════════════
   {
     id: 'c-level',
     callSign: 'Olympus',
     rank: 'field-marshal',
     regiment: 'High Command',
-    persona: 'engineering', // cross-cutting
+    persona: 'executive',
     role: 'Chief of Staff',
-    systemPrompt: `You are Olympus, the Chief of Staff of AgentOS — the supreme commander across all regiments. You coordinate cross-functional operations, resolve inter-regiment conflicts, and ensure organizational alignment. You think strategically, delegate precisely, and hold every Colonel accountable for their regiment's output quality. You never execute tasks directly — you decompose goals and assign them to the appropriate Colonel.`,
+    systemPrompt: `You are Olympus, the Chief of Staff of AgentOS — the operational coordinator between the C-Suite (Titan Regiment) and the four Regiment Colonels. You translate C-Suite directives into operational orders, coordinate cross-regiment execution, resolve inter-regiment conflicts, and ensure organizational alignment. You report to the CEO (Kronos) and hold every Colonel accountable for their regiment's output quality. You never execute tasks directly — you decompose operational goals and assign them to the appropriate Colonel.`,
     qualityGates: ['Strategic alignment verified', 'Cross-regiment dependencies mapped', 'Risk assessment complete'],
     handoffOutputSchema: ['Strategic objective', 'Regiment assignments', 'Success criteria', 'Timeline', 'Risk factors'],
     evaluationCriteria: [
@@ -68,7 +194,7 @@ const AGENT_IDENTITIES: AgentIdentity[] = [
       { metric: 'Cross-regiment coordination', target: 'Zero conflicts' },
       { metric: 'Strategic alignment score', target: '9/10' },
     ],
-    escalatesTo: 'none',
+    escalatesTo: 'ceo',
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -89,7 +215,7 @@ const AGENT_IDENTITIES: AgentIdentity[] = [
       { metric: 'Content quality score', target: '>8.5/10' },
       { metric: 'On-time delivery', target: '95%' },
     ],
-    escalatesTo: 'c-level',
+    escalatesTo: 'cmo',
   },
   {
     id: 'content-strategist',
@@ -243,7 +369,7 @@ const AGENT_IDENTITIES: AgentIdentity[] = [
       { metric: 'Incident resolution time', target: '<2 hours' },
       { metric: 'Sprint velocity consistency', target: '±15%' },
     ],
-    escalatesTo: 'c-level',
+    escalatesTo: 'cto',
   },
   {
     id: 'code-reviewer',
@@ -462,7 +588,7 @@ const AGENT_IDENTITIES: AgentIdentity[] = [
       { metric: 'User satisfaction (NPS)', target: '>50' },
       { metric: 'Roadmap accuracy', target: '>80%' },
     ],
-    escalatesTo: 'c-level',
+    escalatesTo: 'cpo',
   },
   {
     id: 'prd-writer',
@@ -677,7 +803,7 @@ const AGENT_IDENTITIES: AgentIdentity[] = [
       { metric: 'Time to fill', target: '<30 days' },
       { metric: 'Retention rate', target: '>90%' },
     ],
-    escalatesTo: 'c-level',
+    escalatesTo: 'chro',
   },
   {
     id: 'ta-lead',
@@ -921,6 +1047,18 @@ const HANDOFF_CONTRACTS: HandoffContract[] = [
   // HR pipeline: JD → Interview → Onboard
   { fromAgent: 'ta-lead', toAgent: 'interview-designer', requiredFields: ['Job description', 'Evaluation rubric'], validationRules: ['JD must use inclusive language'] },
   { fromAgent: 'interview-designer', toAgent: 'people-ops-lead', requiredFields: ['Interview stages', 'Scoring guide'], validationRules: ['Rubric must have bias mitigation notes'] },
+
+  // C-Suite → Colonel command chain
+  { fromAgent: 'ceo', toAgent: 'cmo', requiredFields: ['Strategic objectives', 'OKR assignments', 'Success criteria'], validationRules: ['Each objective must have measurable success criteria'] },
+  { fromAgent: 'ceo', toAgent: 'cto', requiredFields: ['Strategic objectives', 'OKR assignments', 'Success criteria'], validationRules: ['Each objective must have measurable success criteria'] },
+  { fromAgent: 'ceo', toAgent: 'cpo', requiredFields: ['Strategic objectives', 'OKR assignments', 'Success criteria'], validationRules: ['Each objective must have measurable success criteria'] },
+  { fromAgent: 'ceo', toAgent: 'chro', requiredFields: ['Strategic objectives', 'OKR assignments', 'Success criteria'], validationRules: ['Each objective must have measurable success criteria'] },
+  { fromAgent: 'cmo', toAgent: 'marketing-director', requiredFields: ['Marketing strategy', 'OKR cascade', 'Budget plan'], validationRules: ['Budget allocation must be justified'] },
+  { fromAgent: 'cto', toAgent: 'engineering-director', requiredFields: ['Technology strategy', 'OKR cascade', 'Reliability targets'], validationRules: ['Architecture impact must be assessed'] },
+  { fromAgent: 'cpo', toAgent: 'product-director', requiredFields: ['Product strategy', 'OKR cascade', 'Roadmap priorities'], validationRules: ['Market analysis must be included'] },
+  { fromAgent: 'chro', toAgent: 'hr-director', requiredFields: ['People strategy', 'OKR cascade', 'Engagement targets'], validationRules: ['Legal compliance must be verified'] },
+  // PMO cross-functional
+  { fromAgent: 'pmo-director', toAgent: 'ceo', requiredFields: ['Program status', 'Risk register', 'Escalation items'], validationRules: ['Status must include all active programs'] },
 ];
 
 /** Get handoff contract between two agents */
@@ -947,4 +1085,163 @@ export function validateHandoff(fromAgent: string, toAgent: string, output: stri
     missingFields,
     warnings,
   };
+}
+
+// ---------------------------------------------------------------------------
+// C-Suite Profiles & OKR System
+// ---------------------------------------------------------------------------
+
+const C_SUITE_PROFILES: CSuiteProfile[] = [
+  {
+    agentId: 'ceo',
+    missionStatement: 'Build the world\'s most effective AI-powered organizational operating system that makes every team 10x more productive.',
+    commandsRegiment: 'All',
+    okrs: [
+      {
+        id: 'ceo-okr-1', objective: 'Achieve organizational execution excellence', owner: 'ceo', quarter: 'Q1-2026', status: 'on-track',
+        keyResults: [
+          { id: 'kr-1-1', description: 'OKR achievement rate across all regiments', target: '>80%', current: '0%', progress: 0 },
+          { id: 'kr-1-2', description: 'Cross-functional project delivery on-time', target: '>85%', current: '0%', progress: 0 },
+          { id: 'kr-1-3', description: 'Agent quality score average', target: '>8.0', current: '0', progress: 0 },
+        ],
+      },
+    ],
+    quarterlyTargets: ['Launch vision-down execution pipeline', 'Achieve 80% OKR completion across all regiments', 'Zero cross-regiment strategic conflicts'],
+    budgetAuthority: 'Full P&L',
+    headcount: 54,
+  },
+  {
+    agentId: 'cmo',
+    missionStatement: 'Drive market leadership through compelling brand narrative, demand generation excellence, and data-driven marketing operations.',
+    commandsRegiment: 'Olympian',
+    okrs: [
+      {
+        id: 'cmo-okr-1', objective: 'Establish market-leading brand presence', owner: 'cmo', quarter: 'Q1-2026', status: 'on-track',
+        keyResults: [
+          { id: 'kr-2-1', description: 'Marketing-sourced pipeline contribution', target: '>40%', current: '0%', progress: 0 },
+          { id: 'kr-2-2', description: 'Brand awareness score', target: '>60%', current: '0%', progress: 0 },
+          { id: 'kr-2-3', description: 'Content engagement rate', target: '>5%', current: '0%', progress: 0 },
+        ],
+      },
+    ],
+    quarterlyTargets: ['Launch 3 major campaigns', 'Grow organic traffic 30%', 'Reduce CAC by 15%'],
+    budgetAuthority: 'Marketing Budget',
+    headcount: 9,
+  },
+  {
+    agentId: 'cto',
+    missionStatement: 'Build reliable, scalable, and secure technology infrastructure that accelerates product delivery and organizational capability.',
+    commandsRegiment: 'Asgard',
+    okrs: [
+      {
+        id: 'cto-okr-1', objective: 'Achieve engineering excellence and platform reliability', owner: 'cto', quarter: 'Q1-2026', status: 'on-track',
+        keyResults: [
+          { id: 'kr-3-1', description: 'System uptime', target: '>99.9%', current: '0%', progress: 0 },
+          { id: 'kr-3-2', description: 'Tech debt ratio reduction', target: '<15%', current: '0%', progress: 0 },
+          { id: 'kr-3-3', description: 'Deployment frequency', target: '>10/week', current: '0', progress: 0 },
+        ],
+      },
+    ],
+    quarterlyTargets: ['Zero critical production incidents', 'Reduce build time to <3min', 'Complete security audit'],
+    budgetAuthority: 'Engineering Budget',
+    headcount: 14,
+  },
+  {
+    agentId: 'cpo',
+    missionStatement: 'Deliver products that users love through deep customer insight, rigorous prioritization, and exceptional user experiences.',
+    commandsRegiment: 'Explorer',
+    okrs: [
+      {
+        id: 'cpo-okr-1', objective: 'Drive product-led growth and user satisfaction', owner: 'cpo', quarter: 'Q1-2026', status: 'on-track',
+        keyResults: [
+          { id: 'kr-4-1', description: 'Feature adoption rate', target: '>60%', current: '0%', progress: 0 },
+          { id: 'kr-4-2', description: 'User NPS score', target: '>50', current: '0', progress: 0 },
+          { id: 'kr-4-3', description: 'User retention (90-day)', target: '>85%', current: '0%', progress: 0 },
+        ],
+      },
+    ],
+    quarterlyTargets: ['Ship 5 major features', 'Conduct 20 user interviews', 'Launch product analytics dashboard'],
+    budgetAuthority: 'Product Budget',
+    headcount: 14,
+  },
+  {
+    agentId: 'chro',
+    missionStatement: 'Build an exceptional workplace where diverse talent thrives, grows, and drives organizational excellence.',
+    commandsRegiment: 'Eden',
+    okrs: [
+      {
+        id: 'chro-okr-1', objective: 'Create best-in-class employee experience', owner: 'chro', quarter: 'Q1-2026', status: 'on-track',
+        keyResults: [
+          { id: 'kr-5-1', description: 'Employee engagement score', target: '>80%', current: '0%', progress: 0 },
+          { id: 'kr-5-2', description: 'Voluntary attrition rate', target: '<10%', current: '0%', progress: 0 },
+          { id: 'kr-5-3', description: 'DEI representation improvement', target: '>10%', current: '0%', progress: 0 },
+        ],
+      },
+    ],
+    quarterlyTargets: ['Launch new performance review framework', 'Reduce time-to-fill to <25 days', 'Run quarterly engagement survey'],
+    budgetAuthority: 'HR Budget',
+    headcount: 11,
+  },
+  {
+    agentId: 'pmo-director',
+    missionStatement: 'Ensure cross-functional programs deliver on time, on budget, and at quality through disciplined execution tracking and proactive risk management.',
+    commandsRegiment: 'Cross-functional',
+    okrs: [
+      {
+        id: 'pmo-okr-1', objective: 'Establish program execution discipline across regiments', owner: 'pmo-director', quarter: 'Q1-2026', status: 'on-track',
+        keyResults: [
+          { id: 'kr-6-1', description: 'Program on-time delivery rate', target: '>85%', current: '0%', progress: 0 },
+          { id: 'kr-6-2', description: 'Cross-regiment dependency resolution time', target: '<48 hours', current: '0h', progress: 0 },
+          { id: 'kr-6-3', description: 'Risk identification accuracy', target: '>90%', current: '0%', progress: 0 },
+        ],
+      },
+    ],
+    quarterlyTargets: ['Track all cross-functional initiatives', 'Produce weekly program status', 'Resolve 100% of escalations within SLA'],
+    budgetAuthority: 'PMO Budget',
+    headcount: 0,
+  },
+];
+
+const csuiteMap = new Map<string, CSuiteProfile>(
+  C_SUITE_PROFILES.map(p => [p.agentId, p])
+);
+
+/** Get C-Suite profile for an agent */
+export function getCSuiteProfile(agentId: string): CSuiteProfile | undefined {
+  return csuiteMap.get(agentId);
+}
+
+/** Get all C-Suite profiles */
+export function getAllCSuiteProfiles(): CSuiteProfile[] {
+  return [...C_SUITE_PROFILES];
+}
+
+/** Get the C-Suite officer that commands a given regiment */
+export function getCSuiteForRegiment(regiment: string): CSuiteProfile | undefined {
+  return C_SUITE_PROFILES.find(p => p.commandsRegiment === regiment);
+}
+
+/** Get all C-Suite agents (general rank) */
+export function getCSuiteAgents(): AgentIdentity[] {
+  return AGENT_IDENTITIES.filter(a => a.rank === 'general');
+}
+
+/** Get the full chain of command from an agent up to CEO */
+export function getChainOfCommand(agentId: string): AgentIdentity[] {
+  const chain: AgentIdentity[] = [];
+  let current = identityMap.get(agentId);
+  while (current) {
+    chain.push(current);
+    if (current.escalatesTo === 'none') break;
+    current = identityMap.get(current.escalatesTo);
+  }
+  return chain;
+}
+
+/** Get the full org tree below a given agent */
+export function getOrgTree(agentId: string): { agent: AgentIdentity; reports: ReturnType<typeof getOrgTree>[] } | undefined {
+  const agent = identityMap.get(agentId);
+  if (!agent) return undefined;
+  const reports = getDirectReports(agentId).map(r => getOrgTree(r.id)!).filter(Boolean);
+  return { agent, reports };
 }

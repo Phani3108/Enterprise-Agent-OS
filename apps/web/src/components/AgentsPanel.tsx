@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { RetrainingAlerts } from './RetrainingAlerts';
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -2092,6 +2093,9 @@ export default function AgentsPanel({ personaFilter }: { personaFilter?: Persona
 
   return (
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+      {/* Retraining Alerts */}
+      <RetrainingAlerts />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

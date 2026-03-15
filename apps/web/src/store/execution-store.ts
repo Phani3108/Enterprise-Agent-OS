@@ -25,7 +25,18 @@ export interface ExecutionStep {
   outputKey?: string;
   outputPreview?: string;
   error?: string;
+  /** IDs of steps this step depends on (DAG mode) */
+  dependsOn?: string[];
 }
+
+/** Directed edge between execution steps (DAG mode) */
+export interface ExecutionEdge {
+  from: string;
+  to: string;
+  condition?: string;
+}
+
+export type ExecutionMode = 'sequential' | 'dag';
 
 export type ExecutionStatus = 'configuring' | 'precheck' | 'queued' | 'running' | 'completed' | 'failed' | 'paused';
 
@@ -38,6 +49,10 @@ export interface Execution {
   skillName: string;
   /** Whether this was a skill or workflow execution */
   executableType: 'skill' | 'workflow';
+  /** Sequential or DAG-based execution */
+  executionMode: ExecutionMode;
+  /** DAG edges (only when executionMode === 'dag') */
+  edges?: ExecutionEdge[];
   /** Which workspace section triggered this */
   workspace: string;
   status: ExecutionStatus;
@@ -196,6 +211,7 @@ export const useExecutionStore = create<ExecutionState>()(persist((set, get) => 
       skillId: skill.id,
       skillName: skill.name,
       executableType: skill.executableType ?? 'skill',
+      executionMode: 'sequential',
       workspace,
       status: 'queued',
       steps: skill.steps.map(s => ({

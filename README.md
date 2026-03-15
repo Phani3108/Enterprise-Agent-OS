@@ -1,188 +1,187 @@
 # Enterprise Agent OS
 
-> **AI-Powered Enterprise Operating System** — Orchestration, governance, memory, and observability for autonomous AI agent clusters.
+> **AI-Powered Enterprise Operating System** — 53 autonomous agents across 5 regiments, orchestrated through a military-grade hierarchy with C-Suite command, budget intelligence, innovation labs, and continuous improvement pipelines.
 
 Enterprise Agent OS (EAOS) is a full-stack platform that coordinates AI agents and external tools to automate complex enterprise workflows. It doesn't replace tools — it **orchestrates them through intelligent agents**.
 
 ---
 
-## Demo
-
-https://github.com/user-attachments/assets/agentos-simulation-demo.mp4
-
-> Full simulation demo — Engineering skill execution from start to finish. [Watch on GitHub →](demos/agentos-simulation-demo.mp4)
-
----
-
 ## Screenshots
 
-### Platform Overview
-**Command Center** — Mission control with live agent stats, recent executions, activity feed, and platform health. **Personas** — Browse AI personas (Marketing, Engineering, Product) scoped by domain. **Agents** — Monitor 12+ autonomous workers with status, model, token usage, and success rates. **Workflow Builder** — Design multi-step DAG workflows chaining agents, skills, and tools with conditional branching.
+### Home & C-Suite Command
 
-![Platform Overview](docs/screenshots/01-home-command-center.png)
+<table>
+<tr>
+<td width="33%">
 
-### Connections, Prompts & Observability
-**Connections & Tools** — Manage integrations (HubSpot, Jira, GitHub, Slack, Salesforce) with auth types, capability mapping, and usage stats. **Prompt Library** — Fork, pin, and upvote curated AI prompts filtered by persona and category. **Observability** — Live execution traces with token usage, cost, latency, and confidence metrics per execution.
+**Home Command Center** — Mission control with live agent stats, recent executions, and platform health.
 
-![Connections & Integrations](docs/screenshots/07-tools-registry.png)
+![Home](docs/screenshots/01-home-command-center.png)
 
----
+</td>
+<td width="33%">
 
-## Persona Hubs
+**C-Suite Command Center** — 53 agents across Titan, Olympian, Asgard, Explorer, and Eden regiments.
+
+![C-Suite](docs/screenshots/02-csuite-command-center.png)
+
+</td>
+<td width="33%">
+
+**Vision & Strategy** — Create vision statements, decompose into objectives, cascade to regiments with PMO tracking.
+
+![Vision](docs/screenshots/03-vision-dashboard.png)
+
+</td>
+</tr>
+</table>
+
+### Persona Hubs
 
 Each persona hub provides a unified workspace with **Skills → Outputs → Programs → Memory** tabs, a skill configuration form with simulation mode, and a full execution pipeline.
 
-### Engineering Hub
-
-10 skills across Code Review, Testing, Incident Response, and Documentation. Adaptive skill forms with file upload, severity selectors, and conditional fields. Generated outputs include reviews, test suites, and RCA drafts — with simulation mode for zero-cost dry runs.
-
 <table>
 <tr>
-<td width="50%">
+<td width="25%">
 
-![Engineering Skills](docs/screenshots/engineering-01-skills.png)
+**Marketing Hub** — 30 workflows across Campaign, Content, Creative, Event, Research, and Analytics.
+
+![Marketing](docs/screenshots/04-marketing-hub.png)
 
 </td>
-<td width="50%">
+<td width="25%">
 
-![Engineering Outputs](docs/screenshots/engineering-02-outputs.png)
+**Engineering Hub** — 10 skills across Code Review, Testing, Incident Response, and Documentation.
+
+![Engineering](docs/screenshots/05-engineering-hub.png)
+
+</td>
+<td width="25%">
+
+**Product Hub** — PRD Generator, Jira Epic Writer, User Story Builder, Roadmap Planner, and more.
+
+![Product](docs/screenshots/06-product-hub.png)
+
+</td>
+<td width="25%">
+
+**HR & Talent Hub** — Recruiting, onboarding, performance reviews, and talent analytics.
+
+![HR](docs/screenshots/07-hr-hub.png)
 
 </td>
 </tr>
 </table>
 
-### Product Hub
-
-PRD Generator, Jira Epic Writer, User Story Builder, Roadmap Planner, and more. Tags for success metrics and constraints, toggle Jira push and Confluence drafts. Outputs include PRDs, user stories, and roadmaps — with simulation mode for mock generation without API calls.
-
-<table>
-<tr>
-<td width="50%">
-
-![Product Skills](docs/screenshots/product-01-skills.png)
-
-</td>
-<td width="50%">
-
-![Product Outputs](docs/screenshots/product-02-outputs.png)
-
-</td>
-</tr>
-</table>
-
-### Marketing Hub
-
-30 workflows across Campaign, Content, Creative, Event, Research, and Analytics. Audience targeting, channel selection, budget allocation, and content parameters. Outputs include campaign assets, analytics reports, and creative briefs — with simulation mode for safe mock generation.
-
-<table>
-<tr>
-<td width="50%">
-
-![Marketing Skills](docs/screenshots/marketing-01-skills.png)
-
-</td>
-<td width="50%">
-
-![Marketing Outputs](docs/screenshots/marketing-02-outputs.png)
-
-</td>
-</tr>
-</table>
-
----
-
-## Simulation Platform
-
-Run any skill or workflow in **simulation mode** — full agent orchestration, tool calls, and output generation without connecting real tools or making live API calls.
+### Platform Intelligence
 
 <table>
 <tr>
 <td width="33%">
 
-**Engineering** — Configure → Execute → Output
+**Agents Panel** — Monitor 53 autonomous agents with status, model, token usage, and success rates.
 
-![Sim Engineering](docs/screenshots/simulation-engineering-04-running.png)
-
-</td>
-<td width="33%">
-
-**Product** — Configure → Execute → Output
-
-![Sim Product](docs/screenshots/simulation-product-03-running.png)
+![Agents](docs/screenshots/08-agents-panel.png)
 
 </td>
 <td width="33%">
 
-**Marketing** — Configure → Execute → Output
+**AI Courses Hub** — Curated courses from 10 platform providers with engagement tracking.
 
-![Sim Marketing](docs/screenshots/simulation-marketing-03-running.png)
+![Courses](docs/screenshots/09-ai-courses-hub.png)
+
+</td>
+<td width="33%">
+
+**Innovation Labs** — Experiment sandbox with hackathons, graduation pipeline, and C-Suite backlog.
+
+![Innovation](docs/screenshots/10-innovation-labs.png)
+
+</td>
+</tr>
+<tr>
+<td width="33%">
+
+**Budget Intelligence** — Per-agent cost tracking, burn-rate projections, CFO dashboard, and cost alerts.
+
+![Budget](docs/screenshots/11-budget-intelligence.png)
+
+</td>
+<td width="33%">
+
+**Agent Improvement** — Performance reviews, improvement plans, feedback loops, and training exemplars.
+
+![Improvement](docs/screenshots/12-agent-improvement.png)
+
+</td>
+<td width="33%">
+
+**Tool Registry** — Manage integrations (HubSpot, Jira, GitHub, Slack, Salesforce) with auth and capabilities.
+
+![Tools](docs/screenshots/13-tools-registry.png)
 
 </td>
 </tr>
 </table>
 
----
-
-## Platform Operations
+### Operations & Admin
 
 <table>
 <tr>
 <td width="25%">
 
-**Skill Marketplace** — Discover, search, and install skills. Filter by category, status, ratings.
+**Notification Center** — Multi-channel dispatch (Slack, Teams, Email, Webhook) with rules and delivery logs.
 
-![Marketplace](docs/screenshots/03-skill-marketplace.png)
-
-</td>
-<td width="25%">
-
-**Knowledge Explorer** — Search Confluence, GitHub, Jira with source attribution and relevance scoring.
-
-![Knowledge](docs/screenshots/09-knowledge-explorer.png)
+![Notifications](docs/screenshots/14-notification-center.png)
 
 </td>
 <td width="25%">
 
-**Control Plane** — Metric sparklines, agent runtime, skill router decisions, live logs, service health.
+**Executions** — Execution history with status tracking, approval workflows, and after-action reports.
 
-![Control Plane](docs/screenshots/10-control-plane.png)
+![Executions](docs/screenshots/15-executions.png)
 
 </td>
 <td width="25%">
 
-**Memory Graph** — Force-directed graph of skill/agent/tool relationships. Filter, search, inspect.
+**Discussion Forum** — Threaded discussions with voting, answer acceptance, and community engagement.
 
-![Memory Graph](docs/screenshots/11-memory-graph.png)
+![Discussions](docs/screenshots/16-discussion-forum.png)
+
+</td>
+<td width="25%">
+
+**Blog Editor** — Create, publish, and manage blog posts with tags, destinations, and engagement stats.
+
+![Blog](docs/screenshots/17-blog-editor.png)
 
 </td>
 </tr>
 <tr>
 <td width="25%">
 
-**Agent Collaboration** — Agent-to-agent message flows with animated messages, edge labels, and payloads.
+**Governance** — License tracking, cost attribution, access management, audit log, and compliance checks.
 
-![Agent Collab](docs/screenshots/12-agent-collaboration.png)
-
-</td>
-<td width="25%">
-
-**Governance** — License tracking, cost attribution, access management, audit log, compliance checks.
-
-![Governance](docs/screenshots/13-governance.png)
+![Governance](docs/screenshots/18-governance.png)
 
 </td>
 <td width="25%">
 
-**AI Learning Hub** — Curated courses, 5-day roadmap, platform providers, and adoption metrics.
+**Usage & Analytics** — Platform usage stats, adoption metrics, and performance analytics.
 
-![Learning Hub](docs/screenshots/15-learning-hub.png)
+![Usage](docs/screenshots/19-usage-analytics.png)
 
 </td>
 <td width="25%">
 
-**Scheduler** — Cron jobs, event triggers, retry policies, and execution history with status tracking.
+**Settings** — Platform configuration, environment variables, and system preferences.
 
-![Scheduler](docs/screenshots/16-scheduler.png)
+![Settings](docs/screenshots/20-settings.png)
+
+</td>
+<td width="25%">
+
+&nbsp;
 
 </td>
 </tr>
@@ -195,25 +194,41 @@ Run any skill or workflow in **simulation mode** — full agent orchestration, t
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Frontend (Next.js 14)                 │
-│  Sidebar │ Command Bar │ Main Content │ Activity Stream  │
-├──────────┴─────────────┴──────────────┴─────────────────┤
+│  Sidebar │ Command Palette │ Main Content │ Right Panel  │
+├──────────┴─────────────────┴──────────────┴─────────────┤
 │                    Gateway API (Node.js)                 │
-│  /api/query │ /api/skills │ /api/prompts │ /api/courses  │
+│  150+ API routes │ JWT Auth │ Event Bus │ WebSocket      │
 ├─────────────────────────────────────────────────────────┤
-│              Agent Graph Runtime (LangGraph)             │
-│  Orchestrator → Agents → Tools → Checkpoints → Storage  │
+│              Agent Hierarchy (53 Agents)                 │
+│  Titan │ Olympian │ Asgard │ Explorer │ Eden Regiments   │
 ├─────────────────────────────────────────────────────────┤
-│  Tool Capability Graph │ Memory Pipeline │ Policy Engine │
+│  C-Suite Layer │ Vision/PMO │ Innovation │ Budget/Cost   │
 ├─────────────────────────────────────────────────────────┤
-│  Connectors: Jira │ GitHub │ Slack │ Confluence │ etc.  │
+│  Persistence: File-backed │ PostgreSQL │ In-Memory       │
+│  Event Bus │ Notification Dispatch │ Webhook Connector   │
+├─────────────────────────────────────────────────────────┤
+│  Connectors: Jira │ GitHub │ Slack │ Teams │ HubSpot    │
 └─────────────────────────────────────────────────────────┘
+```
+
+### Organizational Hierarchy
+
+```
+Board / Vision Layer
+  └── CEO (Supreme Commander — Titan Regiment)
+       ├── CMO → Olympian Regiment (Marketing)
+       ├── CTO → Asgard Regiment (Engineering)
+       ├── CPO → Explorer Regiment (Product)
+       ├── CHRO → Eden Regiment (HR & Talent)
+       ├── CFO → Budget Intelligence
+       └── PMO → Program Management Office
 ```
 
 ### Core Principles
 
 ```
-User Intent → Skill Detection → Agent Deployment → Tool Selection
-     → Workflow Orchestration → Execution → Human Checkpoints → Asset Storage
+Vision → Decomposition → Cascading → Agent Assignment → Skill Execution
+     → Output Aggregation → Human Review → After-Action Reports → Learning
 ```
 
 ---
@@ -221,69 +236,64 @@ User Intent → Skill Detection → Agent Deployment → Tool Selection
 ## Features
 
 ### Core Platform
-- **Agents** — 12+ autonomous workers with multi-step execution pipelines
-- **Workflows** — DAG-based pipelines chaining agents and tools
-- **Knowledge Explorer** — Search across Confluence, GitHub, Jira with source attribution
-- **Skills** — Reusable AI capabilities with success rates and quality tiers
-- **Command Bar** — Natural language queries with intent classification (Cmd+K)
+- **53 Autonomous Agents** — organized across 5 regiments (Titan, Olympian, Asgard, Explorer, Eden)
+- **Military Hierarchy** — General → Field Marshal → Colonel → Captain → Corporal chain of command
+- **150+ API Routes** — fully implemented backend with real persistence
+- **JWT Authentication** — role-based access control with persona gating
+- **Event Bus** — in-process pub/sub with pattern matching and notification dispatch
+- **WebSocket Streaming** — live execution updates pushed to the frontend
+- **Three-Tier Persistence** — File-backed JSON (default), PostgreSQL, or In-Memory
 
-### Prompt Library
-- **13+ curated prompts** across engineering, QA, SRE, architecture categories
-- **Community skills** curated from 6 open-source repositories
-- **Fork, pin, upvote, flag** — full engagement lifecycle
-- **Recommendations** — Users submit and vote on new prompt ideas
-- **Target tools** — Cursor, GitHub Copilot, Claude, ChatGPT, Office Copilot
+### C-Suite & Vision Layer
+- **C-Suite Command Center** — CEO, CMO, CTO, CPO, CHRO command their regiments
+- **Vision & Strategy** — Create vision statements, LLM-powered decomposition into objectives
+- **Cascading** — objectives cascade from C-Suite → regiment → agents
+- **PMO Dashboard** — program management with cross-regiment status rollups
 
-### AI Learning Hub
-- **10 Platform Providers** — Anthropic, Google, Meta, NVIDIA, Microsoft, OpenAI, IBM, AWS, DeepLearning.AI, Hugging Face
-- **5-Day Roadmap** — Visual milestone journey covering AI Agents, MCP, Memory, Quality, Production
-- **24 Courses** — Categorized, filterable, with engagement tracking
-- **Organization Stats** — Aggregate views, likes, pins to measure AI adoption
+### Persona Hubs (4 domains)
+- **Marketing** — 30 workflows across Campaign, Content, Creative, Event, Research, Analytics
+- **Engineering** — 10 skills: PR Review, Unit Tests, Incident RCA, Architecture Review, etc.
+- **Product** — 10 skills: PRD Generator, Jira Epics, User Stories, Roadmaps, etc.
+- **HR & Talent** — Recruiting, onboarding, performance reviews, talent analytics
 
-### Marketing Agent Graph (SOMAN)
-- **12 Specialized Agents** — Orchestrator, Strategy, Research, Competitor, Copy, Design, Landing Page, Campaign, Analytics, Optimization, SEO, Email
-- **Self-Optimizing Loop** — Agents learn from campaign outcomes and adapt automatically
-- **Tool Marketplace** — 16 connectors (Canva, DALL-E, LinkedIn Ads, HubSpot, GA4, etc.)
-- **10 Marketing Skills** — Campaign Builder, Content Creation, Creative Design, and more
-- **Human-in-the-Loop** — Approval checkpoints before critical actions
-- **3 Optimization Modes** — Manual, Assisted, Autonomous
+### Innovation Labs
+- **Experiment Sandbox** — create, activate, evaluate, and graduate experiments
+- **Hackathon Mode** — time-boxed innovation sprints linked to experiments
+- **Graduation Pipeline** — promote successful experiments to production with review
 
-### Tool Capability Graph
-- **Dynamic tool selection** — Maps tasks → capabilities → tools
-- **20 capabilities** across content, visual, layout, campaign, analytics, research, storage
-- **22 tool nodes** with priority, cost tier, and latency rankings
-- **Execution planning** — Query graph for optimal tool chains
+### Budget & Cost Intelligence
+- **Per-Agent Budgets** — allocate monthly/quarterly/annual budgets per agent
+- **Spend Tracking** — every API call logged with cost, tokens, model, and latency
+- **Burn Rate Analysis** — daily/weekly averages, month-end projections, trend detection
+- **Cost Alerts** — threshold, overspend, and spike alerts with severity levels
+- **CFO Dashboard** — total budget/spent, by-regiment breakdown, top spenders, cost by provider/model
 
-### Observability
-- **Execution traces** — Every LLM call, tool invocation, memory retrieval
-- **Token usage and cost tracking** — Per-query cost analysis
-- **Confidence and grounding scores** — Quality metrics on every response
+### Agent Training & Continuous Improvement
+- **Performance Reviews** — scored across reliability, efficiency, quality, collaboration, cost-effectiveness
+- **Improvement Plans** — objective-based plans with metric tracking and auto-completion
+- **Feedback Loops** — positive/negative/correction feedback with sentiment trend analysis
+- **Training Exemplars** — curated exemplary/good/cautionary executions for agent learning
+- **Health Reports** — agents needing attention, outcome distributions, feedback sentiment
 
-### Engineering Hub
-- **10 Engineering Skills** — PR Review, PR Summary, Unit Test Generator, Code Documentation, CI Failure Diagnosis, Incident RCA Draft, Dependency Audit, Architecture Review, API Contract Validator, Performance Profiler
-- **Smart Skill Forms** — adaptive field types: multiselect, tags, toggles, file upload, conditional `dependsOn` fields
-- **Live / Sandbox run modes** — test without real API calls
-- **Tool strip** — shows Claude (always connected), GitHub, Jira, Sentry, Datadog, PagerDuty connection states
+### Notifications & Webhooks
+- **Multi-Channel Dispatch** — Slack, Teams, Email, Webhook
+- **Rule Engine** — trigger-based notification routing with pattern matching
+- **Webhook Connector** — inbound/outbound with HMAC-SHA256 signature verification
+- **Delivery Logs** — full audit trail of every notification sent
 
-### Product Hub
-- **10 Product Skills** — PRD Generator, BRD Generator, Jira Epic Generator, User Story Writer, Acceptance Criteria Generator, Roadmap Builder, Competitor Analysis Brief, Release Notes, Stakeholder Update, Customer Feedback Synthesizer
-- **Jira + Confluence integration** — push epics and drafts directly from skill forms
-- **Tags fields** for success metrics, constraints, and stakeholders
-- **Violet accent** distinguishes product workflows from engineering (slate) and marketing (emerald)
+### Platform Operations
+- **Skill Marketplace** — CRUD with voting, comments, analytics, and governance
+- **Scheduler** — cron, interval, event-driven, and one-time job scheduling
+- **Discussion Forum** — threaded conversations with voting and answer acceptance
+- **Blog Editor** — create, publish, and manage blog posts with engagement tracking
+- **Prompt Library** — fork, pin, upvote curated prompts by persona and category
+- **Tool Registry** — manage external tool connections with OAuth and API key auth
 
-### Guided Tour
-- **21-step interactive tour** covering all sections including Engineering and Product Hubs
-- **Onboarding modal** for first-time users
-- **Keyboard navigation** (Arrow keys, Escape, Enter)
-- **Help menu** with tour restart
-
-### Simulation Platform
-- **Dry-run execution** — Run any skill without real tool connections or API calls
-- **Full pipeline simulation** — All agents, steps, and checkpoints execute as normal
-- **Mock output generation** — Realistic synthetic outputs for review and testing
-- **Zero cost** — No token usage, no external API charges
-- **Cross-persona** — Available for Engineering, Product, and Marketing hubs
-- **Safe testing** — No side effects on production systems or data
+### Observability & Governance
+- **Audit Trail** — every action, handoff, and decision logged immutably
+- **Cost Attribution** — per-persona, per-agent, per-task cost breakdown
+- **Execution Traces** — token usage, latency, confidence metrics
+- **After-Action Reports** — auto-generated per workflow execution
 
 ---
 
@@ -403,49 +413,32 @@ The app will show an **onboarding modal** on your first visit. After that, use t
 
 ## Guided Tour
 
-The app includes a 29-step interactive guided tour that covers:
-
-| Step | Section | What You Learn |
-|------|---------|---------------|
-| 1-2 | Welcome + Nav | Sidebar navigation, Mission Control overview |
-| 3 | Intent Router | Natural language skill routing |
-| 4-6 | Core Skills | Persona selector, Skills dashboard, Execution panel |
-| 7 | Governance | License tracking and Corp IT dashboard |
-| 8-10 | Navigation | Agents, Workflows, Skill Marketplace |
-| 11-13 | Tools + Content | Tools registry, Prompt Library, Knowledge |
-| 14 | Learning | AI courses and 5-day roadmap |
-| 15-16 | Engineering Hub | Command Center, smart skill forms |
-| 17-18 | Product Hub | PRD/Jira/Roadmap skills, tags and toggle fields |
-| 19 | Tool Strip | Connected vs unconnected tool indicators |
-| 20-21 | Completion | Full platform ready, tour restart |
+The app includes an interactive guided tour covering all sections. Use the **Help menu** (top-right) to restart the tour anytime.
 
 **Keyboard shortcuts**: Arrow keys to navigate, Escape to skip, Enter to advance.
 
 ---
 
-## API Endpoints
+## API Endpoints (150+)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/query` | Natural language query |
-| GET | `/api/skills` | Skill catalog |
-| GET | `/api/prompts` | Prompt library (with filters) |
-| POST | `/api/prompts/:id/vote` | Upvote/downvote prompt |
-| POST | `/api/prompts/:id/fork` | Fork a prompt |
-| GET | `/api/recommendations` | User-submitted suggestions |
-| GET | `/api/tools` | Tools registry |
-| GET | `/api/courses/stats` | Course engagement stats |
-| GET | `/api/capability-graph` | Tool capability graph |
-| POST | `/api/capability-graph/plan` | Generate execution plan |
-| GET | `/api/engineering/skills` | Engineering skill catalog |
-| POST | `/api/engineering/execute` | Execute an engineering skill |
-| GET | `/api/engineering/executions/:id` | Poll execution status |
-| GET | `/api/product/skills` | Product skill catalog |
-| POST | `/api/product/execute` | Execute a product skill |
-| GET | `/api/product/executions/:id` | Poll execution status |
-| POST | `/api/tools/:id/connect` | Save tool credentials |
-| POST | `/api/tools/:id/test` | Test tool connection |
-| GET | `/api/health` | Gateway health check |
+| Group | Routes | Description |
+|-------|--------|-------------|
+| **Auth** | `POST /api/auth/token`, `GET /api/auth/me` | JWT issuance & user info |
+| **Execution** | `POST /api/execute`, `GET /api/executions`, `GET /api/executions/:id` | Unified skill execution across all personas |
+| **C-Suite** | `GET /api/csuite`, `GET /api/csuite/:id`, `GET /api/csuite/:id/chain` | Agent hierarchy & command chain |
+| **Vision/PMO** | `POST /api/vision`, `POST /api/vision/:id/decompose`, `POST /api/vision/:id/cascade/:objId` | Vision decomposition & cascading |
+| **Innovation** | `/api/innovation/experiments/*`, `/api/innovation/hackathons/*`, `/api/innovation/graduations/*` | Innovation labs CRUD + state machine |
+| **Budget** | `/api/budget/agents/*`, `/api/budget/spend`, `/api/budget/alerts/*`, `/api/budget/dashboard` | Cost tracking, burn rate, CFO dashboard |
+| **Improvement** | `/api/improvement/reviews/*`, `/api/improvement/plans/*`, `/api/improvement/feedback`, `/api/improvement/exemplars/*` | Performance reviews, plans, feedback |
+| **Notifications** | `/api/notifications/channels/*`, `/api/notifications/rules/*`, `/api/notifications/dispatch` | Multi-channel notification dispatch |
+| **Webhooks** | `/api/webhooks/endpoints/*`, `/api/webhooks/subscriptions/*`, `/api/webhooks/receive/:id` | Inbound/outbound with HMAC-SHA256 |
+| **Skills** | `/api/skills/unified`, `/api/marketplace/skills/*` | Skill marketplace with voting & analytics |
+| **Personas** | `/api/engineering/*`, `/api/product/*`, `/api/hr/*`, `/api/marketing/*` | Persona-gated skill execution |
+| **Agents** | `/api/agents/registry`, `/api/agents/kpis`, `/api/agents/memory` | Agent registry, KPIs, memory snapshots |
+| **Scheduler** | `/api/scheduler/jobs/*`, `/api/scheduler/events` | Cron/interval/event-driven scheduling |
+| **Blog/Forum** | `/api/blog/posts/*`, `/api/forum/threads/*` | Content with voting & engagement |
+| **Cognitive** | `/api/cognitive/process`, `/api/cognitive/decompose`, `/api/cognitive/reason` | Multi-step LLM reasoning pipeline |
+| **Observability** | `/api/governance/audit`, `/api/events`, `/api/health` | Audit trail, event bus, system health |
 
 ---
 

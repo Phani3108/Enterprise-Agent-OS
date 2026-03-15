@@ -30,6 +30,12 @@ import { ExecutionScreen } from '../components/ExecutionScreen';
 import { DiscussionForum } from '../components/DiscussionForum';
 import { BlogEditor } from '../components/BlogEditor';
 import { AICoursesHub } from '../components/AICoursesHub';
+import CSuiteCommandCenter from '../components/CSuiteCommandCenter';
+import VisionDashboard from '../components/VisionDashboard';
+import NotificationCenter from '../components/NotificationCenter';
+import InnovationLabs from '../components/InnovationLabs';
+import BudgetIntelligence from '../components/BudgetIntelligence';
+import AgentImprovement from '../components/AgentImprovement';
 
 function MainContent({ section }: { section: string }) {
   // Dynamic connector detail pages: connector-detail-{connectorId}
@@ -41,6 +47,10 @@ function MainContent({ section }: { section: string }) {
   switch (section) {
     // Home
     case 'home':                    return <HomeCommandCenter />;
+
+    // C-Suite
+    case 'csuite-command':          return <CSuiteCommandCenter />;
+    case 'csuite-vision':           return <VisionDashboard />;
 
     // Workspaces
     case 'ws-marketing':            return <MarketingHub />;
@@ -67,9 +77,13 @@ function MainContent({ section }: { section: string }) {
     // Platform (cross-persona)
     case 'platform-agents':         return <AgentsPanel />;
     case 'platform-courses':        return <AICoursesHub />;
+    case 'platform-innovation':     return <InnovationLabs />;
+    case 'platform-budget':         return <BudgetIntelligence />;
+    case 'platform-improvement':    return <AgentImprovement />;
 
     // Operations
     case 'ops-integrations':        return <ToolsRegistry />;
+    case 'ops-notifications':       return <NotificationCenter />;
     case 'ops-executions':          return <OpsExecutionsView />;
     case 'ops-discussions':         return <DiscussionForum />;
     case 'ops-blog':                return <BlogEditor />;

@@ -413,6 +413,8 @@ export interface UnifiedStepDef {
     description?: string;
     /** Capability identifier for capability-based routing */
     capability?: string;
+    /** DAG mode: IDs of steps this step depends on */
+    dependsOn?: string[];
 }
 
 export interface UnifiedSkillDef {
