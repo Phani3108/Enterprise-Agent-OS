@@ -42,6 +42,8 @@ import { getFullRegistry, getAgentIdentity, getAgentsByPersona, getCSuiteAgents,
 import { processCognitivePipeline, decompose, reason, reflect, groundCheck, getCognitiveResult, getCognitiveTrace, type CognitiveRequest } from './cognitive-pipeline.js';
 import { eventBus } from './event-bus.js';
 import { submitGoal, getGoalExecution, listGoalExecutions, cancelGoal } from './gateway-orchestrator.js';
+import { PipelineEngine, getPipelineExecution, listPipelineExecutions, cancelPipeline, type GraphConfig, type OrchestratorConfig, type AgentDefinition } from './pipeline-engine.js';
+import { pluginRegistry } from './plugin-interfaces.js';
 import { createVision, getVision, listVisions, decomposeVision, cascadeToRegiment, createProgram, getProgram, listPrograms, updateProgram, generatePMOStatusReport, getVisionStatus, initVisionStore } from './vision-api.js';
 import type { VisionStatement, ProgramRecord } from './vision-api.js';
 import { createChannel, getChannel, listChannels, updateChannel, deleteChannel, createRule, getRule, listRules, updateRule, deleteRule, dispatch, dispatchByTrigger, getDeliveryLog, getDelivery, getDeliveryStats, initNotificationStore } from './notification-dispatch.js';
@@ -2472,6 +2474,97 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/orchestrator/goals' && method === 'GET') {
             sendJSON(res, 200, listGoalExecutions());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Pipeline Engine API — DAG-based agent pipeline execution
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/pipeline/execute' && method === 'POST') {
+            const body = await readBody(req);
+            const { intent, context, provider, model, graphConfig, orchestratorConfig, agentDefinitions } = body as {
+                intent?: string;
+                context?: Record<string, unknown>;
+                provider?: string;
+                model?: string;
+                graphConfig?: GraphConfig;
+                orchestratorConfig?: OrchestratorConfig;
+                agentDefinitions?: AgentDefinition[];
+            };
+            if (!intent || typeof intent !== 'string') {
+                sendJSON(res, 400, { error: 'Missing intent field' });
+                return;
+            }
+            if (!graphConfig || !orchestratorConfig || !agentDefinitions?.length) {
+                sendJSON(res, 400, { error: 'Missing graphConfig, orchestratorConfig, or agentDefinitions' });
+                return;
+            }
+            const agentDefs = new Map(agentDefinitions.map(a => [a.agent_id, a]));
+            const engine = new PipelineEngine(graphConfig, orchestratorConfig, agentDefs);
+            const execution = await engine.execute(intent, context, { provider: provider as any, model });
+            recordAudit(userId, 'pipeline.execute', String(intent).slice(0, 80));
+            broadcastEvent(execution.id, 'pipeline.started', { intent, nodeCount: execution.nodeStates.size });
+            sendJSON(res, 200, {
+                id: execution.id,
+                status: execution.status,
+                intent: execution.intent,
+                totalTokensUsed: execution.totalTokensUsed,
+                totalCostUsd: execution.totalCostUsd,
+                afterActionReport: execution.afterActionReport,
+                statusReports: execution.statusReports,
+            });
+            return;
+        }
+
+        if (path.startsWith('/api/pipeline/') && !path.includes('/cancel') && method === 'GET') {
+            const pipelineId = path.replace('/api/pipeline/', '');
+            const exec = getPipelineExecution(pipelineId);
+            if (!exec) { sendJSON(res, 404, { error: 'Pipeline execution not found' }); return; }
+            sendJSON(res, 200, {
+                id: exec.id,
+                status: exec.status,
+                intent: exec.intent,
+                totalTokensUsed: exec.totalTokensUsed,
+                totalCostUsd: exec.totalCostUsd,
+                afterActionReport: exec.afterActionReport,
+                statusReports: exec.statusReports,
+            });
+            return;
+        }
+
+        if (path.startsWith('/api/pipeline/') && path.endsWith('/cancel') && method === 'POST') {
+            const pipelineId = path.replace('/api/pipeline/', '').replace('/cancel', '');
+            const cancelled = await cancelPipeline(pipelineId);
+            sendJSON(res, 200, { cancelled });
+            return;
+        }
+
+        if (path === '/api/pipelines' && method === 'GET') {
+            const executions = listPipelineExecutions().map(e => ({
+                id: e.id,
+                status: e.status,
+                intent: e.intent,
+                startedAt: e.startedAt,
+                completedAt: e.completedAt,
+                totalTokensUsed: e.totalTokensUsed,
+                totalCostUsd: e.totalCostUsd,
+            }));
+            sendJSON(res, 200, executions);
+            return;
+        }
+
+        // GET /api/plugins — list registered plugins and their health
+        if (path === '/api/plugins' && method === 'GET') {
+            const health = await pluginRegistry.healthCheckAll();
+            const plugins = [
+                ...pluginRegistry.listByType('runtime').map(p => ({ ...p.manifest, healthy: health.get(p.manifest.id)?.healthy })),
+                ...pluginRegistry.listByType('tool').map(p => ({ ...p.manifest, healthy: health.get(p.manifest.id)?.healthy })),
+                ...pluginRegistry.listByType('llm').map(p => ({ ...p.manifest, healthy: health.get(p.manifest.id)?.healthy })),
+                ...pluginRegistry.listByType('memory').map(p => ({ ...p.manifest, healthy: health.get(p.manifest.id)?.healthy })),
+                ...pluginRegistry.listByType('observability').map(p => ({ ...p.manifest, healthy: health.get(p.manifest.id)?.healthy })),
+            ];
+            sendJSON(res, 200, { plugins });
             return;
         }
 

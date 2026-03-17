@@ -1,49 +1,222 @@
 {
     "graph_id": "marketing.agent_graph",
     "name": "Marketing Agent Collaboration Graph",
-    "description": "Self-optimizing agent network where agents collaborate through shared state",
+    "description": "Self-optimizing agent network where agents collaborate through shared state, quality gates, retry logic, and feedback loops",
+
     "nodes": [
-        { "id": "research", "agent": "marketing.research", "depends_on": [] },
-        { "id": "competitor", "agent": "marketing.competitor", "depends_on": ["research"] },
-        { "id": "strategy", "agent": "marketing.strategy", "depends_on": ["research", "competitor"] },
-        { "id": "seo", "agent": "marketing.seo", "depends_on": ["research"] },
-        { "id": "copy", "agent": "marketing.copy", "depends_on": ["strategy"] },
-        { "id": "design", "agent": "marketing.design", "depends_on": ["copy"] },
-        { "id": "landing", "agent": "marketing.landing", "depends_on": ["copy", "design"] },
-        { "id": "email", "agent": "marketing.email", "depends_on": ["copy"] },
-        { "id": "campaign", "agent": "marketing.campaign", "depends_on": ["design", "copy"] },
-        { "id": "analytics", "agent": "marketing.analytics", "depends_on": ["campaign"] },
-        { "id": "optimization", "agent": "marketing.optimization", "depends_on": ["analytics"] }
+        { "id": "research",     "agent": "marketing.research",     "depends_on": [],                       "phase": "intelligence",  "parallel_group": "research" },
+        { "id": "competitor",   "agent": "marketing.competitor",   "depends_on": ["research"],             "phase": "intelligence",  "parallel_group": "analysis" },
+        { "id": "seo",          "agent": "marketing.seo",          "depends_on": ["research"],             "phase": "intelligence",  "parallel_group": "analysis" },
+        { "id": "strategy",     "agent": "marketing.strategy",     "depends_on": ["research", "competitor"], "phase": "planning",    "parallel_group": null },
+        { "id": "copy",         "agent": "marketing.copy",         "depends_on": ["strategy"],             "phase": "production",    "parallel_group": "content" },
+        { "id": "design",       "agent": "marketing.design",       "depends_on": ["copy"],                 "phase": "production",    "parallel_group": "assets" },
+        { "id": "landing",      "agent": "marketing.landing",      "depends_on": ["copy", "design"],       "phase": "production",    "parallel_group": "assets" },
+        { "id": "email",        "agent": "marketing.email",        "depends_on": ["copy"],                 "phase": "production",    "parallel_group": "content" },
+        { "id": "campaign",     "agent": "marketing.campaign",     "depends_on": ["design", "copy"],       "phase": "activation",    "parallel_group": null },
+        { "id": "analytics",    "agent": "marketing.analytics",    "depends_on": ["campaign"],             "phase": "measurement",   "parallel_group": null },
+        { "id": "optimization", "agent": "marketing.optimization", "depends_on": ["analytics"],            "phase": "optimization",  "parallel_group": null }
     ],
-    "feedback_loops": [
+
+    "phases": {
+        "intelligence":  { "label": "Research & Intelligence",  "order": 1, "description": "Gather market data, competitive intel, and SEO insights" },
+        "planning":      { "label": "Strategy & Planning",      "order": 2, "description": "Synthesize intelligence into campaign strategy" },
+        "production":    { "label": "Content & Asset Production","order": 3, "description": "Create copy, design, landing pages, and email sequences" },
+        "activation":    { "label": "Campaign Activation",      "order": 4, "description": "Configure and launch campaigns across platforms" },
+        "measurement":   { "label": "Performance Measurement",  "order": 5, "description": "Track KPIs, attribution, funnel analysis" },
+        "optimization":  { "label": "Continuous Optimization",  "order": 6, "description": "Analyze results and trigger improvement loops" }
+    },
+
+    "quality_gates": [
         {
-            "from": "optimization",
-            "to": ["strategy", "copy", "design"],
-            "trigger": "performance_below_threshold",
-            "description": "When campaign performance drops, optimization agent triggers strategy/copy/design regeneration"
+            "id": "gate_research_quality",
+            "after_node": "research",
+            "validation": {
+                "required_sections": ["executive_summary", "key_findings", "segment_profiles", "recommendations"],
+                "min_citations": 3,
+                "max_unsourced_claims": 0
+            },
+            "on_fail": "retry",
+            "max_retries": 2,
+            "retry_instructions": "Research output missing required sections or citations. Re-run with explicit instruction to include all required sections with cited data points."
+        },
+        {
+            "id": "gate_strategy_completeness",
+            "after_node": "strategy",
+            "validation": {
+                "required_sections": ["objectives", "target_segments", "positioning", "messaging_pillars", "channel_strategy", "kpi_framework"],
+                "must_reference_research": true
+            },
+            "on_fail": "retry",
+            "max_retries": 2,
+            "retry_instructions": "Strategy is incomplete or doesn't reference research data. Re-run with all 6 required sections and explicit citations from research findings."
+        },
+        {
+            "id": "gate_copy_brand_compliance",
+            "after_node": "copy",
+            "validation": {
+                "required_sections": ["ad_copy", "email_copy", "landing_page_copy"],
+                "must_include_variants": true,
+                "must_trace_to_pillars": true
+            },
+            "on_fail": "retry",
+            "max_retries": 3,
+            "retry_instructions": "Copy is missing A/B variants or doesn't trace to messaging pillars. Re-run ensuring every piece of copy maps to a specific pillar and includes at least 2 variants."
+        },
+        {
+            "id": "gate_creative_specs",
+            "after_node": "design",
+            "validation": {
+                "required_sections": ["creative_concepts", "format_specifications", "generation_prompts"],
+                "platform_specs_verified": true
+            },
+            "on_fail": "retry",
+            "max_retries": 2,
+            "retry_instructions": "Creative specs missing or platform requirements not met. Re-run with exact dimensions and text overlay calculations for each platform."
+        },
+        {
+            "id": "gate_campaign_preflight",
+            "after_node": "campaign",
+            "type": "human_approval",
+            "validation": {
+                "required_sections": ["campaign_structure", "targeting_criteria", "budget_allocation", "tracking_setup"],
+                "preflight_checklist_complete": true
+            },
+            "on_fail": "block",
+            "escalation": "Human review required before campaign launch. Budget: ${state.campaign.total_budget}. Platforms: ${state.campaign.platforms}."
         }
     ],
-    "shared_state": {
-        "state.market_insights": { "written_by": "research", "read_by": ["strategy", "competitor", "seo"] },
-        "state.competitor_analysis": { "written_by": "competitor", "read_by": ["strategy"] },
-        "state.strategy": { "written_by": "strategy", "read_by": ["copy", "campaign"] },
-        "state.messaging": { "written_by": "copy", "read_by": ["design", "landing", "email", "campaign"] },
-        "state.creatives": { "written_by": "design", "read_by": ["campaign", "landing"] },
-        "state.landing_page": { "written_by": "landing", "read_by": ["campaign"] },
-        "state.campaign": { "written_by": "campaign", "read_by": ["analytics"] },
-        "state.analytics": { "written_by": "analytics", "read_by": ["optimization"] },
-        "state.optimization_actions": { "written_by": "optimization", "read_by": ["strategy", "copy", "design"] }
-    },
+
     "checkpoints": [
-        { "before": "campaign", "type": "approve_messaging" },
-        { "before": "campaign", "type": "approve_creatives" },
-        { "before": "campaign.launch", "type": "approve_campaign_launch" },
-        { "before": "campaign.budget", "type": "approve_budget" },
-        { "before": "email.send", "type": "approve_email_send" }
+        {
+            "id": "approve_messaging",
+            "before_node": "design",
+            "type": "human_approval",
+            "description": "Review and approve messaging pillars and copy direction before creative production",
+            "timeout_hours": 24,
+            "on_timeout": "escalate",
+            "escalation_target": "marketing.orchestrator"
+        },
+        {
+            "id": "approve_creatives",
+            "before_node": "campaign",
+            "type": "human_approval",
+            "description": "Review and approve creative assets before campaign activation",
+            "timeout_hours": 24,
+            "on_timeout": "escalate",
+            "escalation_target": "marketing.orchestrator"
+        },
+        {
+            "id": "approve_campaign_launch",
+            "before_node": "campaign",
+            "after_gate": "gate_campaign_preflight",
+            "type": "human_approval",
+            "description": "Final approval before going live with ad spend",
+            "timeout_hours": 12,
+            "on_timeout": "block",
+            "requires_fields": ["budget_confirmed", "targeting_confirmed", "tracking_verified"]
+        },
+        {
+            "id": "approve_budget_shift",
+            "within_node": "optimization",
+            "type": "conditional_approval",
+            "condition": "budget_shift_percent > 30",
+            "description": "Budget reallocation exceeding 30% requires human approval",
+            "auto_approve_below": 30
+        },
+        {
+            "id": "approve_email_send",
+            "before_node": "email",
+            "type": "human_approval",
+            "description": "Approve email sequences before activation"
+        }
     ],
-    "_provenance": {
-        "_created_by": "50 68 61 6e 69 20 4d 61 72 75 70 61 6b 61",
-        "_profile": "6c 69 6e 6b 65 64 69 6e 2e 63 6f 6d 2f 69 6e 2f 70 68 61 6e 69 2d 6d 61 72 75 70 61 6b 61",
-        "_copyright": "a9 20 32 30 32 36"
+
+    "feedback_loops": [
+        {
+            "id": "loop_performance_optimization",
+            "from": "optimization",
+            "to": ["strategy", "copy", "design"],
+            "trigger": {
+                "condition": "performance_below_threshold",
+                "thresholds": {
+                    "ctr_below": 0.005,
+                    "cpa_above_target_multiplier": 2.0,
+                    "conversion_rate_below": 0.02,
+                    "roas_below": 1.0
+                },
+                "minimum_data_window_hours": 48
+            },
+            "actions": {
+                "strategy": "Re-evaluate targeting and messaging pillars based on performance data",
+                "copy": "Generate new copy variants addressing underperforming messaging angles",
+                "design": "Create fresh creatives to combat creative fatigue"
+            },
+            "max_loop_iterations": 3,
+            "cooldown_hours": 72,
+            "circuit_breaker": {
+                "pause_if": "cpa > 3x target for 48+ hours",
+                "action": "Pause all campaigns, escalate to human"
+            }
+        },
+        {
+            "id": "loop_creative_fatigue",
+            "from": "analytics",
+            "to": ["design"],
+            "trigger": {
+                "condition": "creative_fatigue_detected",
+                "thresholds": {
+                    "ctr_decline_percent": 15,
+                    "ctr_decline_window_days": 7,
+                    "frequency_above": 4.0
+                }
+            },
+            "actions": {
+                "design": "Rotate to untested creative variants or generate new concepts"
+            },
+            "max_loop_iterations": 5,
+            "cooldown_hours": 48
+        }
+    ],
+
+    "shared_state": {
+        "state.market_insights":       { "written_by": "research",     "read_by": ["strategy", "competitor", "seo"], "schema": "market_insights" },
+        "state.competitor_analysis":   { "written_by": "competitor",   "read_by": ["strategy"],                     "schema": "competitor_profiles" },
+        "state.seo_insights":          { "written_by": "seo",          "read_by": ["copy", "landing"],               "schema": "seo_data" },
+        "state.strategy":              { "written_by": "strategy",     "read_by": ["copy", "campaign"],              "schema": "campaign_strategy" },
+        "state.messaging":             { "written_by": "copy",         "read_by": ["design", "landing", "email", "campaign"], "schema": "messaging_pack" },
+        "state.creatives":             { "written_by": "design",       "read_by": ["campaign", "landing"],           "schema": "creative_assets" },
+        "state.landing_page":          { "written_by": "landing",      "read_by": ["campaign"],                     "schema": "landing_spec" },
+        "state.email_campaigns":       { "written_by": "email",        "read_by": ["campaign"],                     "schema": "email_sequences" },
+        "state.campaign":              { "written_by": "campaign",     "read_by": ["analytics"],                    "schema": "campaign_config" },
+        "state.analytics":             { "written_by": "analytics",    "read_by": ["optimization"],                 "schema": "performance_data" },
+        "state.optimization_actions":  { "written_by": "optimization", "read_by": ["strategy", "copy", "design"],   "schema": "optimization_brief" }
+    },
+
+    "execution_config": {
+        "parallel_execution": true,
+        "max_concurrent_agents": 3,
+        "global_timeout_minutes": 120,
+        "per_node_timeout_minutes": 15,
+        "retry_backoff_multiplier": 1.5,
+        "status_reporting_interval_seconds": 30
+    },
+
+    "status_reporting": {
+        "template": {
+            "header": "Marketing Pipeline Status Report",
+            "fields": [
+                "current_phase",
+                "completed_nodes",
+                "active_nodes",
+                "pending_nodes",
+                "blocked_checkpoints",
+                "quality_gate_results",
+                "feedback_loop_status",
+                "elapsed_time",
+                "estimated_remaining"
+            ]
+        },
+        "on_phase_complete": "Generate phase summary with agent performance metrics",
+        "on_pipeline_complete": "Generate full after-action report with handoff chain analysis"
     }
 }
