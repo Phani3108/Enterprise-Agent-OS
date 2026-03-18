@@ -12,13 +12,11 @@ import { useConnectionsStore } from '../store/connections-store';
 import { useEAOSStore } from '../store/eaos-store';
 import { ExecutionTimeline } from './marketing/ExecutionTimeline';
 import { PersonaWorkflowForm, type SkillInputField, type SkillToolRef } from './persona/PersonaWorkflowForm';
-import { ProductProgramManagement } from './product/ProductProgramManagement';
 import { UnifiedPersonaLayout } from './persona/UnifiedPersonaLayout';
 import { OutputsView, type OutputExecution } from './persona/OutputsView';
-import { MemoryView } from './persona/MemoryView';
-import { WorkflowBuilder } from './WorkflowBuilder';
 import { PromptLibrary } from './PromptLibraryDeep';
 import AgentsPanel from './AgentsPanel';
+import { PipelineView } from './PipelineView';
 import type { ExecutionStepEvent } from '../store/marketing-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -602,10 +600,10 @@ function ProdSkillsContent() {
 }
 
 // ---------------------------------------------------------------------------
-// Outputs — unified execution history
+// History — unified execution history
 // ---------------------------------------------------------------------------
 
-function ProdOutputsContent() {
+function ProdHistoryContent() {
   const executions = useProductStore((s) => s.executions);
   const mapped: OutputExecution[] = executions.map(e => ({
     id: e.id,
@@ -620,16 +618,35 @@ function ProdOutputsContent() {
 }
 
 // ---------------------------------------------------------------------------
-// Memory — learning & suggestions
+// Library — Browse skills, prompts, agent definitions
 // ---------------------------------------------------------------------------
 
-function ProdMemoryContent() {
-  const executions = useProductStore((s) => s.executions);
-  return <MemoryView persona="Product" accentColor="violet-700" totalRuns={executions.length} />;
+function ProdLibraryContent() {
+  const [tab, setTab] = useState<'skills' | 'prompts' | 'agents'>('skills');
+  return (
+    <div>
+      <div className="flex border-b border-slate-200 px-6 pt-4">
+        {(['skills', 'prompts', 'agents'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors capitalize ${
+              tab === t ? 'border-violet-700 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t === 'skills' ? '⚡ Skills' : t === 'prompts' ? '✨ Prompts' : '🤖 Agents'}
+          </button>
+        ))}
+      </div>
+      {tab === 'skills' && <ProductAgentBrowser onRunSkill={() => {}} />}
+      {tab === 'prompts' && <PromptLibrary personaFilter="product" />}
+      {tab === 'agents' && <AgentsPanel personaFilter="Product" />}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Main Hub — 4-section router with unified layout
+// Main Hub — 4-tab router with unified layout
 // ---------------------------------------------------------------------------
 
 export function ProductHub() {
@@ -643,13 +660,10 @@ export function ProductHub() {
       activeSection={activeSection}
       onSectionChange={(s) => setActiveSection(s as typeof activeSection)}
     >
-      {activeSection === 'skills' && <ProdSkillsContent />}
-      {activeSection === 'workflows' && <WorkflowBuilder personaFilter="Product" />}
-      {activeSection === 'prompts' && <PromptLibrary personaFilter="product" />}
-      {activeSection === 'agents' && <AgentsPanel personaFilter="Product" />}
-      {activeSection === 'outputs' && <ProdOutputsContent />}
-      {activeSection === 'programs' && <ProductProgramManagement />}
-      {activeSection === 'memory' && <ProdMemoryContent />}
+      {activeSection === 'run' && <ProdSkillsContent />}
+      {activeSection === 'library' && <ProdLibraryContent />}
+      {activeSection === 'pipelines' && <PipelineView persona="product" accentColor="violet-700" />}
+      {activeSection === 'history' && <ProdHistoryContent />}
     </UnifiedPersonaLayout>
   );
 }

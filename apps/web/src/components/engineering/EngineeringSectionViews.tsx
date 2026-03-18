@@ -557,7 +557,7 @@ export function EngineeringWorkflowsView() {
             <h3 className="text-sm font-bold text-slate-800 mb-3">{cluster}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {workflows.filter(w => w.cluster === cluster).map(wf => (
-                <button key={wf.id} onClick={() => setActiveSection('skills')}
+                <button key={wf.id} onClick={() => setActiveSection('run')}
                   className="flex flex-col gap-1.5 p-3 rounded-lg border border-slate-100 bg-slate-50 hover:border-slate-300 hover:bg-white text-left transition-colors">
                   <span className="text-lg">{wf.icon}</span>
                   <span className="text-xs font-semibold text-slate-800">{wf.name}</span>

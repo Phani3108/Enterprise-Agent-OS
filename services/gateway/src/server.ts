@@ -60,7 +60,10 @@ import { getAgentMemory, getAllAgentMemorySnapshots, recordAgentMemory, _exportD
 import { initOTel, shutdownOTel } from '../../../packages/observability/src/otel.js';
 import { attachWebSocket, broadcastEvent, getWSClientCount } from './ws.js';
 import http from 'node:http';
+import fs from 'node:fs';
+import nodePath from 'node:path';
 import { URL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 // Store selection: DATABASE_URL → Postgres, PERSIST=false → In-memory, default → File-backed
 const usePostgres = !!process.env.DATABASE_URL;
@@ -2474,6 +2477,52 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/orchestrator/goals' && method === 'GET') {
             sendJSON(res, 200, listGoalExecutions());
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Pipeline Graph Config API — serve graph.json for each persona
+        // -----------------------------------------------------------------------
+
+        const graphRouteMatch = path.match(/^\/api\/(\w+)\/pipeline\/graph$/);
+        const graphQueryPersona = path === '/api/pipeline/graph' && method === 'GET' ? url.searchParams.get('persona') : null;
+
+        if ((graphRouteMatch || graphQueryPersona) && method === 'GET') {
+            const persona = (graphRouteMatch?.[1] || graphQueryPersona || '').toLowerCase();
+            try {
+                // Resolve project root relative to this server file
+                const thisDir = typeof __dirname !== 'undefined' ? __dirname : nodePath.dirname(fileURLToPath(import.meta.url));
+                const projectRoot = nodePath.resolve(thisDir, '..', '..', '..');
+                const graphPath = nodePath.join(projectRoot, 'agents', persona, 'graph_runtime', 'graph.json');
+                if (fs.existsSync(graphPath)) {
+                    const raw = fs.readFileSync(graphPath, 'utf-8');
+                    const data = JSON.parse(raw);
+                    sendJSON(res, 200, data);
+                } else {
+                    // Generate a minimal placeholder graph for personas without a graph.json
+                    const agentsByPersona = getAgentsByPersona(persona as any);
+                    const nodes = agentsByPersona.map((a, i) => ({
+                        id: a.id,
+                        agent: a.id,
+                        depends_on: i > 0 ? [agentsByPersona[i - 1].id] : [],
+                        phase: 'default',
+                        parallel_group: null,
+                    }));
+                    sendJSON(res, 200, {
+                        graph_id: `${persona}.agent_graph`,
+                        name: `${persona.charAt(0).toUpperCase() + persona.slice(1)} Agent Collaboration Graph`,
+                        description: `Auto-generated graph for ${persona} agents`,
+                        nodes,
+                        phases: { default: { label: 'Execution', order: 1, description: 'Sequential agent execution' } },
+                        quality_gates: [],
+                        checkpoints: [],
+                        feedback_loops: [],
+                        shared_state: [],
+                    });
+                }
+            } catch (err) {
+                sendJSON(res, 500, { error: 'Failed to load graph config' });
+            }
             return;
         }
 

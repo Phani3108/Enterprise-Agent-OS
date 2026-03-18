@@ -9,10 +9,10 @@
 import { useProductStore, type ProductSection } from '../../store/persona-store';
 
 const SECTIONS: { id: ProductSection; label: string; icon: string }[] = [
-  { id: 'skills',   label: 'Skills',   icon: '⚡' },
-  { id: 'outputs',  label: 'Outputs',  icon: '📦' },
-  { id: 'programs', label: 'Programs', icon: '📋' },
-  { id: 'memory',   label: 'Memory',   icon: '🧠' },
+  { id: 'run',       label: 'Run',       icon: '▶️' },
+  { id: 'library',   label: 'Library',   icon: '📚' },
+  { id: 'pipelines', label: 'Pipelines', icon: '🔀' },
+  { id: 'history',   label: 'History',   icon: '📜' },
 ];
 
 export function ProductModuleLayout({ children }: { children: React.ReactNode }) {

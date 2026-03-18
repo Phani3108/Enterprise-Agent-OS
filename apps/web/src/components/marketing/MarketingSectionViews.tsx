@@ -37,7 +37,7 @@ export function MarketingCampaignsView() {
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-900">Campaign Orchestration</h2>
       <p className="text-sm text-slate-600">Webinars, product launches, ABM, paid media, nurture sequences.</p>
-      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('skills'); }} />
+      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('run'); }} />
     </div>
   );
 }
@@ -50,7 +50,7 @@ export function MarketingContentStudioView() {
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-900">Content Studio</h2>
       <p className="text-sm text-slate-600">Blogs, newsletters, case studies, executive rewrites.</p>
-      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('skills'); }} />
+      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('run'); }} />
     </div>
   );
 }
@@ -63,7 +63,7 @@ export function MarketingCreativeStudioView() {
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-900">Creative Studio</h2>
       <p className="text-sm text-slate-600">LinkedIn creatives, standees, banners, ebook covers.</p>
-      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('skills'); }} />
+      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('run'); }} />
     </div>
   );
 }
@@ -76,7 +76,7 @@ export function MarketingResearchHubView() {
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-900">Research Hub</h2>
       <p className="text-sm text-slate-600">Competitive intel, trends, messaging gaps, account research.</p>
-      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('skills'); }} />
+      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('run'); }} />
     </div>
   );
 }
@@ -89,7 +89,7 @@ export function MarketingAnalyticsHubView() {
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-900">Analytics Hub</h2>
       <p className="text-sm text-slate-600">Campaign performance, funnel diagnosis, channel comparison.</p>
-      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('skills'); }} />
+      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('run'); }} />
     </div>
   );
 }
@@ -102,7 +102,7 @@ export function MarketingEventsView() {
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-900">Event Marketing</h2>
       <p className="text-sm text-slate-600">Promo kits, booth messaging, account outreach, follow-ups.</p>
-      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('skills'); }} />
+      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('run'); }} />
     </div>
   );
 }
@@ -115,7 +115,7 @@ export function MarketingSalesEnableView() {
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-900">Sales Enablement</h2>
       <p className="text-sm text-slate-600">One-pagers, battlecards, meeting briefs.</p>
-      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('skills'); }} />
+      <WorkflowGrid workflows={workflows} onSelect={(wf) => { setSelectedWorkflowId(wf.id); setActiveSection('run'); }} />
     </div>
   );
 }

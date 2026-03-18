@@ -29,13 +29,10 @@ import { ConnectorDetailPage } from '../components/connections/ConnectorDetailPa
 import { ExecutionScreen } from '../components/ExecutionScreen';
 import { DiscussionForum } from '../components/DiscussionForum';
 import { BlogEditor } from '../components/BlogEditor';
-import { AICoursesHub } from '../components/AICoursesHub';
 import CSuiteCommandCenter from '../components/CSuiteCommandCenter';
 import VisionDashboard from '../components/VisionDashboard';
 import NotificationCenter from '../components/NotificationCenter';
 import InnovationLabs from '../components/InnovationLabs';
-import BudgetIntelligence from '../components/BudgetIntelligence';
-import AgentImprovement from '../components/AgentImprovement';
 
 function MainContent({ section }: { section: string }) {
   // Dynamic connector detail pages: connector-detail-{connectorId}
@@ -64,22 +61,10 @@ function MainContent({ section }: { section: string }) {
     case 'exec-product':            return <ExecutionScreen persona="product" workspace="ws-product" />;
     case 'exec-hr':                 return <ExecutionScreen persona="hr" workspace="ws-hr" />;
 
-    // Connections (all route to ConnectionsHub — the store tracks active category)
-    case 'conn-ai-models':          return <ConnectionsHub />;
-    case 'conn-storage':            return <ConnectionsHub />;
-    case 'conn-design':             return <ConnectionsHub />;
-    case 'conn-crm':                return <ConnectionsHub />;
-    case 'conn-devtools':           return <ConnectionsHub />;
-    case 'conn-cms':                return <ConnectionsHub />;
-    case 'conn-messaging':          return <ConnectionsHub />;
-    case 'conn-data':               return <ConnectionsHub />;
-
     // Platform (cross-persona)
     case 'platform-agents':         return <AgentsPanel />;
-    case 'platform-courses':        return <AICoursesHub />;
+    case 'platform-connections':    return <ConnectionsHub />;
     case 'platform-innovation':     return <InnovationLabs />;
-    case 'platform-budget':         return <BudgetIntelligence />;
-    case 'platform-improvement':    return <AgentImprovement />;
 
     // Operations
     case 'ops-integrations':        return <ToolsRegistry />;

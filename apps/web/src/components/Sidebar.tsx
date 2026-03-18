@@ -62,22 +62,9 @@ const NAV: NavGroup[] = [
     items: [{ id: 'home', label: 'Home', icon: 'home' }],
   },
   {
-    id: 'connections', label: 'Connections', collapsible: true,
-    items: [
-      { id: 'conn-ai-models', label: 'AI Models',        icon: 'connections' },
-      { id: 'conn-storage',   label: 'Storage & Docs',   icon: 'connections' },
-      { id: 'conn-design',    label: 'Design',           icon: 'connections' },
-      { id: 'conn-crm',       label: 'CRM & Ads',        icon: 'connections' },
-      { id: 'conn-devtools',  label: 'Dev Tools',        icon: 'connections' },
-      { id: 'conn-cms',       label: 'CMS & Publishing', icon: 'connections' },
-      { id: 'conn-messaging', label: 'Messaging',        icon: 'connections' },
-      { id: 'conn-data',      label: 'Data & Infra',     icon: 'connections' },
-    ],
-  },
-  {
     id: 'csuite', label: 'C-Suite', collapsible: true,
     items: [
-      { id: 'csuite-command',  label: 'Command Center', icon: 'command' },
+      { id: 'csuite-command',  label: 'Command Center',    icon: 'command' },
       { id: 'csuite-vision',   label: 'Vision & Strategy', icon: 'vision'  },
     ],
   },
@@ -93,21 +80,19 @@ const NAV: NavGroup[] = [
   {
     id: 'platform', label: 'Platform', collapsible: true,
     items: [
-      { id: 'platform-agents',      label: 'Agents',             icon: 'agents'      },
-      { id: 'platform-courses',     label: 'Courses',            icon: 'courses'     },
+      { id: 'platform-agents',      label: 'Agent Registry',     icon: 'agents'      },
+      { id: 'platform-connections',  label: 'Connections',        icon: 'connections' },
       { id: 'platform-innovation',  label: 'Innovation Labs',    icon: 'innovation'  },
-      { id: 'platform-budget',      label: 'Budget Intelligence',icon: 'budget'      },
-      { id: 'platform-improvement', label: 'Agent Improvement',  icon: 'improvement' },
     ],
   },
   {
     id: 'operations', label: 'Operations', collapsible: true,
     items: [
-      { id: 'ops-integrations',   label: 'Tool Registry',       icon: 'tools'         },
-      { id: 'ops-notifications',  label: 'Notifications',       icon: 'notifications' },
-      { id: 'ops-executions',     label: 'Executions',          icon: 'executions'    },
-      { id: 'ops-discussions',    label: 'Discussions',         icon: 'discussions'   },
-      { id: 'ops-blog',          label: 'Blog',                icon: 'blogs'         },
+      { id: 'ops-executions',     label: 'Executions',    icon: 'executions'    },
+      { id: 'ops-notifications',  label: 'Notifications', icon: 'notifications' },
+      { id: 'ops-integrations',   label: 'Tool Registry', icon: 'tools'         },
+      { id: 'ops-discussions',    label: 'Discussions',    icon: 'discussions'   },
+      { id: 'ops-blog',           label: 'Blog',          icon: 'blogs'         },
     ],
   },
   {
@@ -133,7 +118,7 @@ export function Sidebar() {
   const connectedCount = useConnectionsStore(s => s.getConnectedCount());
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(
-    () => new Set(['home-group', 'connections', 'workspaces'])
+    () => new Set(['home-group', 'csuite', 'workspaces'])
   );
 
   useEffect(() => {
@@ -173,7 +158,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-2 px-2">
         {NAV.map(group => {
           const isOpen = !group.collapsible || openGroups.has(group.id);
-          const isConnections = group.id === 'connections';
+          const isConnections = group.id === 'platform';
           return (
             <div key={group.id} className="mb-0.5">
               {group.label && !collapsed && (

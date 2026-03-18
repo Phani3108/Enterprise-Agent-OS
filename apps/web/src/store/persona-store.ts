@@ -12,11 +12,11 @@ import { create } from 'zustand';
 // Types
 // ---------------------------------------------------------------------------
 
-export type EngineeringSection = 'skills' | 'workflows' | 'prompts' | 'agents' | 'outputs' | 'programs' | 'memory';
+export type EngineeringSection = 'run' | 'library' | 'pipelines' | 'history';
 
-export type ProductSection = 'skills' | 'workflows' | 'prompts' | 'agents' | 'outputs' | 'programs' | 'memory';
+export type ProductSection = 'run' | 'library' | 'pipelines' | 'history';
 
-export type HRSection = 'skills' | 'workflows' | 'prompts' | 'agents' | 'outputs' | 'programs' | 'memory';
+export type HRSection = 'run' | 'library' | 'pipelines' | 'history';
 
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'approval_required';
 
@@ -72,7 +72,7 @@ interface EngineeringState {
 }
 
 export const useEngineeringStore = create<EngineeringState>((set) => ({
-  activeSection: 'skills',
+  activeSection: 'run',
   setActiveSection: (section) => set({ activeSection: section }),
 
   selectedSkillId: null,
@@ -128,7 +128,7 @@ interface ProductState {
 }
 
 export const useProductStore = create<ProductState>((set) => ({
-  activeSection: 'skills',
+  activeSection: 'run',
   setActiveSection: (section) => set({ activeSection: section }),
 
   selectedSkillId: null,
@@ -184,7 +184,7 @@ interface HRState {
 }
 
 export const useHRStore = create<HRState>((set) => ({
-  activeSection: 'skills',
+  activeSection: 'run',
   setActiveSection: (section) => set({ activeSection: section }),
 
   selectedSkillId: null,

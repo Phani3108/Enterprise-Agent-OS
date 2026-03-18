@@ -38,3 +38,12 @@ docker-volumes/
 *.log
 logs/
 .agentos-data/
+
+# Compiled TypeScript output in source dirs
+**/*.d.ts
+!**/next-env.d.ts
+**/*.d.ts.map
+**/*.js.map
+**/src/**/*.js
+!**/*.config.js
+!**/next.config.*

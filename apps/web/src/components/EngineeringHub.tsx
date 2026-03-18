@@ -12,13 +12,11 @@ import { useConnectionsStore } from '../store/connections-store';
 import { useEAOSStore } from '../store/eaos-store';
 import { ExecutionTimeline } from './marketing/ExecutionTimeline';
 import { PersonaWorkflowForm, type SkillInputField, type SkillToolRef } from './persona/PersonaWorkflowForm';
-import { EngineeringProgramManagement } from './engineering/EngineeringProgramManagement';
 import { UnifiedPersonaLayout } from './persona/UnifiedPersonaLayout';
 import { OutputsView, type OutputExecution } from './persona/OutputsView';
-import { MemoryView } from './persona/MemoryView';
-import { WorkflowBuilder } from './WorkflowBuilder';
 import { PromptLibrary } from './PromptLibraryDeep';
 import AgentsPanel from './AgentsPanel';
+import { PipelineView } from './PipelineView';
 import type { ExecutionStepEvent } from '../store/marketing-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -601,10 +599,10 @@ function EngSkillsContent() {
 }
 
 // ---------------------------------------------------------------------------
-// Outputs — unified execution history
+// History — unified execution history
 // ---------------------------------------------------------------------------
 
-function EngOutputsContent() {
+function EngHistoryContent() {
   const executions = useEngineeringStore((s) => s.executions);
   const mapped: OutputExecution[] = executions.map(e => ({
     id: e.id,
@@ -619,16 +617,35 @@ function EngOutputsContent() {
 }
 
 // ---------------------------------------------------------------------------
-// Memory — learning & suggestions
+// Library — Browse skills, prompts, agent definitions
 // ---------------------------------------------------------------------------
 
-function EngMemoryContent() {
-  const executions = useEngineeringStore((s) => s.executions);
-  return <MemoryView persona="Engineering" accentColor="slate-900" totalRuns={executions.length} />;
+function EngLibraryContent() {
+  const [tab, setTab] = useState<'skills' | 'prompts' | 'agents'>('skills');
+  return (
+    <div>
+      <div className="flex border-b border-slate-200 px-6 pt-4">
+        {(['skills', 'prompts', 'agents'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors capitalize ${
+              tab === t ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t === 'skills' ? '⚡ Skills' : t === 'prompts' ? '✨ Prompts' : '🤖 Agents'}
+          </button>
+        ))}
+      </div>
+      {tab === 'skills' && <EngineeringAgentBrowser onRunSkill={() => {}} />}
+      {tab === 'prompts' && <PromptLibrary personaFilter="engineering" />}
+      {tab === 'agents' && <AgentsPanel personaFilter="Engineering" />}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Main Hub — 4-section router with unified layout
+// Main Hub — 4-tab router with unified layout
 // ---------------------------------------------------------------------------
 
 export function EngineeringHub() {
@@ -642,13 +659,10 @@ export function EngineeringHub() {
       activeSection={activeSection}
       onSectionChange={(s) => setActiveSection(s as typeof activeSection)}
     >
-      {activeSection === 'skills' && <EngSkillsContent />}
-      {activeSection === 'workflows' && <WorkflowBuilder personaFilter="Engineering" />}
-      {activeSection === 'prompts' && <PromptLibrary personaFilter="engineering" />}
-      {activeSection === 'agents' && <AgentsPanel personaFilter="Engineering" />}
-      {activeSection === 'outputs' && <EngOutputsContent />}
-      {activeSection === 'programs' && <EngineeringProgramManagement />}
-      {activeSection === 'memory' && <EngMemoryContent />}
+      {activeSection === 'run' && <EngSkillsContent />}
+      {activeSection === 'library' && <EngLibraryContent />}
+      {activeSection === 'pipelines' && <PipelineView persona="engineering" accentColor="slate-900" />}
+      {activeSection === 'history' && <EngHistoryContent />}
     </UnifiedPersonaLayout>
   );
 }

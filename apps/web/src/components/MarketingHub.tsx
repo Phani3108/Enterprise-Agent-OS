@@ -8,12 +8,10 @@
 
 import { useState, useRef } from 'react';
 import { MarketingCommandCenter } from './marketing/MarketingCommandCenter';
-import { ProgramManagement } from './marketing/ProgramManagement';
 import { UnifiedPersonaLayout } from './persona/UnifiedPersonaLayout';
 import { OutputsView, type OutputExecution } from './persona/OutputsView';
-import { MemoryView } from './persona/MemoryView';
-import { WorkflowBuilder } from './WorkflowBuilder';
 import { PromptLibrary } from './PromptLibraryDeep';
+import { PipelineView } from './PipelineView';
 import AgentsPanel from './AgentsPanel';
 import { useMarketingStore } from '../store/marketing-store';
 import { useConnectionsStore } from '../store/connections-store';
@@ -368,8 +366,10 @@ function MarketingSkillsContent() {
 // ---------------------------------------------------------------------------
 // Outputs — unified execution history
 // ---------------------------------------------------------------------------
+// History — unified execution history
+// ---------------------------------------------------------------------------
 
-function MarketingOutputsContent() {
+function MarketingHistoryContent() {
   const executions = useMarketingStore((s) => s.executions);
   const mapped: OutputExecution[] = executions.map(e => ({
     id: e.id,
@@ -384,16 +384,36 @@ function MarketingOutputsContent() {
 }
 
 // ---------------------------------------------------------------------------
-// Memory — learning & suggestions
+// Library — Browse skills, prompts, agent definitions
 // ---------------------------------------------------------------------------
 
-function MarketingMemoryContent() {
-  const executions = useMarketingStore((s) => s.executions);
-  return <MemoryView persona="Marketing" accentColor="blue-600" totalRuns={executions.length} />;
+function MarketingLibraryContent() {
+  const [tab, setTab] = useState<'skills' | 'prompts' | 'agents'>('skills');
+  return (
+    <div>
+      {/* Sub-tabs */}
+      <div className="flex border-b border-slate-200 px-6 pt-4">
+        {(['skills', 'prompts', 'agents'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors capitalize ${
+              tab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t === 'skills' ? '⚡ Skills' : t === 'prompts' ? '✨ Prompts' : '🤖 Agents'}
+          </button>
+        ))}
+      </div>
+      {tab === 'skills' && <MarketingAgentBrowser />}
+      {tab === 'prompts' && <PromptLibrary personaFilter="marketing" />}
+      {tab === 'agents' && <AgentsPanel personaFilter="Marketing" />}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Main Hub — 4-section router with unified layout
+// Main Hub — 4-tab router with unified layout
 // ---------------------------------------------------------------------------
 
 export function MarketingHub() {
@@ -407,13 +427,10 @@ export function MarketingHub() {
       activeSection={activeSection}
       onSectionChange={(s) => setActiveSection(s as typeof activeSection)}
     >
-      {activeSection === 'skills' && <MarketingSkillsContent />}
-      {activeSection === 'workflows' && <WorkflowBuilder personaFilter="Marketing" />}
-      {activeSection === 'prompts' && <PromptLibrary personaFilter="marketing" />}
-      {activeSection === 'agents' && <AgentsPanel personaFilter="Marketing" />}
-      {activeSection === 'outputs' && <MarketingOutputsContent />}
-      {activeSection === 'programs' && <ProgramManagement />}
-      {activeSection === 'memory' && <MarketingMemoryContent />}
+      {activeSection === 'run' && <MarketingSkillsContent />}
+      {activeSection === 'library' && <MarketingLibraryContent />}
+      {activeSection === 'pipelines' && <PipelineView persona="marketing" accentColor="blue-600" />}
+      {activeSection === 'history' && <MarketingHistoryContent />}
     </UnifiedPersonaLayout>
   );
 }

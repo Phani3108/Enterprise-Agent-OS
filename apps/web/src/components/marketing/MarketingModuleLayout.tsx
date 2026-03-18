@@ -9,10 +9,10 @@
 import { useMarketingStore, type MarketingSection } from '../../store/marketing-store';
 
 const SECTIONS: { id: MarketingSection; label: string; icon: string; short?: string }[] = [
-  { id: 'skills',   label: 'Skills',   icon: '⚡', short: 'Skills' },
-  { id: 'outputs',  label: 'Outputs',  icon: '📦', short: 'Outputs' },
-  { id: 'programs', label: 'Programs', icon: '📋', short: 'Programs' },
-  { id: 'memory',   label: 'Memory',   icon: '🧠', short: 'Memory' },
+  { id: 'run',       label: 'Run',       icon: '▶️', short: 'Run' },
+  { id: 'library',   label: 'Library',   icon: '📚', short: 'Library' },
+  { id: 'pipelines', label: 'Pipelines', icon: '🔀', short: 'Pipelines' },
+  { id: 'history',   label: 'History',   icon: '📜', short: 'History' },
 ];
 
 export function MarketingModuleLayout({ children }: { children: React.ReactNode }) {

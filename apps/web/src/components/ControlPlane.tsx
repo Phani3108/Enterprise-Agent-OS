@@ -238,7 +238,7 @@ export default function ControlPlane() {
       {
         label: 'Memory (MB)',
         value: o?.gateway ? Math.round((o.gateway as Record<string, number>).memoryMb) : METRIC_TILES[3].value,
-        sub: `Gateway ${(o?.gateway as Record<string, string>)?.status ?? 'unknown'}`,
+        sub: `Gateway ${(o?.gateway as Record<string, unknown>)?.status ?? 'unknown'}`,
         icon: '⚡',
         color: 'text-purple-600',
         sparkline: METRIC_TILES[3].sparkline,

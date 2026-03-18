@@ -40,7 +40,6 @@ const GROUP_LABELS: Record<string, string> = {
   'platform-agents':'Platform',   'platform-courses':'Platform',
   'ops-integrations':'Operations','ops-executions':'Operations',
   'ops-discussions':'Operations',  'ops-blog':'Operations',
-  'platform-agents':'Platform',   'platform-courses':'Platform',
   'admin-governance':'Admin',     'admin-usage':'Admin',            'admin-settings':'Admin',
 };
 

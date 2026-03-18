@@ -14,10 +14,9 @@ import { ExecutionTimeline } from './marketing/ExecutionTimeline';
 import { PersonaWorkflowForm, type SkillInputField, type SkillToolRef } from './persona/PersonaWorkflowForm';
 import { UnifiedPersonaLayout } from './persona/UnifiedPersonaLayout';
 import { OutputsView, type OutputExecution } from './persona/OutputsView';
-import { MemoryView } from './persona/MemoryView';
-import { WorkflowBuilder } from './WorkflowBuilder';
 import { PromptLibrary } from './PromptLibraryDeep';
 import AgentsPanel from './AgentsPanel';
+import { PipelineView } from './PipelineView';
 import type { ExecutionStepEvent } from '../store/marketing-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -481,55 +480,54 @@ function HRSkillsContent() {
   );
 }
 
-function HROutputsContent() {
+// ---------------------------------------------------------------------------
+// History — unified execution history
+// ---------------------------------------------------------------------------
+
+function HRHistoryContent() {
   const executions = useHRStore((s) => s.executions);
-  const mapped: OutputExecution[] = executions.map((e) => ({
+  const mapped: OutputExecution[] = executions.map(e => ({
     id: e.id,
-    skillName: e.skillName,
+    skillName: e.skillName || '',
     status: e.status,
     startedAt: e.startedAt,
     completedAt: e.completedAt,
     outputs: e.outputs,
     steps: [],
   }));
-  return <OutputsView executions={mapped} accentColor="bg-pink-700" />;
+  return <OutputsView executions={mapped} accentColor="pink-700" />;
 }
 
-function HRMemoryContent() {
-  const executions = useHRStore((s) => s.executions);
-  return <MemoryView persona="HR & TA" accentColor="border-pink-300" totalRuns={executions.length} />;
-}
+// ---------------------------------------------------------------------------
+// Library — Browse skills, prompts, agent definitions
+// ---------------------------------------------------------------------------
 
-// Placeholder for Programs tab
-function HRProgramManagement() {
+function HRLibraryContent() {
+  const [tab, setTab] = useState<'skills' | 'prompts' | 'agents'>('skills');
   return (
-    <div className="p-6 max-w-4xl">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-800 mb-2">People Programs</h3>
-        <p className="text-xs text-slate-500 mb-4">Track hiring pipelines, onboarding cohorts, performance review cycles, and engagement initiatives.</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { label: 'Active Hiring Pipelines', value: '12', icon: '🎯', color: 'bg-pink-50 border-pink-200' },
-            { label: 'Onboarding In Progress', value: '8', icon: '🚀', color: 'bg-emerald-50 border-emerald-200' },
-            { label: 'Performance Reviews Due', value: '24', icon: '📊', color: 'bg-blue-50 border-blue-200' },
-            { label: 'Engagement Score', value: '82%', icon: '❤️', color: 'bg-amber-50 border-amber-200' },
-          ].map((stat) => (
-            <div key={stat.label} className={`rounded-lg border ${stat.color} p-4 flex items-center gap-3`}>
-              <span className="text-2xl">{stat.icon}</span>
-              <div>
-                <p className="text-lg font-bold text-slate-800">{stat.value}</p>
-                <p className="text-[11px] text-slate-500">{stat.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+    <div>
+      <div className="flex border-b border-slate-200 px-6 pt-4">
+        {(['skills', 'prompts', 'agents'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors capitalize ${
+              tab === t ? 'border-pink-700 text-pink-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t === 'skills' ? '⚡ Skills' : t === 'prompts' ? '✨ Prompts' : '🤖 Agents'}
+          </button>
+        ))}
       </div>
+      {tab === 'skills' && <HRAgentBrowser />}
+      {tab === 'prompts' && <PromptLibrary personaFilter="hr" />}
+      {tab === 'agents' && <AgentsPanel personaFilter="HR & TA" />}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main Hub Component
+// Main Hub — 4-tab router with unified layout
 // ---------------------------------------------------------------------------
 
 export function HRHub() {
@@ -543,13 +541,10 @@ export function HRHub() {
       activeSection={activeSection}
       onSectionChange={(s) => setActiveSection(s as typeof activeSection)}
     >
-      {activeSection === 'skills' && <HRSkillsContent />}
-      {activeSection === 'workflows' && <WorkflowBuilder personaFilter="HR" />}
-      {activeSection === 'prompts' && <PromptLibrary personaFilter="hr" />}
-      {activeSection === 'agents' && <AgentsPanel personaFilter="HR & TA" />}
-      {activeSection === 'outputs' && <HROutputsContent />}
-      {activeSection === 'programs' && <HRProgramManagement />}
-      {activeSection === 'memory' && <HRMemoryContent />}
+      {activeSection === 'run' && <HRSkillsContent />}
+      {activeSection === 'library' && <HRLibraryContent />}
+      {activeSection === 'pipelines' && <PipelineView persona="hr" accentColor="pink-700" />}
+      {activeSection === 'history' && <HRHistoryContent />}
     </UnifiedPersonaLayout>
   );
 }

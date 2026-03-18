@@ -12,7 +12,7 @@ import { persist } from 'zustand/middleware';
 // Types
 // ---------------------------------------------------------------------------
 
-export type MarketingSection = 'skills' | 'workflows' | 'prompts' | 'agents' | 'outputs' | 'programs' | 'memory';
+export type MarketingSection = 'run' | 'library' | 'pipelines' | 'history';
 
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'approval_required';
 
@@ -87,7 +87,7 @@ interface MarketingState {
 // ---------------------------------------------------------------------------
 
 export const useMarketingStore = create<MarketingState>()(persist((set) => ({
-  activeSection: 'skills',
+  activeSection: 'run',
   setActiveSection: (section) => set({ activeSection: section }),
 
   activeExecution: null,

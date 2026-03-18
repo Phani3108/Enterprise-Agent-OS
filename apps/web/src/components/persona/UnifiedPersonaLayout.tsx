@@ -1,6 +1,6 @@
 /**
- * UnifiedPersonaLayout — Shared 7-section sidebar for all personas.
- * Skills → Workflows → Prompts → Agents → Outputs → Programs → Memory.
+ * UnifiedPersonaLayout — Shared 4-tab sidebar for all workspace hubs.
+ * Run → Library → Pipelines → History.
  * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
@@ -13,13 +13,10 @@ import type { ReactNode } from 'react';
 // ---------------------------------------------------------------------------
 
 const SECTIONS = [
-  { id: 'skills',    label: 'Skills',    icon: '⚡' },
-  { id: 'workflows', label: 'Workflows', icon: '🔀' },
-  { id: 'prompts',   label: 'Prompts',   icon: '✨' },
-  { id: 'agents',    label: 'Agents',    icon: '🤖' },
-  { id: 'outputs',   label: 'Outputs',   icon: '📦' },
-  { id: 'programs',  label: 'Programs',  icon: '📋' },
-  { id: 'memory',    label: 'Memory',    icon: '🧠' },
+  { id: 'run',       label: 'Run',       icon: '⚡' },
+  { id: 'library',   label: 'Library',   icon: '📚' },
+  { id: 'pipelines', label: 'Pipelines', icon: '🔀' },
+  { id: 'history',   label: 'History',   icon: '📦' },
 ] as const;
 
 export type PersonaSection = (typeof SECTIONS)[number]['id'];
@@ -75,7 +72,7 @@ export function UnifiedPersonaLayout({
         <div className="px-4 mt-4">
           <div className="rounded-lg bg-slate-100 p-2.5">
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              <span className="font-bold text-slate-600">Flow:</span> Pick a skill → check tools → fill details → review prompt → execute → get output.
+              <span className="font-bold text-slate-600">Flow:</span> Run a skill → Browse library → View pipeline DAG → Check execution history.
             </p>
           </div>
         </div>
