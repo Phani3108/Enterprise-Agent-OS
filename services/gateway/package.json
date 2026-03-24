@@ -16,7 +16,13 @@
         "build": "tsc",
         "typecheck": "tsc --noEmit"
     },
-    "dependencies": {},
+    "dependencies": {
+        "@agentos/auth": "workspace:*",
+        "@agentos/db": "workspace:*",
+        "@agentos/observability": "workspace:*",
+        "@agentos/skills": "workspace:*",
+        "@agentos/workflow-engine": "workspace:*"
+    },
     "devDependencies": {
         "typescript": "^5.4.0",
         "tsx": "^4.7.0"

@@ -7,7 +7,22 @@
     "type": "module",
     "main": "dist/connection.js",
     "exports": {
-        ".": "./dist/connection.js"
+        ".": {
+            "types": "./dist/connection.d.ts",
+            "import": "./dist/connection.js"
+        },
+        "./persistent-store": {
+            "types": "./dist/persistent-store.d.ts",
+            "import": "./dist/persistent-store.js"
+        },
+        "./postgres-store": {
+            "types": "./dist/postgres-store.d.ts",
+            "import": "./dist/postgres-store.js"
+        },
+        "./unified-types": {
+            "types": "./dist/unified-types.d.ts",
+            "import": "./dist/unified-types.js"
+        }
     },
     "scripts": {
         "build": "tsc",

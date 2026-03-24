@@ -11,7 +11,8 @@
  * 7. Record usage
  */
 
-import type { SkillDefinition, CompiledSkill, SkillUsageRecord } from './registry.js';
+import type { SkillDefinition } from './schema.js';
+import type { CompiledSkill } from './compiler.js';
 
 // ---------------------------------------------------------------------------
 // Types

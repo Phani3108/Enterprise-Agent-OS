@@ -7,10 +7,13 @@
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
-import type { UnifiedSkillDef, UnifiedStepDef, UnifiedInputField } from '../../../packages/skills/src/schema.js';
+import type { UnifiedSkillDef, UnifiedStepDef, UnifiedInputField } from '@agentos/skills/schema';
 
 // Re-export for backward compat
-export type { UnifiedSkillDef as PersonaSkillDef, UnifiedStepDef as SkillStep, UnifiedInputField as SkillInputField };
+type PersonaSkillDef = UnifiedSkillDef;
+type SkillStep = UnifiedStepDef;
+type SkillInputField = UnifiedInputField;
+export type { PersonaSkillDef, SkillStep, SkillInputField };
 
 export const ENGINEERING_SKILLS: UnifiedSkillDef[] = [
   // ──────────────────────────────────────────────────────────────────────────

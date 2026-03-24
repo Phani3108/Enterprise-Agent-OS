@@ -57,7 +57,7 @@ import { getAgentMemory, getAllAgentMemorySnapshots, recordAgentMemory, _exportD
 // Workflow engine available as library but not exposed as API routes
 // (all execution flows use persona-api.ts sequential model)
 // import { executeWorkflow, getWorkflowExecution, resumeWorkflow } from './workflow-bridge.js';
-import { initOTel, shutdownOTel } from '../../../packages/observability/src/otel.js';
+import { initOTel, shutdownOTel } from '@agentos/observability';
 import { attachWebSocket, broadcastEvent, getWSClientCount } from './ws.js';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -88,7 +88,7 @@ const licenseStore = new LicenseStore();
 // Gateway-wide persistence — wire all ephemeral stores to backing store
 // ---------------------------------------------------------------------------
 registerStore('forum_threads',
-  () => forumStore._exportData().threads.map(t => ({ ...t, _type: 'thread' })).concat(forumStore._exportData().comments.map(c => ({ ...c, _type: 'comment' }))) as Record<string, unknown>[],
+  () => [...forumStore._exportData().threads.map(t => ({ ...t, _type: 'thread' as const })), ...forumStore._exportData().comments.map(c => ({ ...c, _type: 'comment' as const }))] as Record<string, unknown>[],
   (rows) => forumStore._importData({
     threads: rows.filter(r => r._type === 'thread') as any[],
     comments: rows.filter(r => r._type === 'comment') as any[],
@@ -2702,7 +2702,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const agentId = decodeURIComponent(path.split('/')[4]!);
             const body = await readBody(req);
             if (!body.kind || !body.content) { sendJSON(res, 400, { error: 'kind and content required' }); return; }
-            const entry = recordAgentMemory(agentId, body.kind, body.content, body.source ?? 'manual');
+            const entry = recordAgentMemory(agentId, body.kind as 'learning' | 'correction' | 'pattern' | 'preference', body.content as string, (body.source as string) ?? 'manual');
             sendJSON(res, 201, { entry });
             return;
         }

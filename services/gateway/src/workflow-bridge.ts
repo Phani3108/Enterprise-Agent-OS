@@ -5,8 +5,8 @@
  * for executing, resuming, and querying DAG-based workflows.
  */
 
-import { WorkflowEngine } from '../../../packages/workflow-engine/src/engine.js';
-import type { Workflow, WorkflowExecution } from '../../../packages/workflow-engine/src/engine.js';
+import { WorkflowEngine } from '@agentos/workflow-engine';
+import type { Workflow, WorkflowExecution } from '@agentos/workflow-engine';
 import { callLLM } from './llm-provider.js';
 
 // Singleton engine instance
@@ -14,11 +14,11 @@ const engine = new WorkflowEngine();
 
 // Register a default skill executor that uses the multi-LLM provider
 engine.registerExecutor('skill', {
-    async execute(step, variables) {
-        const config = step.config as { type: 'skill'; skillId: string; inputs: Record<string, unknown> };
+    async execute(config, variables) {
+        const skillConfig = config as { type: 'skill'; skillId: string; inputs: Record<string, unknown> };
         const response = await callLLM({
-            systemPrompt: `You are executing workflow step "${step.name}" for skill ${config.skillId}.`,
-            userPrompt: `Execute this step with inputs: ${JSON.stringify({ ...config.inputs, ...variables })}`,
+            systemPrompt: `You are executing workflow step for skill ${skillConfig.skillId}.`,
+            userPrompt: `Execute this step with inputs: ${JSON.stringify({ ...skillConfig.inputs, ...variables })}`,
             maxTokens: 4096,
         });
         return { output: response.content, status: 'complete' };
@@ -27,13 +27,14 @@ engine.registerExecutor('skill', {
 
 // No-op executors for other step types
 engine.registerExecutor('tool', {
-    async execute(step) {
-        return { output: `Tool ${step.name} executed`, status: 'complete' };
+    async execute(config) {
+        const toolConfig = config as { type: 'tool'; toolId: string };
+        return { output: `Tool ${toolConfig.toolId} executed`, status: 'complete' };
     },
 });
 
 engine.registerExecutor('approval', {
-    async execute(step) {
+    async execute(_config) {
         return { output: null, status: 'waiting_approval' };
     },
 });

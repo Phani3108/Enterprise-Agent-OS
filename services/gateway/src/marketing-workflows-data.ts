@@ -7,7 +7,7 @@
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
-import type { UnifiedSkillDef, UnifiedStepDef } from '../../../packages/skills/src/schema.js';
+import type { UnifiedSkillDef, UnifiedStepDef } from '@agentos/skills/schema';
 
 // Re-export for backward compat
 export type WorkflowStepRef = UnifiedStepDef;

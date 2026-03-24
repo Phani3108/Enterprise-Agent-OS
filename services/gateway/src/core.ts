@@ -211,7 +211,7 @@ export async function executeQuery(
     let sources: Array<{ title: string; type: string; url: string }> = [];
     let confidence = intent.confidence;
     let groundingScore = 0;
-    let model = LLM_MODEL;
+    let model = process.env.LLM_MODEL ?? 'claude-sonnet-4-20250514';
     let tokensUsed = 0;
     let costUsd = 0;
 

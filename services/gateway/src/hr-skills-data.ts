@@ -6,7 +6,7 @@
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
-import type { UnifiedSkillDef } from '../../../packages/skills/src/schema.js';
+import type { UnifiedSkillDef } from '@agentos/skills/schema';
 
 export const HR_SKILLS: UnifiedSkillDef[] = [
   // ──────────────────────────────────────────────────────────────────────────

@@ -514,6 +514,22 @@ importers:
         version: 1.6.1(@types/node@20.19.37)
 
   services/gateway:
+    dependencies:
+      '@agentos/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@agentos/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@agentos/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@agentos/skills':
+        specifier: workspace:*
+        version: link:../../packages/skills
+      '@agentos/workflow-engine':
+        specifier: workspace:*
+        version: link:../../packages/workflow-engine
     devDependencies:
       tsx:
         specifier: ^4.7.0

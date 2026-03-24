@@ -260,7 +260,7 @@ async function callLLMUnified(
 // ---------------------------------------------------------------------------
 
 function generateSandboxOutput(
-  persona: 'engineering' | 'product',
+  persona: 'engineering' | 'product' | 'hr' | 'marketing',
   skillName: string,
   step: SkillStep,
   inputs: Record<string, unknown>,

@@ -5,17 +5,12 @@
 // Registry
 export { SkillRegistry } from './registry.js';
 export type {
-    SkillDefinition, SkillGuardrails, SkillVersion,
-    SkillUsageRecord, CompiledSkill,
+    SkillSearchQuery, SkillCatalogEntry, ExecutionReport, RegistryResult,
 } from './registry.js';
 
-// Compiler
-export { SkillCompiler, SkillCompilationError } from './compiler.js';
+// Schema
+export type { SkillDefinition } from './schema.js';
 
-// Executor
-export { SkillExecutor } from './executor.js';
-export type {
-    SkillExecutionRequest, SkillExecutionResult,
-    SkillExecutionContext, SkillMemoryProvider,
-    SkillModelProvider, SkillOutputValidator,
-} from './executor.js';
+// Compiler
+export { SkillCompiler } from './compiler.js';
+export type { CompiledSkill } from './compiler.js';

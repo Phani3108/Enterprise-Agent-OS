@@ -15,7 +15,6 @@ export type {
 // Bus
 export type { EventBus } from './bus.js';
 export { InMemoryEventBus } from './bus.js';
-export { NatsEventBus } from './nats-bus.js';
 
 // Contracts
 export type {

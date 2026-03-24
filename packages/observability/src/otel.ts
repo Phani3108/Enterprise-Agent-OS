@@ -52,13 +52,16 @@ export async function initOTel(serviceName: string): Promise<void> {
             url: `${endpoint}/v1/metrics`,
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const metricReader: any = new PeriodicExportingMetricReader({
+                exporter: metricExporter,
+                exportIntervalMillis: 15_000,
+            });
+
         const nodeSdk = new NodeSDK({
             resource,
             traceExporter,
-            metricReader: new PeriodicExportingMetricReader({
-                exporter: metricExporter,
-                exportIntervalMillis: 15_000,
-            }),
+            metricReader,
         });
 
         nodeSdk.start();

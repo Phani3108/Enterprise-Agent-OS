@@ -6,7 +6,7 @@
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
-import type { Store } from '../../../packages/db/src/connection.js';
+import type { Store } from './db.js';
 import { eventBus } from './event-bus.js';
 
 // ---------------------------------------------------------------------------
