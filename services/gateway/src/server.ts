@@ -25,6 +25,8 @@ import { createUTCPPacket, storePacket, getPacket, getRecentPackets, getPacketsB
 import { createA2AMessage, respondToA2A, createMeeting, createSwarm, storeMessage, getMessage, getRecentMessages, getMessagesByTask, getPendingMessages, storeMeeting, getMeeting, getRecentMeetings, getActiveMeetings, storeSwarm, getSwarm, getActiveSwarms, getRecentSwarms, type A2AAgent } from './a2a-protocol.js';
 import { createMCPAction, executeMCPAction, getToolCapabilities, getToolCapability, getExecutionLog as getMCPLog, getToolStats } from './mcp-executor.js';
 import { createAgentRuntime, createEphemeralAgent, addReACTIteration, completeExecution, assembleFullPrompt, storeRuntime, getRuntime, getActiveRuntimes, getAllRuntimes, terminateRuntime } from './agent-runtime.js';
+import { startMeetingFromTemplate, delegateTask, escalateTask, getDelegationChain, getDelegationChainsByTask, getAgentRoster, getMeetingTemplates, type MeetingTemplate } from './agent-meetings.js';
+import { launchSwarm, advanceSwarmPhase, dissolveSwarm, getSwarmTemplates, getSwarmTemplate, getSwarmStats } from './swarm-manager.js';
 import { simulateSkillExecution } from './simulation.js';
 import { toolRegistry } from './tool-registry.js';
 import { scheduler } from './scheduler.js';
@@ -1031,11 +1033,115 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
 
-        if (path.startsWith('/api/a2a/swarms/') && method === 'GET') {
+        if (path.startsWith('/api/a2a/swarms/') && !path.includes('/advance') && !path.includes('/dissolve') && method === 'GET') {
             const swarmId = path.replace('/api/a2a/swarms/', '');
             const swarm = getSwarm(swarmId);
             if (!swarm) { sendJSON(res, 404, { error: 'Swarm not found' }); return; }
             sendJSON(res, 200, { swarm });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Agent Meetings — Orchestrated meetings with templates
+        // -----------------------------------------------------------------
+
+        if (path === '/api/meetings/templates' && method === 'GET') {
+            sendJSON(res, 200, { templates: getMeetingTemplates() });
+            return;
+        }
+
+        if (path === '/api/meetings/start' && method === 'POST') {
+            const body = await readBody(req);
+            const meeting = startMeetingFromTemplate(
+                (body.type as string) ?? 'standup',
+                body.persona as string | undefined,
+                body.agenda as string[] | undefined,
+                body.task_ref as string | undefined,
+            );
+            sendJSON(res, 201, { meeting });
+            return;
+        }
+
+        if (path === '/api/meetings/roster' && method === 'GET') {
+            const persona = url.searchParams.get('persona') ?? undefined;
+            sendJSON(res, 200, { agents: getAgentRoster(persona) });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Swarm Manager — Cross-functional agent pods
+        // -----------------------------------------------------------------
+
+        if (path === '/api/swarms/templates' && method === 'GET') {
+            sendJSON(res, 200, { templates: getSwarmTemplates() });
+            return;
+        }
+
+        if (path === '/api/swarms/launch' && method === 'POST') {
+            const body = await readBody(req);
+            const result = launchSwarm({
+                templateType: (body.type as string ?? 'custom') as any,
+                mission: body.mission as string ?? '',
+                userId,
+            });
+            sendJSON(res, 201, result);
+            return;
+        }
+
+        if (path.startsWith('/api/swarms/') && path.endsWith('/advance') && method === 'POST') {
+            const swarmId = path.replace('/api/swarms/', '').replace('/advance', '');
+            const swarm = advanceSwarmPhase(swarmId);
+            if (!swarm) { sendJSON(res, 404, { error: 'Swarm not found' }); return; }
+            sendJSON(res, 200, { swarm });
+            return;
+        }
+
+        if (path.startsWith('/api/swarms/') && path.endsWith('/dissolve') && method === 'POST') {
+            const swarmId = path.replace('/api/swarms/', '').replace('/dissolve', '');
+            const swarm = dissolveSwarm(swarmId);
+            if (!swarm) { sendJSON(res, 404, { error: 'Swarm not found' }); return; }
+            sendJSON(res, 200, { swarm });
+            return;
+        }
+
+        if (path === '/api/swarms/stats' && method === 'GET') {
+            sendJSON(res, 200, getSwarmStats());
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Delegation Chains — Colonel → Captain → Corporal routing
+        // -----------------------------------------------------------------
+
+        if (path === '/api/delegation/delegate' && method === 'POST') {
+            const body = await readBody(req);
+            const chain = delegateTask(
+                body.task_ref as string ?? '',
+                body.task as string ?? '',
+                body.persona as string ?? 'engineering',
+            );
+            sendJSON(res, 201, { chain });
+            return;
+        }
+
+        if (path === '/api/delegation/escalate' && method === 'POST') {
+            const body = await readBody(req);
+            const chain = escalateTask(body.chain_id as string ?? '', body.reason as string ?? '');
+            if (!chain) { sendJSON(res, 404, { error: 'Chain not found' }); return; }
+            sendJSON(res, 200, { chain });
+            return;
+        }
+
+        if (path.startsWith('/api/delegation/') && method === 'GET') {
+            const chainId = path.replace('/api/delegation/', '');
+            if (chainId.startsWith('task/')) {
+                const taskRef = chainId.replace('task/', '');
+                sendJSON(res, 200, { chains: getDelegationChainsByTask(taskRef) });
+            } else {
+                const chain = getDelegationChain(chainId);
+                if (!chain) { sendJSON(res, 404, { error: 'Chain not found' }); return; }
+                sendJSON(res, 200, { chain });
+            }
             return;
         }
 
