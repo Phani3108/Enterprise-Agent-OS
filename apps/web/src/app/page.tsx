@@ -107,7 +107,17 @@ export default function Home() {
   // On mount: read URL path and navigate to the matching section, default to landing
   useEffect(() => {
     const path = window.location.pathname.replace(/^\/+/, '');
-    setActiveSection(path || 'landing');
+    const knownSections = [
+      'home','dashboard','landing',
+      'csuite-command','csuite-vision',
+      'ws-marketing','ws-engineering','ws-product','ws-hr','ws-ta','ws-program',
+      'exec-marketing','exec-engineering','exec-product','exec-hr','exec-ta','exec-program',
+      'platform-agents','platform-connections','platform-meetings','platform-swarms',
+      'platform-protocols','platform-innovation',
+      'ops-executions','ops-notifications','ops-integrations','ops-discussions','ops-blog',
+      'admin-governance','admin-usage','admin-settings',
+    ];
+    setActiveSection(knownSections.includes(path) ? path : 'landing');
     assertProvenance();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

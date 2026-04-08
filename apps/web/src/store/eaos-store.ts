@@ -135,8 +135,9 @@ export const useEAOSStore = create<EAOSState>()(persist((set) => ({
     setRightPanelMode: (mode) => set({ rightPanelMode: mode }),
 }), {
   name: 'eaos-store',
+  version: 2, // Bump to invalidate stale localStorage from pre-Phase-6 sessions
   partialize: (state) => ({
-    activeSection: state.activeSection,
+    // activeSection NOT persisted — navigation always starts fresh from URL
     sidebarCollapsed: state.sidebarCollapsed,
     notifications: state.notifications,
     activeSessions: state.activeSessions,
