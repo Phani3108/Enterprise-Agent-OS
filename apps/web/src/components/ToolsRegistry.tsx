@@ -6,6 +6,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useEAOSStore } from '../store/eaos-store';
+import { useConnectionsStore, CONNECTOR_CATALOG } from '../store/connections-store';
 import type { ToolRegistryEntry } from '../lib/api';
 
 // ---------------------------------------------------------------------------
@@ -85,14 +87,31 @@ export function ToolsRegistry() {
 
     const formatLatency = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
 
+    const setActiveSection = useEAOSStore(s => s.setActiveSection);
+    const connectedCount = useConnectionsStore(s => s.getConnectedCount());
+
     return (
         <div className="bg-slate-50 min-h-full p-6 space-y-6 max-w-[1400px] mx-auto" data-tour="tools-registry">
+            {/* Connections Hub Banner */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-blue-50 border border-blue-200">
+                <div className="flex items-center gap-3">
+                    <span className="text-xl">🔌</span>
+                    <div>
+                        <p className="text-sm font-semibold text-blue-900">Manage all connections in the Connections Hub</p>
+                        <p className="text-xs text-blue-700">{connectedCount} of {CONNECTOR_CATALOG.length} connectors configured — set up auth, test connections, manage credentials</p>
+                    </div>
+                </div>
+                <button onClick={() => setActiveSection('platform-connections')} className="btn btn-primary btn-sm">
+                    Open Connections Hub
+                </button>
+            </div>
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-bold text-slate-900">Tools Registry</h2>
                     <p className="text-sm text-slate-600 mt-1">
-                        Internal tools and connectors used by AgentOS workers and skills at runtime.
+                        Runtime tool status and MCP execution metrics.
                     </p>
                 </div>
                 <div className="flex gap-2">

@@ -10,6 +10,8 @@
 
 import type { PersonaSkillDef, SkillStep } from './engineering-skills-data.js';
 import { callLLM as callLLMProvider, type LLMProviderId, type LLMResponse } from './llm-provider.js';
+import { routedLLMCall, recordCostEntry, detectComplexity } from './model-router.js';
+import { createUTCPPacket, storePacket, updatePacketStatus } from './utcp-protocol.js';
 import { getAgentIdentity, getAgentsByPersona, validateHandoff, type AgentIdentity } from './agent-registry.js';
 import { buildAgentMemoryContext, extractAndStoreMemory, initAgentMemory } from './agent-memory.js';
 import type { Store } from './db.js';
@@ -244,15 +246,37 @@ async function callLLMUnified(
   systemPrompt: string,
   userPrompt: string,
   provider?: LLMProviderId,
-  modelId?: string
+  modelId?: string,
+  persona?: string,
+  skillComplexity?: string
 ): Promise<LLMResponse> {
-  return callLLMProvider({
+  // Use model router for intelligent routing when no specific model requested
+  if (!modelId) {
+    const result = await routedLLMCall(systemPrompt, userPrompt, {
+      preferredProvider: provider,
+      maxCostPerExec: 1.0,
+      maxCostPerHour: parseFloat(process.env.COST_BUDGET_HOURLY_USD ?? '50'),
+      cheapRetries: true,
+    }, skillComplexity);
+
+    // Record cost for metering
+    recordCostEntry(result.provider, result.model, persona ?? 'unknown', result.cost, result.inputTokens, result.outputTokens);
+
+    return result;
+  }
+
+  // Direct provider call when model is explicitly specified
+  const response = await callLLMProvider({
     provider,
     model: modelId,
     systemPrompt,
     userPrompt,
     maxTokens: 4096,
   });
+
+  recordCostEntry(response.provider, response.model, persona ?? 'unknown', response.cost, response.inputTokens, response.outputTokens);
+
+  return response;
 }
 
 // ---------------------------------------------------------------------------
@@ -1213,7 +1237,7 @@ async function executeSingleStep(
       output = generateSandboxOutput(persona, skillName, skillStep as any, inputs, previousOutputs);
     } else {
       const { system, user } = buildStepPrompt(persona, skillName, skillStep as any, inputs, previousOutputs, customPrompt, agentIdentity);
-      llmResponse = await callLLMUnified(system, user, provider, modelId);
+      llmResponse = await callLLMUnified(system, user, provider, modelId, persona, skill?.complexity);
       output = llmResponse.content;
     }
 

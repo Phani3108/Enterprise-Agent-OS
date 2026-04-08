@@ -36,6 +36,7 @@ import NotificationCenter from '../components/NotificationCenter';
 import InnovationLabs from '../components/InnovationLabs';
 import AgentMeetingView from '../components/AgentMeetingView';
 import SwarmView from '../components/SwarmView';
+import ProtocolMonitor from '../components/ProtocolMonitor';
 
 function MainContent({ section }: { section: string }) {
   // Dynamic connector detail pages: connector-detail-{connectorId}
@@ -75,6 +76,7 @@ function MainContent({ section }: { section: string }) {
     case 'platform-innovation':     return <InnovationLabs />;
     case 'platform-meetings':       return <AgentMeetingView />;
     case 'platform-swarms':         return <SwarmView />;
+    case 'platform-protocols':      return <ProtocolMonitor />;
 
     // Operations
     case 'ops-integrations':        return <ToolsRegistry />;
