@@ -1,8 +1,56 @@
 # Enterprise Agent OS
 
-> **AI-Powered Enterprise Operating System** — 53 autonomous agents across 5 regiments, orchestrated through a military-grade hierarchy with C-Suite command, budget intelligence, innovation labs, and continuous improvement pipelines.
+> **The AI Operating System for Enterprise Teams** — 53 autonomous agents across 5 regiments, orchestrating work across 6 persona workspaces through UTCP, A2A, and MCP protocols with full governance, observability, and cost control.
 
-Enterprise Agent OS (EAOS) is a full-stack platform that coordinates AI agents and external tools to automate complex enterprise workflows. It doesn't replace tools — it **orchestrates them through intelligent agents**.
+Enterprise Agent OS is a **control plane for enterprise work** — agents think, decide, and orchestrate; tools execute; workflows structure. It doesn't replace your tools — it **orchestrates them through intelligent multi-agent collaboration**.
+
+## Core Architecture
+
+```
+User Intent → Intent Engine → Workflow Selection → Agent Orchestration (A2A)
+    → Tool Execution (MCP) → Output Aggregation → Human Approval → Memory
+```
+
+**Think of it as:** "Kubernetes for Enterprise Workflows" — Agents=Pods, Skills=Containers, Workflows=Deployments, MCP=Service Mesh, UTCP=API Schema.
+
+## Platform Capabilities
+
+| Layer | What It Does |
+|-------|-------------|
+| **6 Persona Workspaces** | Engineering, Marketing, Product, HR, Talent Acquisition, Program Management |
+| **60+ Skills** | Pre-built execution primitives across all personas |
+| **53 Agents** | 5 regiments (Titan, Olympian, Asgard, Explorer, Vanguard) with Colonel→Captain→Corporal hierarchy |
+| **UTCP Protocol** | Universal Task Context Protocol — standardized packets for every execution |
+| **A2A Protocol** | Agent-to-Agent messaging — delegate, query, review, approve, critique, escalate |
+| **MCP Tool Layer** | 8 tool adapters (Jira, GitHub, Slack, Confluence, HubSpot, GA4, LinkedIn, Figma) |
+| **Agent Meetings** | Standup, sprint planning, retrospective, design review, war room, debrief |
+| **Cross-Functional Swarms** | Product launch, incident response, hiring sprint, campaign pods |
+| **5 Flagship Workflows** | PRD→Jira, Incident RCA, Campaign Launch, Hiring Pipeline, Launch Readiness |
+| **Model Router** | Intelligent routing (Haiku→Sonnet→Opus) with cost metering and circuit breakers |
+| **Workflow Canvas** | Visual DAG builder for cross-functional workflow templates |
+| **Protocol Monitor** | Real-time UTCP, A2A, MCP, Runtime, and Cost dashboards |
+| **Governance** | RBAC, audit trails, compliance checks, cost attribution, budget controls |
+
+## Quick Start
+
+```bash
+# Clone and install
+git clone https://github.com/Phani3108/Enterprise-Agent-OS.git
+cd Enterprise-Agent-OS
+pnpm install
+
+# Set up environment
+cp deploy/.env.example .env
+# Edit .env — add at minimum: ANTHROPIC_API_KEY
+
+# Run gateway + frontend
+pnpm dev
+
+# Or use Docker
+docker compose -f deploy/docker-compose.production.yml up -d
+```
+
+**Frontend:** http://localhost:3010 | **Gateway:** http://localhost:3000 | **Grafana:** http://localhost:3001
 
 ---
 

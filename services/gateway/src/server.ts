@@ -27,6 +27,7 @@ import { createMCPAction, executeMCPAction, getToolCapabilities, getToolCapabili
 import { createAgentRuntime, createEphemeralAgent, addReACTIteration, completeExecution, assembleFullPrompt, storeRuntime, getRuntime, getActiveRuntimes, getAllRuntimes, terminateRuntime } from './agent-runtime.js';
 import { startMeetingFromTemplate, delegateTask, escalateTask, getDelegationChain, getDelegationChainsByTask, getAgentRoster, getMeetingTemplates, type MeetingTemplate } from './agent-meetings.js';
 import { launchSwarm, advanceSwarmPhase, dissolveSwarm, getSwarmTemplates, getSwarmTemplate, getSwarmStats } from './swarm-manager.js';
+import { getFlagshipWorkflows, getFlagshipWorkflow, getFlagshipWorkflowsByPersona } from './flagship-workflows.js';
 import { routeModel, routedLLMCall, getCostMeter, getCostHistory, recordCostEntry, checkRateLimit, isCircuitOpen, getAllCircuitStates, type ModelRouterConfig } from './model-router.js';
 import { getHealth, getReadiness, getMetrics, recordRequest } from './health.js';
 import { simulateSkillExecution } from './simulation.js';
@@ -1188,6 +1189,25 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 if (!chain) { sendJSON(res, 404, { error: 'Chain not found' }); return; }
                 sendJSON(res, 200, { chain });
             }
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Flagship Workflows — Cross-functional templates
+        // -----------------------------------------------------------------
+
+        if (path === '/api/workflows/flagship' && method === 'GET') {
+            const persona = url.searchParams.get('persona');
+            const workflows = persona ? getFlagshipWorkflowsByPersona(persona) : getFlagshipWorkflows();
+            sendJSON(res, 200, { workflows });
+            return;
+        }
+
+        if (path.startsWith('/api/workflows/flagship/') && method === 'GET') {
+            const idOrSlug = path.replace('/api/workflows/flagship/', '');
+            const wf = getFlagshipWorkflow(idOrSlug);
+            if (!wf) { sendJSON(res, 404, { error: 'Workflow not found' }); return; }
+            sendJSON(res, 200, { workflow: wf });
             return;
         }
 

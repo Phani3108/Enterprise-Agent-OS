@@ -11,7 +11,7 @@ import { useEAOSStore } from '../store/eaos-store';
 import { getStats, getPlatformMetrics } from '../lib/api';
 import { useConnectionsStore, CONNECTOR_CATALOG } from '../store/connections-store';
 import { useMarketingStore } from '../store/marketing-store';
-import { useEngineeringStore, useProductStore } from '../store/persona-store';
+import { useEngineeringStore, useProductStore, useHRStore, useTAStore, useProgramStore } from '../store/persona-store';
 import PlatformArchitecture from './PlatformArchitecture';
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -100,25 +100,53 @@ export default function HomeCommandCenter() {
   const totalConnectors  = CONNECTOR_CATALOG.length;
   const coveragePct      = Math.round((connectedCount / totalConnectors) * 100);
 
-  // Pull real execution data from stores
+  // Pull real execution data from ALL persona stores
   const mktExecutions = useMarketingStore(s => s.executions);
   const mktApprovals  = useMarketingStore(s => s.approvalQueue);
   const engExecutions = useEngineeringStore(s => s.executions);
   const prodExecutions = useProductStore(s => s.executions);
+  const hrExecutions = useHRStore(s => s.executions);
+  const taExecutions = useTAStore(s => s.executions);
+  const pgmExecutions = useProgramStore(s => s.executions);
+
+  const mapExec = (e: any, persona: string, ws: string): RecentExec => ({
+    id: e.id, skill: e.workflowName || e.skillName || 'Unknown', persona, workspace: ws,
+    status: (e.status === 'completed' ? 'completed' : e.status === 'failed' ? 'failed' : 'running') as RecentExec['status'],
+    duration: e.completedAt ? `${((new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / 1000).toFixed(1)}s` : '—',
+    time: e.startedAt,
+  });
 
   const allExecutions: RecentExec[] = [
-    ...mktExecutions.map(e => ({ id: e.id, skill: e.workflowName, persona: 'Marketing', workspace: 'ws-marketing', status: (e.status === 'completed' ? 'completed' : e.status === 'failed' ? 'failed' : 'running') as RecentExec['status'], duration: e.completedAt ? `${((new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / 1000).toFixed(1)}s` : '—', time: e.startedAt })),
-    ...engExecutions.map(e => ({ id: e.id, skill: e.skillName, persona: 'Engineering', workspace: 'ws-engineering', status: (e.status === 'completed' ? 'completed' : e.status === 'failed' ? 'failed' : 'running') as RecentExec['status'], duration: e.completedAt ? `${((new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / 1000).toFixed(1)}s` : '—', time: e.startedAt })),
-    ...prodExecutions.map(e => ({ id: e.id, skill: e.skillName, persona: 'Product', workspace: 'ws-product', status: (e.status === 'completed' ? 'completed' : e.status === 'failed' ? 'failed' : 'running') as RecentExec['status'], duration: e.completedAt ? `${((new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / 1000).toFixed(1)}s` : '—', time: e.startedAt })),
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
+    ...mktExecutions.map((e: any) => mapExec(e, 'Marketing', 'ws-marketing')),
+    ...engExecutions.map((e: any) => mapExec(e, 'Engineering', 'ws-engineering')),
+    ...prodExecutions.map((e: any) => mapExec(e, 'Product', 'ws-product')),
+    ...hrExecutions.map((e: any) => mapExec(e, 'HR', 'ws-hr')),
+    ...taExecutions.map((e: any) => mapExec(e, 'Talent Acq', 'ws-ta')),
+    ...pgmExecutions.map((e: any) => mapExec(e, 'Program', 'ws-program')),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 10);
 
-  const pendingApprovals = mktApprovals.filter(a => a.status === 'pending');
+  const pendingApprovals = mktApprovals.filter((a: any) => a.status === 'pending');
 
-  // Workspace stats from real data
+  // Swarm and meeting data from gateway
+  const [swarmStats, setSwarmStats] = useState({ active: 0, completed: 0 });
+  const [meetingCount, setMeetingCount] = useState(0);
+  const [costData, setCostData] = useState({ totalCost: 0, hourlyCost: 0, budget: 50 });
+
+  useEffect(() => {
+    const gw = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+    fetch(`${gw}/api/swarms/stats`).then(r => r.json()).then(d => setSwarmStats({ active: d.active || 0, completed: d.completed || 0 })).catch(() => {});
+    fetch(`${gw}/api/a2a/meetings?limit=5`).then(r => r.json()).then(d => setMeetingCount(d.total || 0)).catch(() => {});
+    fetch(`${gw}/api/costs/meter`).then(r => r.json()).then(d => setCostData({ totalCost: d.totalCostUsd || 0, hourlyCost: d.hourlyCostUsd || 0, budget: d.hourlyBudgetUsd || 50 })).catch(() => {});
+  }, []);
+
+  // Workspace stats from real data (all 6 personas)
   const workspaceStats: Record<string, { label: string; value: string }[]> = {
-    'ws-marketing':   [{ label: 'Executions', value: String(mktExecutions.length) }, { label: 'Pending approval', value: String(pendingApprovals.length) }],
-    'ws-engineering': [{ label: 'Executions', value: String(engExecutions.length) }, { label: 'Skills available', value: '10' }],
-    'ws-product':     [{ label: 'Executions', value: String(prodExecutions.length) }, { label: 'Skills available', value: '8' }],
+    'ws-marketing':   [{ label: 'Executions', value: String(mktExecutions.length) }, { label: 'Pending', value: String(pendingApprovals.length) }],
+    'ws-engineering': [{ label: 'Executions', value: String(engExecutions.length) }, { label: 'Skills', value: '10' }],
+    'ws-product':     [{ label: 'Executions', value: String(prodExecutions.length) }, { label: 'Skills', value: '8' }],
+    'ws-hr':          [{ label: 'Executions', value: String(hrExecutions.length) }, { label: 'Skills', value: '8' }],
+    'ws-ta':          [{ label: 'Executions', value: String(taExecutions.length) }, { label: 'Skills', value: '8' }],
+    'ws-program':     [{ label: 'Executions', value: String(pgmExecutions.length) }, { label: 'Skills', value: '8' }],
   };
 
   const [greeting, setGreeting] = useState('Good morning');
