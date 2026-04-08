@@ -1253,7 +1253,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const rt = body.ephemeral
                 ? createEphemeralAgent({
                     persona: body.persona ?? 'engineering',
-                    function_domain: body.function_domain ?? body.persona ?? 'engineering',
+                    function_domain: (body.function_domain as string) ?? (body.persona as string) ?? 'engineering',
                     task_ref: body.task_ref ?? '',
                     tool_access: body.tool_access ?? [],
                     stage_prompt: body.stage_prompt ?? '',
@@ -1267,7 +1267,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                     persona: body.persona ?? 'engineering',
                     type: 'persistent',
                     tool_access: body.tool_access ?? [],
-                    function_domain: body.function_domain ?? body.persona ?? 'engineering',
+                    function_domain: (body.function_domain as string) ?? (body.persona as string) ?? 'engineering',
                   });
             storeRuntime(rt);
             eventBus.emit('runtime.agent.created', { runtimeId: rt.runtime_id, type: rt.type });
@@ -1312,7 +1312,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/memory/decisions' && method === 'POST') {
             const body = await readBody(req);
-            const trace = memoryGraph.recordDecision(body);
+            const trace = memoryGraph.recordDecision(body as any);
             sendJSON(res, 201, { decision: trace });
             return;
         }
@@ -1326,7 +1326,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/memory/corrections' && method === 'POST') {
             const body = await readBody(req);
-            const corr = memoryGraph.recordCorrection(body);
+            const corr = memoryGraph.recordCorrection(body as any);
             sendJSON(res, 201, { correction: corr });
             return;
         }
@@ -2958,7 +2958,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
             const skill = getTASkill(skillId);
             if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
-            const execution = createPersonaExecution('ta' as any, skillId, skill.name, skill.steps as any, inputs || {}, userId, simulate ?? false);
+            const execution = createPersonaExecution('ta' as any, skill as any, inputs || {}, userId, simulate ?? false);
             sendJSON(res, 201, { execution });
             return;
         }
@@ -3001,7 +3001,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
             const skill = getProgramSkill(skillId);
             if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
-            const execution = createPersonaExecution('program' as any, skillId, skill.name, skill.steps as any, inputs || {}, userId, simulate ?? false);
+            const execution = createPersonaExecution('program' as any, skill as any, inputs || {}, userId, simulate ?? false);
             sendJSON(res, 201, { execution });
             return;
         }
