@@ -21,6 +21,10 @@ import { PersonaSystem, LicenseStore } from './persona-system.js';
 import { skillMarketplace } from './skill-marketplace.js';
 import { intentEngine } from './intent-engine.js';
 import { memoryGraph } from './memory-graph.js';
+import { createUTCPPacket, storePacket, getPacket, getRecentPackets, getPacketsByStatus, updatePacketStatus, type UTCPPacket, type TaskStatus } from './utcp-protocol.js';
+import { createA2AMessage, respondToA2A, createMeeting, createSwarm, storeMessage, getMessage, getRecentMessages, getMessagesByTask, getPendingMessages, storeMeeting, getMeeting, getRecentMeetings, getActiveMeetings, storeSwarm, getSwarm, getActiveSwarms, getRecentSwarms, type A2AAgent } from './a2a-protocol.js';
+import { createMCPAction, executeMCPAction, getToolCapabilities, getToolCapability, getExecutionLog as getMCPLog, getToolStats } from './mcp-executor.js';
+import { createAgentRuntime, createEphemeralAgent, addReACTIteration, completeExecution, assembleFullPrompt, storeRuntime, getRuntime, getActiveRuntimes, getAllRuntimes, terminateRuntime } from './agent-runtime.js';
 import { simulateSkillExecution } from './simulation.js';
 import { toolRegistry } from './tool-registry.js';
 import { scheduler } from './scheduler.js';
@@ -861,11 +865,352 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
 
+        if (path === '/api/intent/route-enhanced' && method === 'POST') {
+            const body = await readBody(req);
+            const query = (body.query as string) ?? '';
+            const result = intentEngine.routeEnhanced(query, userId, 'operator');
+            if (!result) { sendJSON(res, 200, { found: false }); return; }
+            storePacket(result.utcpPacket);
+            sendJSON(res, 200, { found: true, result });
+            return;
+        }
+
+        if (path === '/api/intent/detect-functions' && method === 'POST') {
+            const body = await readBody(req);
+            const functions = intentEngine.detectFunctions((body.query as string) ?? '');
+            sendJSON(res, 200, { functions });
+            return;
+        }
+
         if (path === '/api/intent/suggestions' && method === 'GET') {
             const personaId = url.searchParams.get('persona') ?? undefined;
             const limit = parseInt(url.searchParams.get('limit') ?? '8', 10);
             const suggestions = intentEngine.getSuggestions(personaId, limit);
             sendJSON(res, 200, { suggestions });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // UTCP — Universal Task Context Protocol
+        // -----------------------------------------------------------------
+
+        if (path === '/api/utcp/tasks' && method === 'GET') {
+            const status = url.searchParams.get('status') as TaskStatus | null;
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            const tasks = status ? getPacketsByStatus(status) : getRecentPackets(limit);
+            sendJSON(res, 200, { tasks, total: tasks.length });
+            return;
+        }
+
+        if (path === '/api/utcp/tasks' && method === 'POST') {
+            const body = await readBody(req);
+            const packet = createUTCPPacket({
+                function: (body.function as string ?? 'engineering') as any,
+                stage: body.stage as string ?? 'intake',
+                intent: (body.intent as string) ?? (body.query as string) ?? '',
+                initiator: { user_id: userId, role: 'operator' },
+                objectives: (body.objectives as string[]) ?? [(body.intent as string) ?? ''],
+                tool_scopes: (body.tool_scopes as string[]) ?? [],
+                urgency: (body.urgency as string ?? 'medium') as any,
+            });
+            storePacket(packet);
+            eventBus.emit('utcp.task.created', { taskId: packet.task_id, function: packet.function });
+            sendJSON(res, 201, { task: packet });
+            return;
+        }
+
+        if (path.startsWith('/api/utcp/tasks/') && method === 'GET') {
+            const taskId = path.replace('/api/utcp/tasks/', '');
+            const packet = getPacket(taskId);
+            if (!packet) { sendJSON(res, 404, { error: 'Task not found' }); return; }
+            sendJSON(res, 200, { task: packet });
+            return;
+        }
+
+        if (path.startsWith('/api/utcp/tasks/') && path.endsWith('/status') && method === 'PUT') {
+            const taskId = path.replace('/api/utcp/tasks/', '').replace('/status', '');
+            const packet = getPacket(taskId);
+            if (!packet) { sendJSON(res, 404, { error: 'Task not found' }); return; }
+            const body = await readBody(req);
+            const updated = updatePacketStatus(packet, body.status as TaskStatus, body.extra as Partial<UTCPPacket> | undefined);
+            storePacket(updated);
+            eventBus.emit('utcp.task.updated', { taskId, status: body.status });
+            sendJSON(res, 200, { task: updated });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // A2A — Agent-to-Agent Protocol
+        // -----------------------------------------------------------------
+
+        if (path === '/api/a2a/messages' && method === 'GET') {
+            const taskRef = url.searchParams.get('taskRef') ?? undefined;
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            const msgs = taskRef ? getMessagesByTask(taskRef) : getRecentMessages(limit);
+            sendJSON(res, 200, { messages: msgs, total: msgs.length });
+            return;
+        }
+
+        if (path === '/api/a2a/messages' && method === 'POST') {
+            const body = await readBody(req);
+            const msg = createA2AMessage({
+                type: body.type ?? 'delegate',
+                sender: body.sender as A2AAgent,
+                receiver: body.receiver as A2AAgent,
+                task_ref: body.task_ref ?? '',
+                payload: body.payload ?? { objective: '', context: {} },
+                priority: body.priority ?? 'medium',
+            });
+            storeMessage(msg);
+            eventBus.emit('a2a.message.sent', { messageId: msg.message_id, type: msg.type });
+            sendJSON(res, 201, { message: msg });
+            return;
+        }
+
+        if (path.startsWith('/api/a2a/messages/') && path.endsWith('/respond') && method === 'POST') {
+            const msgId = path.replace('/api/a2a/messages/', '').replace('/respond', '');
+            const msg = getMessage(msgId);
+            if (!msg) { sendJSON(res, 404, { error: 'Message not found' }); return; }
+            const body = await readBody(req);
+            const updated = respondToA2A(msg, body.response);
+            storeMessage(updated);
+            eventBus.emit('a2a.message.responded', { messageId: msgId });
+            sendJSON(res, 200, { message: updated });
+            return;
+        }
+
+        if (path === '/api/a2a/meetings' && method === 'GET') {
+            const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
+            const active = url.searchParams.get('active') === 'true';
+            const meetings = active ? getActiveMeetings() : getRecentMeetings(limit);
+            sendJSON(res, 200, { meetings, total: meetings.length });
+            return;
+        }
+
+        if (path === '/api/a2a/meetings' && method === 'POST') {
+            const body = await readBody(req);
+            const meeting = createMeeting({
+                type: body.type ?? 'standup',
+                title: body.title ?? 'Agent Meeting',
+                participants: body.participants ?? [],
+                agenda: body.agenda ?? [],
+                task_ref: body.task_ref,
+            });
+            storeMeeting(meeting);
+            eventBus.emit('a2a.meeting.created', { meetingId: meeting.meeting_id, type: meeting.type });
+            sendJSON(res, 201, { meeting });
+            return;
+        }
+
+        if (path.startsWith('/api/a2a/meetings/') && method === 'GET') {
+            const meetingId = path.replace('/api/a2a/meetings/', '');
+            const meeting = getMeeting(meetingId);
+            if (!meeting) { sendJSON(res, 404, { error: 'Meeting not found' }); return; }
+            sendJSON(res, 200, { meeting });
+            return;
+        }
+
+        if (path === '/api/a2a/swarms' && method === 'GET') {
+            const active = url.searchParams.get('active') === 'true';
+            const swarms = active ? getActiveSwarms() : getRecentSwarms();
+            sendJSON(res, 200, { swarms, total: swarms.length });
+            return;
+        }
+
+        if (path === '/api/a2a/swarms' && method === 'POST') {
+            const body = await readBody(req);
+            const swarm = createSwarm({
+                mission: body.mission ?? '',
+                task_ref: body.task_ref ?? '',
+                type: body.type ?? 'custom',
+                agents: body.agents ?? [],
+            });
+            storeSwarm(swarm);
+            eventBus.emit('a2a.swarm.created', { swarmId: swarm.swarm_id, type: swarm.type });
+            sendJSON(res, 201, { swarm });
+            return;
+        }
+
+        if (path.startsWith('/api/a2a/swarms/') && method === 'GET') {
+            const swarmId = path.replace('/api/a2a/swarms/', '');
+            const swarm = getSwarm(swarmId);
+            if (!swarm) { sendJSON(res, 404, { error: 'Swarm not found' }); return; }
+            sendJSON(res, 200, { swarm });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // MCP — Tool Execution Layer
+        // -----------------------------------------------------------------
+
+        if (path === '/api/mcp/tools' && method === 'GET') {
+            sendJSON(res, 200, { tools: getToolCapabilities() });
+            return;
+        }
+
+        if (path.startsWith('/api/mcp/tools/') && method === 'GET') {
+            const toolId = path.replace('/api/mcp/tools/', '');
+            const cap = getToolCapability(toolId);
+            if (!cap) { sendJSON(res, 404, { error: 'Tool not found' }); return; }
+            sendJSON(res, 200, { tool: cap });
+            return;
+        }
+
+        if (path === '/api/mcp/execute' && method === 'POST') {
+            const body = await readBody(req);
+            const action = createMCPAction({
+                tool_id: body.tool_id ?? '',
+                action: body.action ?? 'read',
+                resource_type: body.resource_type ?? '',
+                params: body.params ?? {},
+                task_ref: body.task_ref ?? '',
+                agent_id: body.agent_id ?? '',
+                step_index: body.step_index ?? 0,
+                credentials_ref: body.credentials_ref,
+            });
+            const result = await executeMCPAction(action);
+            eventBus.emit('mcp.tool.executed', { toolId: body.tool_id, action: body.action, status: result.status });
+            sendJSON(res, 200, { result });
+            return;
+        }
+
+        if (path === '/api/mcp/log' && method === 'GET') {
+            const limit = parseInt(url.searchParams.get('limit') ?? '100', 10);
+            sendJSON(res, 200, { log: getMCPLog(limit) });
+            return;
+        }
+
+        if (path === '/api/mcp/stats' && method === 'GET') {
+            sendJSON(res, 200, { stats: getToolStats() });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Agent Runtime
+        // -----------------------------------------------------------------
+
+        if (path === '/api/runtime/agents' && method === 'GET') {
+            const active = url.searchParams.get('active') === 'true';
+            const agents = active ? getActiveRuntimes() : getAllRuntimes();
+            sendJSON(res, 200, { agents, total: agents.length });
+            return;
+        }
+
+        if (path === '/api/runtime/agents' && method === 'POST') {
+            const body = await readBody(req);
+            const rt = body.ephemeral
+                ? createEphemeralAgent({
+                    persona: body.persona ?? 'engineering',
+                    function_domain: body.function_domain ?? body.persona ?? 'engineering',
+                    task_ref: body.task_ref ?? '',
+                    tool_access: body.tool_access ?? [],
+                    stage_prompt: body.stage_prompt ?? '',
+                    task_prompt: body.task_prompt ?? '',
+                  })
+                : createAgentRuntime({
+                    agent_id: body.agent_id ?? `agent-${Date.now()}`,
+                    agent_name: body.agent_name ?? 'Agent',
+                    regiment: body.regiment ?? 'General',
+                    rank: body.rank ?? 'Specialist',
+                    persona: body.persona ?? 'engineering',
+                    type: 'persistent',
+                    tool_access: body.tool_access ?? [],
+                    function_domain: body.function_domain ?? body.persona ?? 'engineering',
+                  });
+            storeRuntime(rt);
+            eventBus.emit('runtime.agent.created', { runtimeId: rt.runtime_id, type: rt.type });
+            sendJSON(res, 201, { agent: rt });
+            return;
+        }
+
+        if (path.startsWith('/api/runtime/agents/') && !path.includes('/prompt') && !path.includes('/terminate') && method === 'GET') {
+            const rtId = path.replace('/api/runtime/agents/', '');
+            const rt = getRuntime(rtId);
+            if (!rt) { sendJSON(res, 404, { error: 'Runtime not found' }); return; }
+            sendJSON(res, 200, { agent: rt });
+            return;
+        }
+
+        if (path.startsWith('/api/runtime/agents/') && path.endsWith('/prompt') && method === 'GET') {
+            const rtId = path.replace('/api/runtime/agents/', '').replace('/prompt', '');
+            const rt = getRuntime(rtId);
+            if (!rt) { sendJSON(res, 404, { error: 'Runtime not found' }); return; }
+            sendJSON(res, 200, { prompt: assembleFullPrompt(rt) });
+            return;
+        }
+
+        if (path.startsWith('/api/runtime/agents/') && path.endsWith('/terminate') && method === 'POST') {
+            const rtId = path.replace('/api/runtime/agents/', '').replace('/terminate', '');
+            terminateRuntime(rtId);
+            sendJSON(res, 200, { terminated: true });
+            return;
+        }
+
+        // -----------------------------------------------------------------
+        // Memory Graph — Enhanced (Decision Traces, Agent Performance, etc.)
+        // -----------------------------------------------------------------
+
+        if (path === '/api/memory/decisions' && method === 'GET') {
+            const taskRef = url.searchParams.get('taskRef') ?? undefined;
+            const agentId = url.searchParams.get('agentId') ?? undefined;
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            sendJSON(res, 200, { decisions: memoryGraph.getDecisionTraces(taskRef, agentId, limit) });
+            return;
+        }
+
+        if (path === '/api/memory/decisions' && method === 'POST') {
+            const body = await readBody(req);
+            const trace = memoryGraph.recordDecision(body);
+            sendJSON(res, 201, { decision: trace });
+            return;
+        }
+
+        if (path === '/api/memory/corrections' && method === 'GET') {
+            const agentId = url.searchParams.get('agentId') ?? undefined;
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            sendJSON(res, 200, { corrections: memoryGraph.getCorrections(agentId, undefined, limit) });
+            return;
+        }
+
+        if (path === '/api/memory/corrections' && method === 'POST') {
+            const body = await readBody(req);
+            const corr = memoryGraph.recordCorrection(body);
+            sendJSON(res, 201, { correction: corr });
+            return;
+        }
+
+        if (path === '/api/memory/agent-performance' && method === 'GET') {
+            const agentId = url.searchParams.get('agentId');
+            if (agentId) {
+                const perf = memoryGraph.getAgentPerformance(agentId);
+                sendJSON(res, 200, { performance: perf || null });
+            } else {
+                sendJSON(res, 200, { performance: memoryGraph.getAllAgentPerformance() });
+            }
+            return;
+        }
+
+        if (path === '/api/memory/agent-performance/top' && method === 'GET') {
+            const metric = (url.searchParams.get('metric') ?? 'volume') as 'success' | 'speed' | 'cost' | 'volume';
+            const limit = parseInt(url.searchParams.get('limit') ?? '10', 10);
+            sendJSON(res, 200, { agents: memoryGraph.getTopAgents(metric, limit) });
+            return;
+        }
+
+        if (path === '/api/memory/graph' && method === 'GET') {
+            const entityId = url.searchParams.get('entityId');
+            if (entityId) {
+                const depth = parseInt(url.searchParams.get('depth') ?? '1', 10);
+                sendJSON(res, 200, memoryGraph.getEntityGraph(entityId, depth));
+            } else {
+                sendJSON(res, 200, memoryGraph.getFullGraph());
+            }
+            return;
+        }
+
+        if (path === '/api/memory/prompts' && method === 'GET') {
+            const promptId = url.searchParams.get('promptId') ?? undefined;
+            sendJSON(res, 200, { prompts: memoryGraph.getPromptPerformance(promptId) });
             return;
         }
 

@@ -7,6 +7,7 @@
 
 import { skillMarketplace } from './skill-marketplace.js';
 import type { MarketplaceSkill } from './skill-marketplace.js';
+import { createUTCPPacket, type UTCPPacket, type FunctionDomain } from './utcp-protocol.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,6 +24,66 @@ export interface IntentResult {
   entities: Record<string, string>;
   suggestedAlternatives: MarketplaceSkill[];
 }
+
+/** Enhanced intent result with UTCP + cross-functional detection */
+export interface EnhancedIntentResult extends IntentResult {
+  /** Whether this intent spans multiple functions (triggers swarm) */
+  isCrossFunctional: boolean;
+  /** All functions involved (for cross-functional missions) */
+  involvedFunctions: { personaId: string; name: string; confidence: number }[];
+  /** Suggested agents from the agent registry */
+  suggestedAgents: string[];
+  /** Required MCP tools for execution */
+  requiredTools: string[];
+  /** Pre-built UTCP packet for execution */
+  utcpPacket: UTCPPacket;
+  /** Classification category */
+  category: 'search' | 'generation' | 'analysis' | 'action' | 'orchestration' | 'decision_support';
+}
+
+// Cross-functional mission patterns
+const CROSS_FUNCTIONAL_PATTERNS: Array<{
+  keywords: string[];
+  functions: string[];
+  swarmType: string;
+}> = [
+  { keywords: ['launch', 'ship', 'release', 'go live', 'ga release'], functions: ['product', 'engineering', 'marketing', 'program'], swarmType: 'product_launch' },
+  { keywords: ['incident', 'outage', 'p1', 'sev1', 'production down'], functions: ['engineering', 'program', 'support'], swarmType: 'incident_response' },
+  { keywords: ['hire', 'open headcount', 'new role', 'hiring sprint'], functions: ['hr', 'engineering', 'program'], swarmType: 'hiring_sprint' },
+  { keywords: ['campaign end-to-end', 'full campaign', 'integrated campaign'], functions: ['marketing', 'product', 'program'], swarmType: 'campaign_pod' },
+  { keywords: ['quarterly planning', 'okr', 'strategic plan', 'annual plan'], functions: ['product', 'engineering', 'marketing', 'program', 'finance'], swarmType: 'planning_pod' },
+  { keywords: ['onboard', 'new employee', 'new hire orientation'], functions: ['hr', 'engineering', 'corpit'], swarmType: 'onboarding_pod' },
+];
+
+// Intent category patterns
+const CATEGORY_PATTERNS: Array<{ category: EnhancedIntentResult['category']; keywords: string[] }> = [
+  { category: 'search', keywords: ['find', 'search', 'look up', 'where', 'who', 'what is'] },
+  { category: 'generation', keywords: ['create', 'write', 'generate', 'draft', 'build', 'make'] },
+  { category: 'analysis', keywords: ['analyze', 'compare', 'benchmark', 'audit', 'diagnose', 'review'] },
+  { category: 'action', keywords: ['deploy', 'send', 'publish', 'schedule', 'assign', 'close'] },
+  { category: 'orchestration', keywords: ['launch', 'coordinate', 'manage', 'run', 'execute'] },
+  { category: 'decision_support', keywords: ['prioritize', 'recommend', 'decide', 'evaluate', 'rank'] },
+];
+
+// Agent suggestions per persona
+const PERSONA_AGENTS: Record<string, string[]> = {
+  engineering: ['Colonel Atlas', 'Captain Prometheus', 'Corporal Mercury', 'Sergeant Vulcan'],
+  marketing: ['Colonel Hyperion', 'Captain Iris', 'Corporal Nova', 'Captain Apollo'],
+  product: ['Colonel Themis', 'Captain Odin', 'Corporal Freya'],
+  hr: ['Colonel Rhea', 'Captain Demeter', 'Corporal Hestia'],
+  program: ['Program Orchestrator', 'Status Synthesis Agent', 'RAID Agent'],
+  ta: ['JD Agent', 'Candidate Match Agent', 'Interview Coordinator'],
+};
+
+// Tool requirements per persona
+const PERSONA_TOOLS: Record<string, string[]> = {
+  engineering: ['github', 'jira', 'confluence', 'sentry', 'datadog'],
+  marketing: ['hubspot', 'google_analytics', 'linkedin_ads', 'canva', 'figma'],
+  product: ['jira', 'confluence', 'google_analytics'],
+  hr: ['slack', 'google_drive', 'confluence'],
+  program: ['jira', 'confluence', 'slack'],
+  ta: ['linkedin_ads', 'slack', 'google_drive'],
+};
 
 // ---------------------------------------------------------------------------
 // Intent → Persona → Skill mapping (keyword-based, extensible to LLM)
@@ -218,6 +279,104 @@ export class IntentEngine {
       ? skillMarketplace.getAllSkills(personaId)
       : skillMarketplace.getAllSkills();
     return skills.slice(0, limit);
+  }
+
+  // -------------------------------------------------------------------------
+  // Enhanced routing with UTCP, cross-functional detection, agents, tools
+  // -------------------------------------------------------------------------
+
+  /**
+   * Full intent routing with UTCP packet, cross-functional detection, agent/tool mapping.
+   */
+  routeEnhanced(query: string, userId = 'user-default', userRole = 'operator'): EnhancedIntentResult | null {
+    const base = this.routeIntent(query);
+    if (!base) return null;
+
+    const lower = query.toLowerCase().trim();
+
+    // Detect cross-functional missions
+    const crossMatch = CROSS_FUNCTIONAL_PATTERNS.find(p => p.keywords.some(k => lower.includes(k)));
+    const isCrossFunctional = !!crossMatch;
+    const involvedFunctions = isCrossFunctional && crossMatch
+      ? crossMatch.functions.map(f => ({
+          personaId: f,
+          name: PERSONA_INFO[f]?.name || f,
+          confidence: lower.includes(f) ? 0.9 : 0.7,
+        }))
+      : [{ personaId: base.personaId, name: base.personaName, confidence: base.confidence }];
+
+    // Classify intent category
+    let category: EnhancedIntentResult['category'] = 'generation';
+    let bestCatScore = 0;
+    for (const cp of CATEGORY_PATTERNS) {
+      const score = cp.keywords.filter(k => lower.includes(k)).length;
+      if (score > bestCatScore) { bestCatScore = score; category = cp.category; }
+    }
+
+    // Map agents
+    const suggestedAgents: string[] = [];
+    for (const func of involvedFunctions) {
+      const agents = PERSONA_AGENTS[func.personaId] || [];
+      suggestedAgents.push(...agents.slice(0, 2));
+    }
+
+    // Map tools
+    const requiredTools: string[] = [];
+    const seen = new Set<string>();
+    for (const func of involvedFunctions) {
+      for (const tool of (PERSONA_TOOLS[func.personaId] || [])) {
+        if (!seen.has(tool)) { requiredTools.push(tool); seen.add(tool); }
+      }
+    }
+
+    // Build UTCP packet
+    const functionDomain = (isCrossFunctional ? 'cross-functional' : base.personaId) as FunctionDomain;
+    const utcpPacket = createUTCPPacket({
+      function: functionDomain,
+      stage: 'intake',
+      intent: query,
+      initiator: { user_id: userId, role: userRole },
+      objectives: [query],
+      tool_scopes: requiredTools,
+      urgency: lower.includes('urgent') || lower.includes('asap') || lower.includes('p1') ? 'critical'
+        : lower.includes('important') ? 'high'
+        : 'medium',
+    });
+
+    return {
+      ...base,
+      isCrossFunctional,
+      involvedFunctions,
+      suggestedAgents,
+      requiredTools,
+      utcpPacket,
+      category,
+    };
+  }
+
+  /**
+   * Detect all personas relevant to a query (for swarm formation).
+   */
+  detectFunctions(query: string): { personaId: string; name: string; score: number }[] {
+    const lower = query.toLowerCase().trim();
+    const results: { personaId: string; name: string; score: number }[] = [];
+
+    for (const pattern of INTENT_PATTERNS) {
+      let score = 0;
+      for (const kw of pattern.keywords) {
+        if (lower.includes(kw)) score += 2;
+      }
+      if (score > 0) {
+        const persona = PERSONA_INFO[pattern.personaId];
+        results.push({
+          personaId: pattern.personaId,
+          name: persona?.name || pattern.personaId,
+          score,
+        });
+      }
+    }
+
+    return results.sort((a, b) => b.score - a.score);
   }
 }
 
