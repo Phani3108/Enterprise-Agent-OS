@@ -1,0 +1,179 @@
+# ============================================================
+# AgentOS — Production Docker Compose
+# Enterprise Agent Operating System
+#
+# Usage:
+#   cp deploy/.env.example deploy/.env  # Fill in secrets
+#   docker compose -f deploy/docker-compose.production.yml up -d
+#
+# @author Phani Marupaka
+# @copyright © 2026 Phani Marupaka. All rights reserved.
+# ============================================================
+
+version: '3.9'
+
+services:
+  # ── Gateway API Server ────────────────────────────────────────
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.gateway
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # LLM Providers
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Database
+      - DATABASE_URL=postgresql://eaos:${POSTGRES_PASSWORD}@postgres:5432/eaos
+      - PERSIST=true
+      # Auth
+      - JWT_SECRET=${JWT_SECRET:-agentos-production-secret-change-me}
+      # Cost Controls
+      - COST_BUDGET_HOURLY_USD=${COST_BUDGET_HOURLY_USD:-50}
+      # Connectors
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - JIRA_BASE_URL=${JIRA_BASE_URL:-}
+      - JIRA_EMAIL=${JIRA_EMAIL:-}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      # Observability
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # ── Web Frontend ──────────────────────────────────────────────
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    ports:
+      - '3010:3010'
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # ── PostgreSQL + pgvector ─────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=eaos
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-eaos-dev-password}
+      - POSTGRES_DB=eaos
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U eaos']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Redis ─────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ── NATS (Event Bus) ──────────────────────────────────────────
+  nats:
+    image: nats:2-alpine
+    ports:
+      - '4222:4222'
+      - '8222:8222'  # Monitoring
+    command: ['--jetstream', '--store_dir=/data']
+    volumes:
+      - natsdata:/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # ── OpenTelemetry Collector ───────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    ports:
+      - '4317:4317'   # gRPC
+      - '4318:4318'   # HTTP
+      - '8889:8889'   # Prometheus metrics
+    volumes:
+      - ./otel-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ── Grafana (Dashboards) ──────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.0.0
+    ports:
+      - '3001:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  pgdata:
+  redisdata:
+  natsdata:
+  grafanadata:
+
+networks:
+  default:
+    name: agentos

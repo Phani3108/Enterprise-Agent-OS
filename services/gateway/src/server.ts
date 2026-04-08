@@ -27,6 +27,8 @@ import { createMCPAction, executeMCPAction, getToolCapabilities, getToolCapabili
 import { createAgentRuntime, createEphemeralAgent, addReACTIteration, completeExecution, assembleFullPrompt, storeRuntime, getRuntime, getActiveRuntimes, getAllRuntimes, terminateRuntime } from './agent-runtime.js';
 import { startMeetingFromTemplate, delegateTask, escalateTask, getDelegationChain, getDelegationChainsByTask, getAgentRoster, getMeetingTemplates, type MeetingTemplate } from './agent-meetings.js';
 import { launchSwarm, advanceSwarmPhase, dissolveSwarm, getSwarmTemplates, getSwarmTemplate, getSwarmStats } from './swarm-manager.js';
+import { routeModel, routedLLMCall, getCostMeter, getCostHistory, recordCostEntry, checkRateLimit, isCircuitOpen, getAllCircuitStates, type ModelRouterConfig } from './model-router.js';
+import { getHealth, getReadiness, getMetrics, recordRequest } from './health.js';
 import { simulateSkillExecution } from './simulation.js';
 import { toolRegistry } from './tool-registry.js';
 import { scheduler } from './scheduler.js';
@@ -232,20 +234,60 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     const authUser = auth.user;
 
     try {
-        // Health — with real system status
+        // Health — liveness check
         if (path === '/api/health' && method === 'GET') {
             sendJSON(res, 200, {
-                status: 'healthy',
-                version: '0.2.0',
+                ...getHealth(),
                 services: { gateway: 'up', skills: 'up', workers: 'up', orchestrator: 'up' },
-                uptime: process.uptime(),
-                timestamp: new Date().toISOString(),
                 llmConfigured: !!process.env.ANTHROPIC_API_KEY,
                 githubConfigured: !!process.env.GITHUB_TOKEN,
                 persistenceEnabled: usePostgres ? 'postgres' : useInMemory ? 'in-memory' : 'file-backed',
                 wsClients: getWSClientCount(),
                 storeStats: 'stats' in store ? (store as PersistentStore).stats() : { tables: 0, totalRows: 0 },
             });
+            return;
+        }
+
+        // Readiness — deep checks (DB, LLM, memory, circuits)
+        if (path === '/api/ready' && method === 'GET') {
+            const readiness = await getReadiness();
+            sendJSON(res, readiness.status === 'ready' ? 200 : 503, readiness);
+            return;
+        }
+
+        // Platform metrics (Prometheus-compatible)
+        if (path === '/api/metrics' && method === 'GET') {
+            sendJSON(res, 200, getMetrics());
+            return;
+        }
+
+        // Model router — route a task to optimal model
+        if (path === '/api/router/route' && method === 'POST') {
+            const body = await readBody(req);
+            const decision = routeModel(
+                body.prompt as string ?? '',
+                body.config as Partial<ModelRouterConfig>,
+                body.skill_complexity as string | undefined,
+            );
+            sendJSON(res, 200, { decision });
+            return;
+        }
+
+        // Cost metering
+        if (path === '/api/costs/meter' && method === 'GET') {
+            sendJSON(res, 200, getCostMeter());
+            return;
+        }
+
+        if (path === '/api/costs/history' && method === 'GET') {
+            const limit = parseInt(url.searchParams.get('limit') ?? '100', 10);
+            sendJSON(res, 200, { history: getCostHistory(limit) });
+            return;
+        }
+
+        // Rate limiting status
+        if (path === '/api/rate-limits' && method === 'GET') {
+            sendJSON(res, 200, { circuits: getAllCircuitStates() });
             return;
         }
 
