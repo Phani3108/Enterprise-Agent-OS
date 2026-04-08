@@ -1099,7 +1099,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (path === '/api/meetings/start' && method === 'POST') {
             const body = await readBody(req);
             const meeting = startMeetingFromTemplate(
-                (body.type as string) ?? 'standup',
+                ((body.type as string) ?? 'standup') as any,
                 body.persona as string | undefined,
                 body.agenda as string[] | undefined,
                 body.task_ref as string | undefined,
@@ -1211,14 +1211,14 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (path === '/api/mcp/execute' && method === 'POST') {
             const body = await readBody(req);
             const action = createMCPAction({
-                tool_id: body.tool_id ?? '',
-                action: body.action ?? 'read',
-                resource_type: body.resource_type ?? '',
-                params: body.params ?? {},
-                task_ref: body.task_ref ?? '',
-                agent_id: body.agent_id ?? '',
-                step_index: body.step_index ?? 0,
-                credentials_ref: body.credentials_ref,
+                tool_id: (body.tool_id as string) ?? '',
+                action: ((body.action as string) ?? 'read') as any,
+                resource_type: (body.resource_type as string) ?? '',
+                params: (body.params as Record<string, unknown>) ?? {},
+                task_ref: (body.task_ref as string) ?? '',
+                agent_id: (body.agent_id as string) ?? '',
+                step_index: (body.step_index as number) ?? 0,
+                credentials_ref: body.credentials_ref as string | undefined,
             });
             const result = await executeMCPAction(action);
             eventBus.emit('mcp.tool.executed', { toolId: body.tool_id, action: body.action, status: result.status });
