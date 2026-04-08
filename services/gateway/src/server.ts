@@ -1252,21 +1252,21 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const body = await readBody(req);
             const rt = body.ephemeral
                 ? createEphemeralAgent({
-                    persona: body.persona ?? 'engineering',
+                    persona: (body.persona as string) ?? 'engineering',
                     function_domain: (body.function_domain as string) ?? (body.persona as string) ?? 'engineering',
-                    task_ref: body.task_ref ?? '',
-                    tool_access: body.tool_access ?? [],
-                    stage_prompt: body.stage_prompt ?? '',
-                    task_prompt: body.task_prompt ?? '',
+                    task_ref: (body.task_ref as string) ?? '',
+                    tool_access: (body.tool_access as string[]) ?? [],
+                    stage_prompt: (body.stage_prompt as string) ?? '',
+                    task_prompt: (body.task_prompt as string) ?? '',
                   })
                 : createAgentRuntime({
-                    agent_id: body.agent_id ?? `agent-${Date.now()}`,
-                    agent_name: body.agent_name ?? 'Agent',
-                    regiment: body.regiment ?? 'General',
-                    rank: body.rank ?? 'Specialist',
-                    persona: body.persona ?? 'engineering',
+                    agent_id: (body.agent_id as string) ?? `agent-${Date.now()}`,
+                    agent_name: (body.agent_name as string) ?? 'Agent',
+                    regiment: (body.regiment as string) ?? 'General',
+                    rank: (body.rank as string) ?? 'Specialist',
+                    persona: (body.persona as string) ?? 'engineering',
                     type: 'persistent',
-                    tool_access: body.tool_access ?? [],
+                    tool_access: (body.tool_access as string[]) ?? [],
                     function_domain: (body.function_domain as string) ?? (body.persona as string) ?? 'engineering',
                   });
             storeRuntime(rt);
