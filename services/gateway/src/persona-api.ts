@@ -1237,7 +1237,7 @@ async function executeSingleStep(
       output = generateSandboxOutput(persona, skillName, skillStep as any, inputs, previousOutputs);
     } else {
       const { system, user } = buildStepPrompt(persona, skillName, skillStep as any, inputs, previousOutputs, customPrompt, agentIdentity);
-      llmResponse = await callLLMUnified(system, user, provider, modelId, persona, skill?.complexity);
+      llmResponse = await callLLMUnified(system, user, provider, modelId, persona);
       output = llmResponse.content;
     }
 

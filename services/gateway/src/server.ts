@@ -1002,12 +1002,12 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (path === '/api/a2a/messages' && method === 'POST') {
             const body = await readBody(req);
             const msg = createA2AMessage({
-                type: body.type ?? 'delegate',
+                type: (body.type as string ?? 'delegate') as any,
                 sender: body.sender as A2AAgent,
                 receiver: body.receiver as A2AAgent,
-                task_ref: body.task_ref ?? '',
-                payload: body.payload ?? { objective: '', context: {} },
-                priority: body.priority ?? 'medium',
+                task_ref: (body.task_ref as string) ?? '',
+                payload: (body.payload as any) ?? { objective: '', context: {} },
+                priority: (body.priority as string ?? 'medium') as any,
             });
             storeMessage(msg);
             eventBus.emit('a2a.message.sent', { messageId: msg.message_id, type: msg.type });
@@ -1020,7 +1020,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const msg = getMessage(msgId);
             if (!msg) { sendJSON(res, 404, { error: 'Message not found' }); return; }
             const body = await readBody(req);
-            const updated = respondToA2A(msg, body.response);
+            const updated = respondToA2A(msg, body.response as any);
             storeMessage(updated);
             eventBus.emit('a2a.message.responded', { messageId: msgId });
             sendJSON(res, 200, { message: updated });
