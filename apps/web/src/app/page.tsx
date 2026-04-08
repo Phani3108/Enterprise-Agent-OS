@@ -58,12 +58,16 @@ function MainContent({ section }: { section: string }) {
     case 'ws-engineering':          return <EngineeringHub />;
     case 'ws-product':              return <ProductHub />;
     case 'ws-hr':                   return <HRHub />;
+    case 'ws-ta':                   return <ExecutionScreen persona="ta" workspace="ws-ta" />;
+    case 'ws-program':              return <ExecutionScreen persona="program" workspace="ws-program" />;
 
     // Execution Screens (launched from workspace hubs or sidebar)
     case 'exec-marketing':          return <ExecutionScreen persona="marketing" workspace="ws-marketing" />;
     case 'exec-engineering':        return <ExecutionScreen persona="engineering" workspace="ws-engineering" />;
     case 'exec-product':            return <ExecutionScreen persona="product" workspace="ws-product" />;
     case 'exec-hr':                 return <ExecutionScreen persona="hr" workspace="ws-hr" />;
+    case 'exec-ta':                 return <ExecutionScreen persona="ta" workspace="ws-ta" />;
+    case 'exec-program':            return <ExecutionScreen persona="program" workspace="ws-program" />;
 
     // Platform (cross-persona)
     case 'platform-agents':         return <AgentsPanel />;

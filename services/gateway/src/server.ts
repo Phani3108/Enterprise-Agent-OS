@@ -41,6 +41,8 @@ import { getNotificationConfig, setNotificationConfig } from './marketing-notifi
 import { ENGINEERING_SKILLS, getEngineeringSkill, getEngineeringSkillsByCluster } from './engineering-skills-data.js';
 import { PRODUCT_SKILLS, getProductSkill, getProductSkillsByCluster } from './product-skills-data.js';
 import { HR_SKILLS, getHRSkill, getHRSkillsByCluster } from './hr-skills-data.js';
+import { TA_SKILLS, getTASkill, getTASkillsByCluster } from './ta-skills-data.js';
+import { PROGRAM_SKILLS, getProgramSkill, getProgramSkillsByCluster } from './program-skills-data.js';
 import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep, getAgentKPIs, getAgentKPI, initPersonaStore, getExecutionStats, getAllExecutions, getAfterActionReport, listAfterActionReports, getRetrainingFlags, getRetrainingFlag, acknowledgeRetrainingFlag, dismissRetrainingFlag } from './persona-api.js';
 import type { AfterActionReport, RetrainingFlag } from './persona-api.js';
 import { getAvailableProviders, getDefaultProvider } from './llm-provider.js';
@@ -418,6 +420,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 ...ENGINEERING_SKILLS,
                 ...PRODUCT_SKILLS,
                 ...HR_SKILLS,
+                ...TA_SKILLS,
+                ...PROGRAM_SKILLS,
                 ...marketingApi.getMarketingSkills(),
             ];
             const filtered = all.filter(s => {
@@ -2885,6 +2889,92 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const stepId = parts[6]!;
             const result = approvePersonaStep(execId, stepId);
             sendJSON(res, result.success ? 200 : 400, result);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // TA (Talent Acquisition) Persona API
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/ta/skills' && method === 'GET') {
+            const cluster = url.searchParams.get('cluster') ?? undefined;
+            sendJSON(res, 200, { skills: cluster ? getTASkillsByCluster(cluster) : TA_SKILLS });
+            return;
+        }
+
+        if (path.match(/^\/api\/ta\/skills\/[^/]+$/) && method === 'GET') {
+            const idOrSlug = path.split('/')[4]!;
+            const skill = getTASkill(idOrSlug);
+            if (!skill) { sendJSON(res, 404, { error: 'Skill not found' }); return; }
+            sendJSON(res, 200, { skill });
+            return;
+        }
+
+        if (path === '/api/ta/executions' && method === 'POST') {
+            const body = await readBody(req);
+            const { skillId, inputs, simulate } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
+            const skill = getTASkill(skillId);
+            if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
+            const execution = createPersonaExecution('ta' as any, skillId, skill.name, skill.steps as any, inputs || {}, userId, simulate ?? false);
+            sendJSON(res, 201, { execution });
+            return;
+        }
+
+        if (path === '/api/ta/executions' && method === 'GET') {
+            const execs = listPersonaExecutions('ta' as any);
+            sendJSON(res, 200, { executions: execs });
+            return;
+        }
+
+        if (path.match(/^\/api\/ta\/executions\/[^/]+$/) && method === 'GET') {
+            const execId = path.split('/')[4]!;
+            const exec = getPersonaExecution(execId);
+            if (!exec) { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            sendJSON(res, 200, { execution: exec });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Program Persona API
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/program/skills' && method === 'GET') {
+            const cluster = url.searchParams.get('cluster') ?? undefined;
+            sendJSON(res, 200, { skills: cluster ? getProgramSkillsByCluster(cluster) : PROGRAM_SKILLS });
+            return;
+        }
+
+        if (path.match(/^\/api\/program\/skills\/[^/]+$/) && method === 'GET') {
+            const idOrSlug = path.split('/')[4]!;
+            const skill = getProgramSkill(idOrSlug);
+            if (!skill) { sendJSON(res, 404, { error: 'Skill not found' }); return; }
+            sendJSON(res, 200, { skill });
+            return;
+        }
+
+        if (path === '/api/program/executions' && method === 'POST') {
+            const body = await readBody(req);
+            const { skillId, inputs, simulate } = body as { skillId?: string; inputs?: Record<string, unknown>; simulate?: boolean };
+            if (!skillId) { sendJSON(res, 400, { error: 'skillId required' }); return; }
+            const skill = getProgramSkill(skillId);
+            if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
+            const execution = createPersonaExecution('program' as any, skillId, skill.name, skill.steps as any, inputs || {}, userId, simulate ?? false);
+            sendJSON(res, 201, { execution });
+            return;
+        }
+
+        if (path === '/api/program/executions' && method === 'GET') {
+            const execs = listPersonaExecutions('program' as any);
+            sendJSON(res, 200, { executions: execs });
+            return;
+        }
+
+        if (path.match(/^\/api\/program\/executions\/[^/]+$/) && method === 'GET') {
+            const execId = path.split('/')[4]!;
+            const exec = getPersonaExecution(execId);
+            if (!exec) { sendJSON(res, 404, { error: 'Execution not found' }); return; }
+            sendJSON(res, 200, { execution: exec });
             return;
         }
 

@@ -18,6 +18,10 @@ export type ProductSection = 'run' | 'library' | 'pipelines' | 'history';
 
 export type HRSection = 'run' | 'library' | 'pipelines' | 'history';
 
+export type TASection = 'run' | 'library' | 'pipelines' | 'history';
+
+export type ProgramSection = 'run' | 'library' | 'pipelines' | 'history';
+
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'approval_required';
 
 export interface PersonaExecutionStep {
@@ -43,7 +47,7 @@ export interface PersonaExecutionStep {
 
 export interface PersonaExecution {
   id: string;
-  persona: 'engineering' | 'product' | 'hr';
+  persona: 'engineering' | 'product' | 'hr' | 'ta' | 'program';
   skillId: string;
   skillName: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
@@ -220,3 +224,41 @@ export const useHRStore = create<HRState>((set) => ({
           : s.activeExecution,
     })),
 }));
+
+// ---------------------------------------------------------------------------
+// TA Store (Talent Acquisition)
+// ---------------------------------------------------------------------------
+
+const createPersonaStore = (set: any) => ({
+  activeSection: 'run' as const,
+  setActiveSection: (section: string) => set({ activeSection: section }),
+  selectedSkillId: null as string | null,
+  setSelectedSkillId: (id: string | null) => set({ selectedSkillId: id }),
+  activeExecution: null as PersonaExecution | null,
+  executions: [] as PersonaExecution[],
+  addExecution: (exec: PersonaExecution) =>
+    set((s: any) => ({ executions: [exec, ...s.executions].slice(0, 50), activeExecution: exec })),
+  updateExecution: (id: string, updates: Partial<PersonaExecution>) =>
+    set((s: any) => ({
+      executions: s.executions.map((e: PersonaExecution) => (e.id === id ? { ...e, ...updates } : e)),
+      activeExecution: s.activeExecution?.id === id ? { ...s.activeExecution, ...updates } : s.activeExecution,
+    })),
+  updateExecutionStep: (execId: string, stepId: string, updates: Partial<PersonaExecutionStep>) =>
+    set((s: any) => ({
+      executions: s.executions.map((e: PersonaExecution) =>
+        e.id === execId ? { ...e, steps: e.steps.map((st: PersonaExecutionStep) => (st.stepId === stepId ? { ...st, ...updates } : st)) } : e
+      ),
+      activeExecution:
+        s.activeExecution?.id === execId
+          ? { ...s.activeExecution, steps: s.activeExecution.steps.map((st: PersonaExecutionStep) => st.stepId === stepId ? { ...st, ...updates } : st) }
+          : s.activeExecution,
+    })),
+});
+
+export const useTAStore = create(createPersonaStore);
+
+// ---------------------------------------------------------------------------
+// Program Store
+// ---------------------------------------------------------------------------
+
+export const useProgramStore = create(createPersonaStore);

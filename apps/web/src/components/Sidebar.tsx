@@ -76,7 +76,9 @@ const NAV: NavGroup[] = [
       { id: 'ws-marketing',     label: 'Marketing',     icon: 'marketing'   },
       { id: 'ws-engineering',   label: 'Engineering',   icon: 'engineering' },
       { id: 'ws-product',       label: 'Product',       icon: 'product'     },
-      { id: 'ws-hr',            label: 'HR & TA',       icon: 'hr'          },
+      { id: 'ws-hr',            label: 'HR',            icon: 'hr'          },
+      { id: 'ws-ta',            label: 'Talent Acq',    icon: 'hr'          },
+      { id: 'ws-program',       label: 'Program',       icon: 'projects'    },
     ],
   },
   {
