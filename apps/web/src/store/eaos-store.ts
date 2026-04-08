@@ -69,7 +69,7 @@ interface Notification {
 
 export const useEAOSStore = create<EAOSState>()(persist((set) => ({
     // Navigation
-    activeSection: 'personas',
+    activeSection: 'landing',
     sidebarCollapsed: false,
     setActiveSection: (section) => set({ activeSection: section }),
     toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),

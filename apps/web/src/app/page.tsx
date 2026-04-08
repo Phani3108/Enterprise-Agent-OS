@@ -6,6 +6,7 @@ import { TopBar } from '../components/TopBar';
 import { RightPanel } from '../components/RightPanel';
 import CommandPalette from '../components/CommandPalette';
 import HomeCommandCenter from '../components/HomeCommandCenter';
+import LandingPage from '../components/LandingPage';
 import IntentRouter from '../components/IntentRouter';
 
 import { ToolsRegistry } from '../components/ToolsRegistry';
@@ -42,8 +43,9 @@ function MainContent({ section }: { section: string }) {
   }
 
   switch (section) {
-    // Home
+    // Home / Dashboard
     case 'home':                    return <HomeCommandCenter />;
+    case 'dashboard':               return <HomeCommandCenter />;
 
     // C-Suite
     case 'csuite-command':          return <CSuiteCommandCenter />;
@@ -92,16 +94,16 @@ export default function Home() {
   // URL ↔ activeSection sync — enables deep-linking & back/forward nav
   // -----------------------------------------------------------------------
 
-  // On mount: read URL path and navigate to the matching section
+  // On mount: read URL path and navigate to the matching section, default to landing
   useEffect(() => {
-    const path = window.location.pathname.replace(/^\/+/, '') || 'home';
-    setActiveSection(path);
+    const path = window.location.pathname.replace(/^\/+/, '');
+    setActiveSection(path || 'landing');
     assertProvenance();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When activeSection changes: push to browser history
   useEffect(() => {
-    const currentPath = window.location.pathname.replace(/^\/+/, '') || 'home';
+    const currentPath = window.location.pathname.replace(/^\/+/, '') || 'landing';
     if (activeSection && activeSection !== currentPath) {
       window.history.pushState(null, '', `/${activeSection}`);
     }
@@ -110,7 +112,7 @@ export default function Home() {
   // Handle browser back/forward buttons
   useEffect(() => {
     const onPopState = () => {
-      const path = window.location.pathname.replace(/^\/+/, '') || 'home';
+      const path = window.location.pathname.replace(/^\/+/, '') || 'landing';
       setActiveSection(path);
     };
     window.addEventListener('popstate', onPopState);
@@ -128,6 +130,16 @@ export default function Home() {
 
   // Intent Router shown on skills/marketplace section
   const showIntentBar = false; // Intent router disabled — skills are inside persona hubs
+
+  // Landing page — full-screen, no shell
+  if (activeSection === 'landing') {
+    return (
+      <>
+        <LandingPage />
+        <CommandPalette />
+      </>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-white text-slate-900 overflow-hidden">

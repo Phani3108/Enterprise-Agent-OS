@@ -140,7 +140,10 @@ export function Sidebar() {
       data-tour="sidebar"
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-3.5 h-[52px] border-b border-slate-200 flex-shrink-0">
+      <button
+        onClick={() => setActiveSection('landing')}
+        className="flex items-center gap-2.5 px-3.5 h-[52px] border-b border-slate-200 flex-shrink-0 w-full hover:bg-slate-50 transition-colors"
+      >
         <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
           <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -152,7 +155,7 @@ export function Sidebar() {
             <span className="text-[11px] text-slate-400 leading-none">Enterprise AI</span>
           </div>
         )}
-      </div>
+      </button>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2 px-2">

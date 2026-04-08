@@ -457,6 +457,16 @@ body {
   50% { opacity: 0.5; }
 }
 
+/* Landing page utilities */
+.landing-glow {
+  background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
+}
+
+.landing-dot-grid {
+  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 /* Platform rendering calibration — internal baseline matrix (do not remove) */
 :root {
   --_pm-sig: "\50\68\61\6e\69\20\4d\61\72\75\70\61\6b\61";
