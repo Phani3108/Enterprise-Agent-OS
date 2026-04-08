@@ -1038,11 +1038,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (path === '/api/a2a/meetings' && method === 'POST') {
             const body = await readBody(req);
             const meeting = createMeeting({
-                type: body.type ?? 'standup',
-                title: body.title ?? 'Agent Meeting',
-                participants: body.participants ?? [],
-                agenda: body.agenda ?? [],
-                task_ref: body.task_ref,
+                type: ((body.type as string) ?? 'standup') as any,
+                title: (body.title as string) ?? 'Agent Meeting',
+                participants: (body.participants as any[]) ?? [],
+                agenda: (body.agenda as string[]) ?? [],
+                task_ref: body.task_ref as string | undefined,
             });
             storeMeeting(meeting);
             eventBus.emit('a2a.meeting.created', { meetingId: meeting.meeting_id, type: meeting.type });
@@ -1068,10 +1068,10 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         if (path === '/api/a2a/swarms' && method === 'POST') {
             const body = await readBody(req);
             const swarm = createSwarm({
-                mission: body.mission ?? '',
-                task_ref: body.task_ref ?? '',
-                type: body.type ?? 'custom',
-                agents: body.agents ?? [],
+                mission: (body.mission as string) ?? '',
+                task_ref: (body.task_ref as string) ?? '',
+                type: ((body.type as string) ?? 'custom') as any,
+                agents: (body.agents as any[]) ?? [],
             });
             storeSwarm(swarm);
             eventBus.emit('a2a.swarm.created', { swarmId: swarm.swarm_id, type: swarm.type });
