@@ -11,7 +11,11 @@
 import type { PersonaSkillDef, SkillStep } from './engineering-skills-data.js';
 import { callLLM as callLLMProvider, type LLMProviderId, type LLMResponse } from './llm-provider.js';
 import { routedLLMCall, recordCostEntry, detectComplexity } from './model-router.js';
-import { createUTCPPacket, storePacket, updatePacketStatus } from './utcp-protocol.js';
+import { createUTCPPacket, storePacket, getPacket, updatePacketStatus } from './utcp-protocol.js';
+import { createA2AMessage, storeMessage } from './a2a-protocol.js';
+import { createMCPAction, executeMCPAction } from './mcp-executor.js';
+import { memoryGraph } from './memory-graph.js';
+import { eventBus } from './event-bus.js';
 import { getAgentIdentity, getAgentsByPersona, validateHandoff, type AgentIdentity } from './agent-registry.js';
 import { buildAgentMemoryContext, extractAndStoreMemory, initAgentMemory } from './agent-memory.js';
 import type { Store } from './db.js';
@@ -63,6 +67,8 @@ export interface PersonaExecutionRecord {
   totalTokenCost?: number;
   totalLatencyMs?: number;
   avgQualityScore?: number;
+  /** UTCP task ID linking this execution to the protocol layer */
+  utcpTaskId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -1112,6 +1118,57 @@ async function processSkillSteps(
 
   // Check for retraining triggers
   checkRetrainingTriggers(exec);
+
+  // ── UTCP: Finalize task packet ──
+  try {
+    if (exec.utcpTaskId) {
+      const packet = getPacket(exec.utcpTaskId);
+      if (packet) {
+        const updated = updatePacketStatus(packet, anyFailed ? 'failed' : 'completed', {
+          confidence: exec.avgQualityScore ? exec.avgQualityScore / 10 : 0.8,
+          progress: 100,
+        } as any);
+        storePacket(updated);
+      }
+    }
+  } catch {}
+
+  // ── Memory Graph: Record execution + agent performance + entity graph ──
+  try {
+    const execRecord = {
+      userId: exec.userId || 'system',
+      skillId: exec.skillId,
+      skillName: exec.skillName,
+      personaId: exec.persona,
+      success: !anyFailed,
+      runtimeSec: (exec.totalLatencyMs || 0) / 1000,
+      cost: exec.totalTokenCost || 0,
+      agentsUsed: exec.steps.map(s => s.agent),
+      toolsUsed: exec.steps.filter(s => s.tool).map(s => s.tool!),
+      outputs: Object.keys(exec.outputs),
+    };
+    memoryGraph.recordExecution(execRecord);
+    memoryGraph.buildGraphFromExecution({ ...execRecord, id: exec.id, ts: new Date().toISOString() });
+
+    for (const step of exec.steps) {
+      if (step.status === 'completed' || step.status === 'approval_required') {
+        memoryGraph.updateAgentPerformance(step.agent, step.agentCallSign || step.agent, '', {
+          success: step.status !== 'failed',
+          confidence: (step.qualityScore || 5) / 10,
+          latencyMs: step.latencyMs || 0,
+          costUsd: step.tokenCost || 0,
+          tokens: 0,
+          skillId: exec.skillId,
+        });
+      }
+    }
+  } catch {}
+
+  // ── Event Bus: Execution completed ──
+  eventBus.emit('execution.completed', {
+    execId: exec.id, persona: exec.persona, status: exec.status,
+    utcpTaskId: exec.utcpTaskId, cost: exec.totalTokenCost,
+  }).catch(() => {});
 }
 
 // ---------------------------------------------------------------------------
@@ -1226,6 +1283,25 @@ async function executeSingleStep(
   stepRecord.startedAt = new Date().toISOString();
   persistExec(exec);
 
+  // ── A2A: Create delegation message from previous agent ──
+  try {
+    const stepIdx = exec.steps.indexOf(stepRecord);
+    if (stepIdx > 0) {
+      const prev = exec.steps[stepIdx - 1];
+      const a2aMsg = createA2AMessage({
+        type: 'delegate',
+        sender: { agent_id: prev.agent, name: prev.agentCallSign || prev.agent, regiment: '', rank: prev.agentRank || '', persona },
+        receiver: { agent_id: resolvedAgentId, name: agentIdentity?.callSign || resolvedAgentId, regiment: '', rank: agentIdentity?.rank || '', persona },
+        task_ref: exec.utcpTaskId || exec.id,
+        payload: { objective: skillStep.name, context: { step: stepIdx } },
+      });
+      storeMessage(a2aMsg);
+    }
+  } catch {}
+
+  // ── Event Bus: Step started ──
+  eventBus.emit('execution.step.started', { execId: exec.id, stepId: skillStep.id, agent: resolvedAgentId }).catch(() => {});
+
   const stepStart = Date.now();
 
   try {
@@ -1265,6 +1341,40 @@ async function executeSingleStep(
     stepRecord.completedAt = new Date().toISOString();
     stepRecord.outputKey = skillStep.outputKey;
     stepRecord.outputPreview = output.slice(0, 300);
+
+    // ── MCP: Record tool call if step uses a non-LLM tool ──
+    if (skillStep.tool && skillStep.tool !== 'Claude' && !simulate) {
+      try {
+        const mcpAction = createMCPAction({
+          tool_id: skillStep.tool.toLowerCase().replace(/\s+/g, '-'),
+          action: 'execute' as any,
+          resource_type: 'skill-step',
+          params: { stepName: skillStep.name, outputPreview: output.slice(0, 500) },
+          task_ref: exec.utcpTaskId || exec.id,
+          agent_id: resolvedAgentId,
+          step_index: exec.steps.indexOf(stepRecord),
+        });
+        await executeMCPAction(mcpAction);
+      } catch {}
+    }
+
+    // ── A2A: Approval request if step requires human approval ──
+    if (skillStep.requiresApproval) {
+      try {
+        const approvalMsg = createA2AMessage({
+          type: 'approve',
+          sender: { agent_id: resolvedAgentId, name: agentIdentity?.callSign || resolvedAgentId, regiment: '', rank: agentIdentity?.rank || '', persona },
+          receiver: { agent_id: 'human-approver', name: 'Human Approver', regiment: 'Command', rank: 'Colonel', persona },
+          task_ref: exec.utcpTaskId || exec.id,
+          payload: { objective: `Approve: ${skillStep.name}`, context: { outputPreview: output.slice(0, 1000) } },
+          priority: 'high',
+        });
+        storeMessage(approvalMsg);
+      } catch {}
+    }
+
+    // ── Event Bus: Step completed ──
+    eventBus.emit('execution.step.completed', { execId: exec.id, stepId: skillStep.id, agent: resolvedAgentId, status: stepRecord.status }).catch(() => {});
 
     return { tokenCost, latencyMs, qualityScore };
 
@@ -1647,7 +1757,24 @@ export function createPersonaExecution(
     userId,
   };
 
+  // ── UTCP: Create task packet for this execution ──
+  try {
+    const utcpPacket = createUTCPPacket({
+      function: persona as any,
+      stage: 'executing',
+      intent: `Execute ${skill.name}`,
+      initiator: { user_id: userId || 'system', role: 'operator' },
+      objectives: [`Run ${skill.name} skill`],
+      tool_scopes: (skill.requiredTools as string[]) || [],
+    });
+    storePacket(utcpPacket);
+    exec.utcpTaskId = utcpPacket.task_id;
+  } catch {}
+
   persistExec(exec);
+
+  // ── Event Bus: Execution started ──
+  eventBus.emit('execution.started', { execId: id, persona, skillName: skill.name, utcpTaskId: exec.utcpTaskId }).catch(() => {});
 
   // Fire execution asynchronously
   processSkillSteps(id, persona, skill, inputs, simulate ?? false, customPrompt, provider, modelId).catch((err) => {
