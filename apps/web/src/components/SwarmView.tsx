@@ -9,8 +9,81 @@
 
 import { useState, useEffect } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 
 const API = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+
+// ── SevenLabs Demo Data ─────────────────────────────────────
+const DEMO_SWARMS: AgentSwarm[] = [
+  {
+    swarm_id: 'demo-swarm-1', mission: 'Launch Credit Card Modernization v2 for community banks', task_ref: 'utcp-demo-1', type: 'product_launch',
+    agents: [
+      { agent_id: 'odin', name: 'Captain Odin', regiment: 'Asgard', rank: 'Captain', persona: 'Product' },
+      { agent_id: 'prometheus', name: 'Captain Prometheus', regiment: 'Olympian', rank: 'Captain', persona: 'Engineering' },
+      { agent_id: 'iris', name: 'Captain Iris', regiment: 'Titan', rank: 'Captain', persona: 'Marketing' },
+      { agent_id: 'chronos', name: 'Colonel Chronos', regiment: 'Vanguard', rank: 'Colonel', persona: 'Program' },
+    ],
+    status: 'active', messages: [], meetings: [],
+    artifacts: [
+      { type: 'phase_completion', title: 'Phase 1: Planning', content: 'PRD finalized, scope confirmed', author: 'Captain Odin', created_at: '2026-04-07T10:00:00Z' },
+      { type: 'phase_completion', title: 'Phase 2: Build', content: 'Payment gateway integration in progress', author: 'Captain Prometheus', created_at: '2026-04-09T10:00:00Z' },
+    ],
+    created_at: '2026-04-05T09:00:00Z',
+    metrics: { total_messages: 23, total_tool_calls: 8, total_tokens: 45000, total_cost_usd: 4.82, duration_ms: 345000, human_interventions: 2 },
+  },
+  {
+    swarm_id: 'demo-swarm-2', mission: 'Q3 Hiring Sprint — 3 Senior Engineers for Payments Team', task_ref: 'utcp-demo-2', type: 'hiring_sprint',
+    agents: [
+      { agent_id: 'jd-specialist', name: 'JD Specialist', regiment: 'Explorer', rank: 'Captain', persona: 'TA' },
+      { agent_id: 'prometheus', name: 'Captain Prometheus', regiment: 'Olympian', rank: 'Captain', persona: 'Engineering' },
+      { agent_id: 'rhea', name: 'Colonel Rhea', regiment: 'Explorer', rank: 'Colonel', persona: 'HR' },
+    ],
+    status: 'active', messages: [], meetings: [],
+    artifacts: [
+      { type: 'phase_completion', title: 'Phase 1: Requisition', content: 'JD and scorecard generated', author: 'JD Specialist', created_at: '2026-04-08T09:00:00Z' },
+    ],
+    created_at: '2026-04-08T08:00:00Z',
+    metrics: { total_messages: 12, total_tool_calls: 4, total_tokens: 22000, total_cost_usd: 2.15, duration_ms: 180000, human_interventions: 1 },
+  },
+  {
+    swarm_id: 'demo-swarm-3', mission: 'Community Banks — Card Modernization Marketing Campaign', task_ref: 'utcp-demo-3', type: 'campaign_pod',
+    agents: [
+      { agent_id: 'hyperion', name: 'Colonel Hyperion', regiment: 'Titan', rank: 'Colonel', persona: 'Marketing' },
+      { agent_id: 'iris', name: 'Captain Iris', regiment: 'Titan', rank: 'Captain', persona: 'Marketing' },
+      { agent_id: 'apollo', name: 'Captain Apollo', regiment: 'Titan', rank: 'Captain', persona: 'Marketing' },
+      { agent_id: 'odin', name: 'Captain Odin', regiment: 'Asgard', rank: 'Captain', persona: 'Product' },
+    ],
+    status: 'completed', messages: [], meetings: [],
+    artifacts: [
+      { type: 'phase_completion', title: 'Phase 1: Strategy', content: 'Campaign objectives and ICP defined', author: 'Colonel Hyperion', created_at: '2026-04-01T10:00:00Z' },
+      { type: 'phase_completion', title: 'Phase 2: Content', content: 'Email sequences, LinkedIn ads, landing page drafted', author: 'Captain Apollo', created_at: '2026-04-03T10:00:00Z' },
+      { type: 'phase_completion', title: 'Phase 3: Launch', content: 'Campaign live in HubSpot + LinkedIn', author: 'Captain Iris', created_at: '2026-04-05T10:00:00Z' },
+      { type: 'phase_completion', title: 'Phase 4: Optimize', content: 'A/B test results: Variant B +18% CTR', author: 'Captain Iris', created_at: '2026-04-07T10:00:00Z' },
+      { type: 'phase_completion', title: 'Phase 5: Report', content: 'ROI report delivered: $2.1M pipeline generated', author: 'Colonel Hyperion', created_at: '2026-04-08T10:00:00Z' },
+    ],
+    created_at: '2026-04-01T09:00:00Z', completed_at: '2026-04-08T17:00:00Z',
+    metrics: { total_messages: 47, total_tool_calls: 15, total_tokens: 89000, total_cost_usd: 8.90, duration_ms: 624000, human_interventions: 3 },
+  },
+  {
+    swarm_id: 'demo-swarm-4', mission: 'Payments API 503 Spike — Incident Response', task_ref: 'utcp-demo-4', type: 'incident_response',
+    agents: [
+      { agent_id: 'atlas', name: 'Colonel Atlas', regiment: 'Olympian', rank: 'Colonel', persona: 'Engineering' },
+      { agent_id: 'prometheus', name: 'Captain Prometheus', regiment: 'Olympian', rank: 'Captain', persona: 'Engineering' },
+      { agent_id: 'chronos', name: 'Colonel Chronos', regiment: 'Vanguard', rank: 'Colonel', persona: 'Program' },
+    ],
+    status: 'completed', messages: [], meetings: [],
+    artifacts: [
+      { type: 'phase_completion', title: 'Phase 1: Triage', content: 'P1 — 12% of payment requests failing', author: 'Colonel Atlas', created_at: '2026-04-08T14:30:00Z' },
+      { type: 'phase_completion', title: 'Phase 2: Investigate', content: 'Connection pool exhaustion from deploy v2.14.3', author: 'Captain Prometheus', created_at: '2026-04-08T14:35:00Z' },
+      { type: 'phase_completion', title: 'Phase 3: Remediate', content: 'Rolled back to v2.14.2 — 503s resolved', author: 'Captain Prometheus', created_at: '2026-04-08T14:40:00Z' },
+      { type: 'phase_completion', title: 'Phase 4: Communicate', content: 'Merchant partners notified, status page updated', author: 'Colonel Chronos', created_at: '2026-04-08T14:45:00Z' },
+      { type: 'phase_completion', title: 'Phase 5: RCA', content: 'Root cause: unbounded query in new feature. Fix: add connection timeout.', author: 'Colonel Atlas', created_at: '2026-04-09T10:00:00Z' },
+    ],
+    created_at: '2026-04-08T14:25:00Z', completed_at: '2026-04-09T10:30:00Z',
+    metrics: { total_messages: 31, total_tool_calls: 9, total_tokens: 52000, total_cost_usd: 5.20, duration_ms: 72000, human_interventions: 1 },
+  },
+];
+const DEMO_STATS: SwarmStats = { active: 2, completed: 2, totalAgents: 14, totalMessages: 113 };
 
 // ── Types ───────────────────────────────────────────────────────
 interface SwarmTemplate {
@@ -55,6 +128,7 @@ export default function SwarmView() {
   const [launchMission, setLaunchMission] = useState('');
   const [launching, setLaunching] = useState(false);
   const [tab, setTab] = useState<'active' | 'completed' | 'templates'>('active');
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -63,8 +137,8 @@ export default function SwarmView() {
       fetch(`${API}/api/swarms/stats`).then(r => r.json()).catch(() => ({})),
     ]).then(([t, s, st]) => {
       setTemplates(t.templates || []);
-      setSwarms(s.swarms || []);
-      setStats(st);
+      if (s.swarms?.length) { setSwarms(s.swarms); setStats(st); }
+      else { setSwarms(DEMO_SWARMS); setStats(DEMO_STATS); setIsDemo(true); setSelectedSwarm(DEMO_SWARMS[0]); }
     });
   }, []);
 
@@ -111,6 +185,12 @@ export default function SwarmView() {
           </div>
           <button onClick={() => setShowLaunch(true)} className="btn btn-primary">Launch Swarm</button>
         </div>
+
+        {isDemo && <DemoPreviewBanner pageName="Agent Swarms" steps={[
+          'Start the gateway — swarms use the A2A protocol to coordinate agents',
+          'Click "Launch Swarm" and enter a mission like "Launch Feature X"',
+          'Watch agents form, collaborate through phases, and produce artifacts',
+        ]} />}
 
         {/* Stats */}
         <div className="grid grid-cols-4 gap-4 mb-6">

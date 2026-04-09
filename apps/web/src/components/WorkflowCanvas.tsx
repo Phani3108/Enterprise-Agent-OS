@@ -9,8 +9,58 @@
 
 import { useState, useEffect } from 'react';
 import { useEAOSStore } from '../store/eaos-store';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 
 const API = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+
+// ── SevenLabs Demo Workflows ────────────────────────────────
+const DEMO_WORKFLOWS: WorkflowTemplate[] = [
+  { id: 'fw-d1', slug: 'prd-to-jira', name: 'PRD \u2192 Jira Decomposition', description: 'Take a product brief, generate a full PRD, decompose into epics/stories, create in Jira.', icon: '\ud83d\udce6', type: 'cross-functional', personas: ['product', 'engineering'], complexity: 'complex', estimatedTime: '3\u20135 min',
+    inputs: [{ id: 'brief', label: 'Product Brief', type: 'textarea', required: true, placeholder: 'Describe the feature...' }],
+    steps: [
+      { id: 's1', name: 'Analyze Brief', agent: 'Captain Odin', agentPersona: 'Product', tool: 'Claude', outputKey: 'analysis', description: 'Parse brief, identify user problems and goals' },
+      { id: 's2', name: 'Generate PRD', agent: 'Captain Odin', agentPersona: 'Product', tool: 'Claude', outputKey: 'prd', description: 'Full PRD with requirements and edge cases', dependsOn: ['s1'] },
+      { id: 's3', name: 'Tech Feasibility', agent: 'Captain Prometheus', agentPersona: 'Engineering', tool: 'Claude', outputKey: 'review', description: 'Review for technical feasibility', dependsOn: ['s2'] },
+      { id: 's4', name: 'Decompose Epics', agent: 'Corporal Freya', agentPersona: 'Product', tool: 'Claude', outputKey: 'epics', description: 'Break into 3-5 epics', dependsOn: ['s2', 's3'] },
+      { id: 's5', name: 'Create Jira', agent: 'Corporal Mercury', agentPersona: 'Engineering', tool: 'Jira', outputKey: 'tickets', description: 'Create tickets in Jira', requiresApproval: true, dependsOn: ['s4'] },
+    ],
+    outputs: ['analysis', 'prd', 'review', 'epics', 'tickets'], tools: ['Claude', 'Jira'], tags: ['prd', 'jira'] },
+  { id: 'fw-d2', slug: 'incident-rca', name: 'Incident RCA Swarm', description: 'Triage, investigate, remediate, and produce root cause analysis for production incidents.', icon: '\ud83d\udea8', type: 'cross-functional', personas: ['engineering', 'program'], complexity: 'critical', estimatedTime: '5\u201310 min',
+    inputs: [{ id: 'incident', label: 'Incident Description', type: 'textarea', required: true, placeholder: 'What happened?' }],
+    steps: [
+      { id: 's1', name: 'Triage', agent: 'Colonel Atlas', agentPersona: 'Engineering', tool: 'Claude', outputKey: 'triage', description: 'Classify severity and blast radius' },
+      { id: 's2', name: 'Log Analysis', agent: 'Sergeant Vulcan', agentPersona: 'Engineering', tool: 'DataDog', outputKey: 'logs', description: 'Pull relevant logs and metrics', dependsOn: ['s1'] },
+      { id: 's3', name: 'Remediation', agent: 'Captain Prometheus', agentPersona: 'Engineering', tool: 'Claude', outputKey: 'fix', description: 'Propose and execute fix', requiresApproval: true, dependsOn: ['s2'] },
+      { id: 's4', name: 'RCA Document', agent: 'Colonel Atlas', agentPersona: 'Engineering', tool: 'Confluence', outputKey: 'rca', description: 'Full root cause analysis', dependsOn: ['s3'] },
+    ],
+    outputs: ['triage', 'logs', 'fix', 'rca'], tools: ['Claude', 'DataDog', 'Confluence'], tags: ['incident', 'rca'] },
+  { id: 'fw-d3', slug: 'campaign-launch', name: 'Campaign Launch Pod', description: 'Strategy through execution: audience, messaging, content, channel setup, and tracking.', icon: '\ud83d\udce3', type: 'cross-functional', personas: ['marketing', 'product'], complexity: 'complex', estimatedTime: '5\u20138 min',
+    inputs: [{ id: 'goal', label: 'Campaign Goal', type: 'textarea', required: true, placeholder: 'What are you trying to achieve?' }],
+    steps: [
+      { id: 's1', name: 'Strategy', agent: 'Colonel Hyperion', agentPersona: 'Marketing', tool: 'Claude', outputKey: 'strategy', description: 'Campaign objectives and channel strategy' },
+      { id: 's2', name: 'Content Creation', agent: 'Captain Apollo', agentPersona: 'Marketing', tool: 'Claude', outputKey: 'content', description: 'Email, ads, landing page copy', dependsOn: ['s1'] },
+      { id: 's3', name: 'Channel Setup', agent: 'Captain Iris', agentPersona: 'Marketing', tool: 'HubSpot', outputKey: 'channels', description: 'Configure in HubSpot', requiresApproval: true, dependsOn: ['s2'] },
+    ],
+    outputs: ['strategy', 'content', 'channels'], tools: ['Claude', 'HubSpot'], tags: ['campaign', 'marketing'] },
+  { id: 'fw-d4', slug: 'hiring-pipeline', name: 'Hiring Pipeline', description: 'End-to-end hiring: JD, scorecard, interview kits, and debrief synthesis.', icon: '\ud83d\udc65', type: 'cross-functional', personas: ['ta', 'engineering', 'hr'], complexity: 'complex', estimatedTime: '5\u20138 min',
+    inputs: [{ id: 'role', label: 'Role Title', type: 'text', required: true, placeholder: 'e.g. Senior Backend Engineer' }],
+    steps: [
+      { id: 's1', name: 'Generate JD', agent: 'JD Specialist', agentPersona: 'TA', tool: 'Claude', outputKey: 'jd', description: 'DEI-optimized job description' },
+      { id: 's2', name: 'Scorecard', agent: 'Scorecard Analyst', agentPersona: 'TA', tool: 'Claude', outputKey: 'scorecard', description: 'Competency rubric', dependsOn: ['s1'] },
+      { id: 's3', name: 'Interview Kit', agent: 'Interview Designer', agentPersona: 'TA', tool: 'Claude', outputKey: 'kit', description: 'Questions and evaluation guide', dependsOn: ['s2'] },
+      { id: 's4', name: 'Compliance Check', agent: 'Colonel Rhea', agentPersona: 'HR', tool: 'Claude', outputKey: 'compliance', description: 'HR policy verification', requiresApproval: true, dependsOn: ['s1'] },
+    ],
+    outputs: ['jd', 'scorecard', 'kit', 'compliance'], tools: ['Claude'], tags: ['hiring', 'ta'] },
+  { id: 'fw-d5', slug: 'launch-readiness', name: 'Launch Readiness Board', description: 'Multi-function go/no-go: Engineering, Product, Marketing, Program all assess readiness.', icon: '\ud83d\ude80', type: 'cross-functional', personas: ['program', 'engineering', 'product', 'marketing'], complexity: 'complex', estimatedTime: '5\u201310 min',
+    inputs: [{ id: 'launch', label: 'Launch Name', type: 'text', required: true, placeholder: 'e.g. Card Modernization v2' }],
+    steps: [
+      { id: 's1', name: 'Eng Readiness', agent: 'Colonel Atlas', agentPersona: 'Engineering', tool: 'Claude', outputKey: 'eng', description: 'Code, tests, deployment plan' },
+      { id: 's2', name: 'Product Readiness', agent: 'Colonel Themis', agentPersona: 'Product', tool: 'Claude', outputKey: 'prod', description: 'Feature scope, docs' },
+      { id: 's3', name: 'Marketing Readiness', agent: 'Colonel Hyperion', agentPersona: 'Marketing', tool: 'Claude', outputKey: 'mkt', description: 'Campaign assets, enablement' },
+      { id: 's4', name: 'Go/No-Go', agent: 'Colonel Chronos', agentPersona: 'Program', tool: 'Claude', outputKey: 'decision', description: 'Confidence score and recommendation', requiresApproval: true, dependsOn: ['s1', 's2', 's3'] },
+    ],
+    outputs: ['eng', 'prod', 'mkt', 'decision'], tools: ['Claude', 'Jira'], tags: ['launch', 'readiness'] },
+];
 
 // ── Types ───────────────────────────────────────────────────────
 interface WorkflowStep {
@@ -43,12 +93,16 @@ export default function WorkflowCanvas() {
   const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([]);
   const [selected, setSelected] = useState<WorkflowTemplate | null>(null);
   const [filterPersona, setFilterPersona] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/api/workflows/flagship`)
       .then(r => r.json())
-      .then(d => { setWorkflows(d.workflows || []); if (d.workflows?.length) setSelected(d.workflows[0]); })
-      .catch(() => {});
+      .then(d => {
+        if (d.workflows?.length) { setWorkflows(d.workflows); setSelected(d.workflows[0]); }
+        else { setWorkflows(DEMO_WORKFLOWS); setSelected(DEMO_WORKFLOWS[0]); setIsDemo(true); }
+      })
+      .catch(() => { setWorkflows(DEMO_WORKFLOWS); setSelected(DEMO_WORKFLOWS[0]); setIsDemo(true); });
   }, []);
 
   const filtered = filterPersona
@@ -70,6 +124,12 @@ export default function WorkflowCanvas() {
             View Active Swarms
           </button>
         </div>
+
+        {isDemo && <DemoPreviewBanner pageName="Workflow Canvas" steps={[
+          'Start the gateway to load live workflow templates from the API',
+          'Select a workflow to visualize its step-by-step DAG with agent assignments',
+          'Click "Launch as Swarm" to execute the workflow with real agent collaboration',
+        ]} />}
 
         {/* Persona filter */}
         <div className="flex gap-1.5 mb-5">

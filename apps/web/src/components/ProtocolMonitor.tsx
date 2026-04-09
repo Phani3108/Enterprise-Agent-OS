@@ -8,8 +8,50 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 
 const API = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+
+// ── SevenLabs Demo Data ─────────────────────────────────────
+const DEMO_UTCP: UTCPTask[] = [
+  { task_id: 'utcp-demo-001', workflow_id: 'wf-launch', function: 'cross-functional', stage: 'executing', intent: 'Launch Credit Card Modernization v2 for community banks', status: 'executing', confidence: 0.88, progress: 65, created_at: '2026-04-09T09:00:00Z', updated_at: '2026-04-09T10:15:00Z' },
+  { task_id: 'utcp-demo-002', workflow_id: 'wf-pr-review', function: 'engineering', stage: 'reviewing', intent: 'Review PR #847 — payment gateway integration', status: 'completed', confidence: 0.94, progress: 100, created_at: '2026-04-09T08:30:00Z', updated_at: '2026-04-09T08:42:00Z' },
+  { task_id: 'utcp-demo-003', workflow_id: 'wf-jd', function: 'ta', stage: 'completed', intent: 'Generate JD for Senior Backend Engineer — Payments Team', status: 'completed', confidence: 0.91, progress: 100, created_at: '2026-04-08T14:00:00Z', updated_at: '2026-04-08T14:08:00Z' },
+  { task_id: 'utcp-demo-004', workflow_id: 'wf-incident', function: 'engineering', stage: 'completed', intent: 'Triage and resolve Payments API 503 spike', status: 'completed', confidence: 0.95, progress: 100, created_at: '2026-04-08T14:25:00Z', updated_at: '2026-04-08T14:45:00Z' },
+  { task_id: 'utcp-demo-005', workflow_id: 'wf-roadmap', function: 'product', stage: 'planning', intent: 'Score and prioritize Q3 roadmap initiatives', status: 'pending', confidence: 0, progress: 0, created_at: '2026-04-09T10:00:00Z', updated_at: '2026-04-09T10:00:00Z' },
+];
+const DEMO_A2A: A2AMsg[] = [
+  { message_id: 'a2a-d1', type: 'delegate', sender: { name: 'Colonel Chronos', persona: 'Program' }, receiver: { name: 'Captain Odin', persona: 'Product' }, status: 'responded', priority: 'high', timestamps: { sent: '2026-04-09T09:01:00Z' } },
+  { message_id: 'a2a-d2', type: 'review', sender: { name: 'Captain Prometheus', persona: 'Engineering' }, receiver: { name: 'Colonel Atlas', persona: 'Engineering' }, status: 'responded', priority: 'medium', timestamps: { sent: '2026-04-09T08:35:00Z' } },
+  { message_id: 'a2a-d3', type: 'approve', sender: { name: 'Colonel Atlas', persona: 'Engineering' }, receiver: { name: 'Captain Prometheus', persona: 'Engineering' }, status: 'responded', priority: 'high', timestamps: { sent: '2026-04-09T08:40:00Z' } },
+  { message_id: 'a2a-d4', type: 'delegate', sender: { name: 'Colonel Hyperion', persona: 'Marketing' }, receiver: { name: 'Captain Iris', persona: 'Marketing' }, status: 'processing', priority: 'medium', timestamps: { sent: '2026-04-09T09:15:00Z' } },
+  { message_id: 'a2a-d5', type: 'query', sender: { name: 'Colonel Rhea', persona: 'HR' }, receiver: { name: 'Captain Prometheus', persona: 'Engineering' }, status: 'responded', priority: 'medium', timestamps: { sent: '2026-04-08T15:00:00Z' } },
+  { message_id: 'a2a-d6', type: 'escalate', sender: { name: 'Captain Prometheus', persona: 'Engineering' }, receiver: { name: 'Colonel Atlas', persona: 'Engineering' }, status: 'responded', priority: 'critical', timestamps: { sent: '2026-04-08T14:30:00Z' } },
+];
+const DEMO_MCP: MCPLog[] = [
+  { action_id: 'mcp-d1', tool_id: 'jira', action: 'create', status: 'success', latency_ms: 340, metadata: { request_at: '2026-04-09T09:05:00Z' } },
+  { action_id: 'mcp-d2', tool_id: 'github', action: 'read', status: 'success', latency_ms: 180, metadata: { request_at: '2026-04-09T08:31:00Z' } },
+  { action_id: 'mcp-d3', tool_id: 'hubspot', action: 'create', status: 'success', latency_ms: 520, metadata: { request_at: '2026-04-09T09:20:00Z' } },
+  { action_id: 'mcp-d4', tool_id: 'slack', action: 'create', status: 'success', latency_ms: 95, metadata: { request_at: '2026-04-08T14:45:00Z' } },
+];
+const DEMO_MCP_STATS: Record<string, ToolStat> = {
+  jira: { calls: 24, success: 23, errors: 1, avg_latency_ms: 310 },
+  github: { calls: 18, success: 18, errors: 0, avg_latency_ms: 165 },
+  hubspot: { calls: 12, success: 11, errors: 1, avg_latency_ms: 480 },
+  slack: { calls: 31, success: 31, errors: 0, avg_latency_ms: 88 },
+  confluence: { calls: 9, success: 9, errors: 0, avg_latency_ms: 220 },
+};
+const DEMO_RUNTIMES: AgentRT[] = [
+  { runtime_id: 'rt-d1', agent_id: 'iris', agent_name: 'Captain Iris', regiment: 'Titan', persona: 'Marketing', type: 'persistent', state: 'thinking', reasoning: { current_iteration: 3, total_confidence: 0.85 }, metrics: { total_executions: 14, success_rate: 0.93, total_cost_usd: 3.41 } },
+  { runtime_id: 'rt-d2', agent_id: 'prometheus', agent_name: 'Captain Prometheus', regiment: 'Olympian', persona: 'Engineering', type: 'persistent', state: 'acting', reasoning: { current_iteration: 2, total_confidence: 0.91 }, metrics: { total_executions: 22, success_rate: 0.96, total_cost_usd: 5.82 } },
+  { runtime_id: 'rt-d3', agent_id: 'odin', agent_name: 'Captain Odin', regiment: 'Asgard', persona: 'Product', type: 'persistent', state: 'idle', reasoning: { current_iteration: 0, total_confidence: 0 }, metrics: { total_executions: 8, success_rate: 0.88, total_cost_usd: 1.94 } },
+];
+const DEMO_COSTS: CostMeter = {
+  totalCostUsd: 12.47, totalCalls: 47, costByProvider: { anthropic: 9.20, openai: 3.27 },
+  costByModel: { 'claude-sonnet-4-6': 7.80, 'claude-haiku': 1.40, 'gpt-4o-mini': 3.27 },
+  costByPersona: { marketing: 5.10, engineering: 4.80, ta: 1.47, product: 1.10 },
+  hourlyCostUsd: 3.82, hourlyBudgetUsd: 50, budgetUtilization: 7.6,
+};
 
 // ── Types ───────────────────────────────────────────────────────
 type Tab = 'utcp' | 'a2a' | 'mcp' | 'runtime' | 'costs';
@@ -45,6 +87,7 @@ export default function ProtocolMonitor() {
   const [runtimes, setRuntimes] = useState<AgentRT[]>([]);
   const [costMeter, setCostMeter] = useState<CostMeter | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
@@ -57,13 +100,21 @@ export default function ProtocolMonitor() {
         fetch(`${API}/api/runtime/agents`).then(r => r.json()).catch(() => ({ agents: [] })),
         fetch(`${API}/api/costs/meter`).then(r => r.json()).catch(() => null),
       ]);
-      setUtcpTasks(utcp.tasks || []);
-      setA2aMessages(a2a.messages || []);
-      setMcpLog(mcp.log || []);
-      setMcpStats(mcpS.stats || {});
-      setRuntimes(rt.agents || []);
-      setCostMeter(costs);
-    } catch {}
+      const hasData = (utcp.tasks?.length || a2a.messages?.length || mcp.log?.length || rt.agents?.length);
+      if (hasData) {
+        setUtcpTasks(utcp.tasks || []); setA2aMessages(a2a.messages || []);
+        setMcpLog(mcp.log || []); setMcpStats(mcpS.stats || {});
+        setRuntimes(rt.agents || []); setCostMeter(costs); setIsDemo(false);
+      } else {
+        setUtcpTasks(DEMO_UTCP); setA2aMessages(DEMO_A2A);
+        setMcpLog(DEMO_MCP); setMcpStats(DEMO_MCP_STATS);
+        setRuntimes(DEMO_RUNTIMES); setCostMeter(DEMO_COSTS); setIsDemo(true);
+      }
+    } catch {
+      setUtcpTasks(DEMO_UTCP); setA2aMessages(DEMO_A2A);
+      setMcpLog(DEMO_MCP); setMcpStats(DEMO_MCP_STATS);
+      setRuntimes(DEMO_RUNTIMES); setCostMeter(DEMO_COSTS); setIsDemo(true);
+    }
     setLoading(false);
   };
 
@@ -91,6 +142,12 @@ export default function ProtocolMonitor() {
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
+
+        {isDemo && <DemoPreviewBanner pageName="Protocol Monitor" steps={[
+          'Start the gateway — protocols track every execution in real-time',
+          'Execute a skill in any workspace or launch a swarm',
+          'Watch UTCP packets, A2A agent messages, and MCP tool calls appear live',
+        ]} />}
 
         {/* Tabs */}
         <div className="flex gap-1 mb-5">

@@ -8,8 +8,93 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 
 const API = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+
+// ── SevenLabs Demo Data ─────────────────────────────────────
+const DEMO_TEMPLATES: MeetingTemplate[] = [
+  { type: 'standup', title: 'Daily Standup', defaultAgenda: ['Agent status updates', 'Blockers', 'Next priorities'], defaultDurationMin: 15, description: 'Quick sync — each agent reports status, blockers, and next steps.' },
+  { type: 'sprint_planning', title: 'Sprint Planning', defaultAgenda: ['Review backlog', 'Estimate effort', 'Assign agents', 'Set sprint goal'], defaultDurationMin: 60, description: 'Plan the next sprint — prioritize, estimate, assign, and set goals.' },
+  { type: 'retrospective', title: 'Retrospective', defaultAgenda: ['What went well?', 'What to improve?', 'Action items'], defaultDurationMin: 45, description: 'Reflect on the sprint — celebrate wins, identify improvements.' },
+  { type: 'war_room', title: 'War Room', defaultAgenda: ['Incident status', 'Impact assessment', 'Remediation plan'], defaultDurationMin: 90, description: 'Urgent cross-functional response to a critical incident.' },
+  { type: 'design_review', title: 'Design Review', defaultAgenda: ['Present approach', 'Feasibility', 'Risk analysis', 'Decision'], defaultDurationMin: 30, description: 'Review a technical or product design — critique, validate, decide.' },
+  { type: 'debrief', title: 'Execution Debrief', defaultAgenda: ['Review outputs', 'Quality assessment', 'Learnings'], defaultDurationMin: 20, description: 'Post-execution review — assess quality, capture learnings.' },
+];
+
+const DEMO_MEETINGS: AgentMeeting[] = [
+  {
+    meeting_id: 'demo-meet-1', type: 'sprint_planning', title: 'Sprint 14 Planning — Card Modernization Launch',
+    participants: [
+      { agent_id: 'hyperion', name: 'Colonel Hyperion', regiment: 'Titan', rank: 'Colonel', persona: 'Marketing' },
+      { agent_id: 'atlas', name: 'Colonel Atlas', regiment: 'Olympian', rank: 'Colonel', persona: 'Engineering' },
+      { agent_id: 'odin', name: 'Captain Odin', regiment: 'Asgard', rank: 'Captain', persona: 'Product' },
+      { agent_id: 'chronos', name: 'Colonel Chronos', regiment: 'Vanguard', rank: 'Colonel', persona: 'Program' },
+    ],
+    agenda: ['Review backlog for Card Modernization v2', 'Estimate engineering effort', 'Assign agents to workstreams', 'Set sprint goal'],
+    discussion: [
+      { speaker: 'Colonel Chronos', agent_id: 'chronos', message: 'Opening Sprint 14 Planning. Focus: Card Modernization v2 launch readiness. We have 3 workstreams to coordinate.', type: 'update', timestamp: '2026-04-09T09:00:00Z' },
+      { speaker: 'Captain Odin', agent_id: 'odin', message: '[Product] PRD is finalized. 4 epics, 12 stories. Key risk: payment gateway integration timeline.', type: 'update', timestamp: '2026-04-09T09:01:00Z' },
+      { speaker: 'Colonel Atlas', agent_id: 'atlas', message: '[Engineering] I can take 18 story points this sprint. Payment gateway integration is the critical path — needs 8 points alone.', type: 'proposal', timestamp: '2026-04-09T09:02:00Z' },
+      { speaker: 'Colonel Hyperion', agent_id: 'hyperion', message: '[Marketing] Campaign assets are 70% ready. Need product screenshots by mid-sprint for landing page and LinkedIn ads.', type: 'update', timestamp: '2026-04-09T09:03:00Z' },
+      { speaker: 'Colonel Chronos', agent_id: 'chronos', message: 'Sprint goal proposal: Complete payment gateway integration + marketing campaign ready for staging review.', type: 'proposal', timestamp: '2026-04-09T09:04:00Z' },
+    ],
+    decisions: [
+      { topic: 'Sprint 14 Goal', outcome: 'Complete payment gateway integration + campaign staging review by sprint end', votes: { hyperion: 'agree', atlas: 'agree', odin: 'agree', chronos: 'agree' }, confidence: 0.92, rationale: 'Aligns with Q3 launch timeline. Engineering capacity confirmed.' },
+    ],
+    action_items: [
+      { owner: 'Colonel Atlas', agent_id: 'atlas', task: 'Complete payment gateway API integration', deadline: '2026-04-16', status: 'pending' },
+      { owner: 'Colonel Hyperion', agent_id: 'hyperion', task: 'Finalize campaign landing page copy', deadline: '2026-04-14', status: 'pending' },
+      { owner: 'Captain Odin', agent_id: 'odin', task: 'Deliver product screenshots for marketing', deadline: '2026-04-12', status: 'pending' },
+    ],
+    status: 'completed', scheduled_at: '2026-04-09T09:00:00Z', started_at: '2026-04-09T09:00:00Z', completed_at: '2026-04-09T09:15:00Z',
+    summary: 'Sprint 14 planned with 4 agents. 1 decision, 3 action items. Sprint goal: payment gateway + campaign staging.',
+  },
+  {
+    meeting_id: 'demo-meet-2', type: 'war_room', title: 'War Room — Payments API 503 Spike',
+    participants: [
+      { agent_id: 'atlas', name: 'Colonel Atlas', regiment: 'Olympian', rank: 'Colonel', persona: 'Engineering' },
+      { agent_id: 'prometheus', name: 'Captain Prometheus', regiment: 'Olympian', rank: 'Captain', persona: 'Engineering' },
+      { agent_id: 'chronos', name: 'Colonel Chronos', regiment: 'Vanguard', rank: 'Colonel', persona: 'Program' },
+    ],
+    agenda: ['Incident status', 'Impact assessment', 'Root cause hypotheses', 'Remediation plan'],
+    discussion: [
+      { speaker: 'Colonel Atlas', agent_id: 'atlas', message: 'Opening War Room. Payments API returning 503s for 12% of requests since 14:23 UTC. Customer-facing impact confirmed.', type: 'update', timestamp: '2026-04-08T14:30:00Z' },
+      { speaker: 'Captain Prometheus', agent_id: 'prometheus', message: '[Engineering] Log analysis shows connection pool exhaustion on payments-db-primary. Recent deployment at 14:15 introduced a new query pattern.', type: 'update', timestamp: '2026-04-08T14:32:00Z' },
+      { speaker: 'Colonel Atlas', agent_id: 'atlas', message: 'Hypothesis: New query in deploy v2.14.3 is holding connections 3x longer than expected. Recommend immediate rollback.', type: 'proposal', timestamp: '2026-04-08T14:34:00Z' },
+      { speaker: 'Colonel Chronos', agent_id: 'chronos', message: '[Program] Stakeholder comms drafted. Will notify merchant partners if not resolved in 15 minutes.', type: 'update', timestamp: '2026-04-08T14:35:00Z' },
+    ],
+    decisions: [
+      { topic: 'Remediation', outcome: 'Rollback to v2.14.2 immediately, investigate query pattern post-recovery', votes: { atlas: 'agree', prometheus: 'agree', chronos: 'agree' }, confidence: 0.95, rationale: 'Root cause identified — rollback is lowest risk path to recovery.' },
+    ],
+    action_items: [
+      { owner: 'Captain Prometheus', agent_id: 'prometheus', task: 'Execute rollback to v2.14.2', deadline: '2026-04-08', status: 'done' },
+      { owner: 'Colonel Atlas', agent_id: 'atlas', task: 'Write RCA document', deadline: '2026-04-09', status: 'pending' },
+    ],
+    status: 'completed', scheduled_at: '2026-04-08T14:30:00Z', started_at: '2026-04-08T14:30:00Z', completed_at: '2026-04-08T14:45:00Z',
+    summary: 'Incident resolved via rollback. 1 decision, 2 action items. RCA pending.',
+  },
+  {
+    meeting_id: 'demo-meet-3', type: 'retrospective', title: 'Sprint 13 Retrospective',
+    participants: [
+      { agent_id: 'atlas', name: 'Colonel Atlas', regiment: 'Olympian', rank: 'Colonel', persona: 'Engineering' },
+      { agent_id: 'hyperion', name: 'Colonel Hyperion', regiment: 'Titan', rank: 'Colonel', persona: 'Marketing' },
+      { agent_id: 'odin', name: 'Captain Odin', regiment: 'Asgard', rank: 'Captain', persona: 'Product' },
+    ],
+    agenda: ['What went well?', 'What could be improved?', 'Action items for Sprint 14'],
+    discussion: [
+      { speaker: 'Colonel Atlas', agent_id: 'atlas', message: 'Opening Sprint 13 Retrospective. Let\'s reflect on what worked and what to improve.', type: 'update', timestamp: '2026-04-07T16:00:00Z' },
+      { speaker: 'Captain Odin', agent_id: 'odin', message: 'What went well: PRD → Jira decomposition workflow saved 6 hours vs manual process. Cross-agent handoffs were seamless.', type: 'update', timestamp: '2026-04-07T16:02:00Z' },
+      { speaker: 'Colonel Hyperion', agent_id: 'hyperion', message: 'To improve: campaign content review took too long — need faster approval gates. Also, A2A context passing lost some formatting.', type: 'update', timestamp: '2026-04-07T16:04:00Z' },
+    ],
+    decisions: [{ topic: 'Top improvement', outcome: 'Reduce approval gate SLA from 24hr to 4hr for marketing content', votes: { atlas: 'agree', hyperion: 'agree', odin: 'agree' }, confidence: 0.88, rationale: 'Marketing velocity is the bottleneck for launch timeline.' }],
+    action_items: [
+      { owner: 'Colonel Atlas', agent_id: 'atlas', task: 'Implement fast-track approval for low-risk content', deadline: '2026-04-14', status: 'pending' },
+    ],
+    status: 'completed', scheduled_at: '2026-04-07T16:00:00Z', started_at: '2026-04-07T16:00:00Z', completed_at: '2026-04-07T16:30:00Z',
+    summary: 'Sprint 13 retro completed. Key win: PRD workflow saved 6hrs. Top improvement: faster approval gates.',
+  },
+];
 
 // ── Types ───────────────────────────────────────────────────────
 interface MeetingTemplate { type: string; title: string; defaultAgenda: string[]; defaultDurationMin: number; description: string }
@@ -51,12 +136,20 @@ export default function AgentMeetingView() {
   const [meetings, setMeetings] = useState<AgentMeeting[]>([]);
   const [selectedMeeting, setSelectedMeeting] = useState<AgentMeeting | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<'templates' | 'history'>('templates');
+  const [tab, setTab] = useState<'templates' | 'history'>('history');
+  const [isDemo, setIsDemo] = useState(false);
   const discussionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch(`${API}/api/meetings/templates`).then(r => r.json()).then(d => setTemplates(d.templates || [])).catch(() => {});
-    fetch(`${API}/api/a2a/meetings?limit=20`).then(r => r.json()).then(d => setMeetings(d.meetings || [])).catch(() => {});
+    fetch(`${API}/api/meetings/templates`).then(r => r.json())
+      .then(d => setTemplates(d.templates?.length ? d.templates : DEMO_TEMPLATES))
+      .catch(() => setTemplates(DEMO_TEMPLATES));
+    fetch(`${API}/api/a2a/meetings?limit=20`).then(r => r.json())
+      .then(d => {
+        if (d.meetings?.length) { setMeetings(d.meetings); }
+        else { setMeetings(DEMO_MEETINGS); setIsDemo(true); setSelectedMeeting(DEMO_MEETINGS[0]); }
+      })
+      .catch(() => { setMeetings(DEMO_MEETINGS); setIsDemo(true); setSelectedMeeting(DEMO_MEETINGS[0]); });
   }, []);
 
   useEffect(() => {
@@ -97,6 +190,12 @@ export default function AgentMeetingView() {
             ))}
           </div>
         </div>
+
+        {isDemo && <DemoPreviewBanner pageName="Agent Meetings" steps={[
+          'Start the gateway — meetings use the A2A protocol between agents',
+          'Click "Start" on a meeting template (standup, sprint planning, retro, war room)',
+          'Watch agents discuss, vote on decisions, and produce action items',
+        ]} />}
 
         <div className="grid grid-cols-3 gap-5">
           {/* Left panel */}
