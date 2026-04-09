@@ -38,6 +38,8 @@ import AgentMeetingView from '../components/AgentMeetingView';
 import SwarmView from '../components/SwarmView';
 import ProtocolMonitor from '../components/ProtocolMonitor';
 import WorkflowCanvas from '../components/WorkflowCanvas';
+import { TAHub } from '../components/TAHub';
+import { ProgramHub } from '../components/ProgramHub';
 
 function MainContent({ section }: { section: string }) {
   // Dynamic connector detail pages: connector-detail-{connectorId}
@@ -60,8 +62,8 @@ function MainContent({ section }: { section: string }) {
     case 'ws-engineering':          return <EngineeringHub />;
     case 'ws-product':              return <ProductHub />;
     case 'ws-hr':                   return <HRHub />;
-    case 'ws-ta':                   return <ExecutionScreen persona="ta" workspace="ws-ta" />;
-    case 'ws-program':              return <ExecutionScreen persona="program" workspace="ws-program" />;
+    case 'ws-ta':                   return <TAHub />;
+    case 'ws-program':              return <ProgramHub />;
 
     // Execution Screens (launched from workspace hubs or sidebar)
     case 'exec-marketing':          return <ExecutionScreen persona="marketing" workspace="ws-marketing" />;

@@ -17,6 +17,7 @@ import { OutputsView, type OutputExecution } from './persona/OutputsView';
 import { PromptLibrary } from './PromptLibraryDeep';
 import AgentsPanel from './AgentsPanel';
 import { PipelineView } from './PipelineView';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 import type { ExecutionStepEvent } from '../store/marketing-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -487,14 +488,11 @@ function HRSkillsContent() {
 function HRHistoryContent() {
   const executions = useHRStore((s) => s.executions);
   const mapped: OutputExecution[] = executions.map(e => ({
-    id: e.id,
-    skillName: e.skillName || '',
-    status: e.status,
-    startedAt: e.startedAt,
-    completedAt: e.completedAt,
-    outputs: e.outputs,
-    steps: [],
+    id: e.id, skillName: e.skillName || '', status: e.status, startedAt: e.startedAt, completedAt: e.completedAt, outputs: e.outputs, steps: [],
   }));
+  if (mapped.length === 0) return (
+    <div className="p-6"><DemoPreviewBanner pageName="HR History" steps={['Execute an HR skill (Policy Q&A, Onboarding Plan, Performance Review)', 'Completed executions appear here with outputs and compliance status', 'All HR executions include PII handling audit trails']} /></div>
+  );
   return <OutputsView executions={mapped} accentColor="pink-700" />;
 }
 
@@ -543,7 +541,12 @@ export function HRHub() {
     >
       {activeSection === 'run' && <HRSkillsContent />}
       {activeSection === 'library' && <HRLibraryContent />}
-      {activeSection === 'pipelines' && <PipelineView persona="hr" accentColor="pink-700" />}
+      {activeSection === 'pipelines' && (
+        <div className="p-6">
+          <DemoPreviewBanner pageName="HR Pipelines" steps={['Execute multi-step HR workflows (Onboarding → Training → Review)', 'Pipeline DAG shows approval gates and compliance checkpoints', 'Track progress with strict PII access controls']} />
+          <PipelineView persona="hr" accentColor="pink-700" />
+        </div>
+      )}
       {activeSection === 'history' && <HRHistoryContent />}
     </UnifiedPersonaLayout>
   );

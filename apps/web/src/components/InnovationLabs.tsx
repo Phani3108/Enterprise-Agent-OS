@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
@@ -248,7 +249,7 @@ export default function InnovationLabs() {
           )}
 
           <div className="grid gap-3">
-            {experiments.length === 0 && <div className="text-gray-500 dark:text-gray-400 text-center py-12">No experiments yet. Start your first experiment!</div>}
+            {experiments.length === 0 && <div className="px-4 py-4"><DemoPreviewBanner pageName="Innovation Experiments" steps={['Start the gateway to enable experiment tracking', 'Create an experiment with a hypothesis (e.g. "AI code review can reduce review time by 40%")', 'Track results, evaluate outcomes, and graduate successful experiments to production skills']} /></div>}
             {experiments.map(exp => (
               <div key={exp.id} onClick={() => setSelectedExp(exp)} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-violet-300 transition-all">
                 <div className="flex items-center justify-between mb-2">
@@ -299,7 +300,7 @@ export default function InnovationLabs() {
           )}
 
           <div className="grid gap-3">
-            {hackathons.length === 0 && <div className="text-gray-500 dark:text-gray-400 text-center py-12">No hackathons yet.</div>}
+            {hackathons.length === 0 && <div className="px-4 py-4"><DemoPreviewBanner pageName="Hackathons" steps={['Start the gateway to enable hackathon management', 'Create a hackathon event with a theme and timeline', 'Add experiments, track progress, and award results']} /></div>}
             {hackathons.map(h => (
               <div key={h.id} className="bg-white dark:bg-gray-800 rounded-lg p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
@@ -330,7 +331,7 @@ export default function InnovationLabs() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold dark:text-white">Graduation Pipeline</h2>
           <div className="grid gap-3">
-            {graduations.length === 0 && <div className="text-gray-500 dark:text-gray-400 text-center py-12">No graduation requests yet. Move experiments to evaluation and request graduation.</div>}
+            {graduations.length === 0 && <div className="px-4 py-4"><DemoPreviewBanner pageName="Graduations" steps={['Run experiments and mark successful ones for evaluation', 'Request graduation to promote an experiment to a production skill', 'Review and approve — graduated experiments become permanent skills in the marketplace']} /></div>}
             {graduations.map(g => (
               <div key={g.id} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-2">

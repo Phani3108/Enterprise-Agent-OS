@@ -17,6 +17,7 @@ import { OutputsView, type OutputExecution } from './persona/OutputsView';
 import { PromptLibrary } from './PromptLibraryDeep';
 import AgentsPanel from './AgentsPanel';
 import { PipelineView } from './PipelineView';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 import type { ExecutionStepEvent } from '../store/marketing-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -606,14 +607,11 @@ function ProdSkillsContent() {
 function ProdHistoryContent() {
   const executions = useProductStore((s) => s.executions);
   const mapped: OutputExecution[] = executions.map(e => ({
-    id: e.id,
-    skillName: e.skillName,
-    status: e.status,
-    steps: e.steps,
-    outputs: e.outputs,
-    startedAt: e.startedAt,
-    completedAt: e.completedAt,
+    id: e.id, skillName: e.skillName, status: e.status, steps: e.steps, outputs: e.outputs, startedAt: e.startedAt, completedAt: e.completedAt,
   }));
+  if (mapped.length === 0) return (
+    <div className="p-6"><DemoPreviewBanner pageName="Product History" steps={['Execute a product skill (PRD Generator, Epic Writer, Roadmap Analyzer)', 'Completed executions appear here with full outputs and quality scores', 'Compare PRD versions, track stakeholder feedback loops']} /></div>
+  );
   return <OutputsView executions={mapped} accentColor="violet-700" />;
 }
 
@@ -662,7 +660,12 @@ export function ProductHub() {
     >
       {activeSection === 'run' && <ProdSkillsContent />}
       {activeSection === 'library' && <ProdLibraryContent />}
-      {activeSection === 'pipelines' && <PipelineView persona="product" accentColor="violet-700" />}
+      {activeSection === 'pipelines' && (
+        <div className="p-6">
+          <DemoPreviewBanner pageName="Product Pipelines" steps={['Execute multi-step product workflows (PRD → Epics → Stories → Jira)', 'Pipeline DAG shows decomposition chain with agent handoffs', 'Track real-time progress as Product and Engineering agents collaborate']} />
+          <PipelineView persona="product" accentColor="violet-700" />
+        </div>
+      )}
       {activeSection === 'history' && <ProdHistoryContent />}
     </UnifiedPersonaLayout>
   );

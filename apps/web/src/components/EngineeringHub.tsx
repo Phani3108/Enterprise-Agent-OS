@@ -17,6 +17,7 @@ import { OutputsView, type OutputExecution } from './persona/OutputsView';
 import { PromptLibrary } from './PromptLibraryDeep';
 import AgentsPanel from './AgentsPanel';
 import { PipelineView } from './PipelineView';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 import type { ExecutionStepEvent } from '../store/marketing-store';
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -605,14 +606,11 @@ function EngSkillsContent() {
 function EngHistoryContent() {
   const executions = useEngineeringStore((s) => s.executions);
   const mapped: OutputExecution[] = executions.map(e => ({
-    id: e.id,
-    skillName: e.skillName,
-    status: e.status,
-    steps: e.steps,
-    outputs: e.outputs,
-    startedAt: e.startedAt,
-    completedAt: e.completedAt,
+    id: e.id, skillName: e.skillName, status: e.status, steps: e.steps, outputs: e.outputs, startedAt: e.startedAt, completedAt: e.completedAt,
   }));
+  if (mapped.length === 0) return (
+    <div className="p-6"><DemoPreviewBanner pageName="Engineering History" steps={['Execute an engineering skill (PR Review, Incident RCA, Test Generator)', 'Completed executions appear here with full outputs and quality scores', 'Compare results across runs, export reports, and track agent performance']} /></div>
+  );
   return <OutputsView executions={mapped} accentColor="slate-900" />;
 }
 
@@ -661,7 +659,12 @@ export function EngineeringHub() {
     >
       {activeSection === 'run' && <EngSkillsContent />}
       {activeSection === 'library' && <EngLibraryContent />}
-      {activeSection === 'pipelines' && <PipelineView persona="engineering" accentColor="slate-900" />}
+      {activeSection === 'pipelines' && (
+        <div className="p-6">
+          <DemoPreviewBanner pageName="Engineering Pipelines" steps={['Execute multi-step engineering workflows (PR Review → Security Scan → Report)', 'Pipeline DAG shows step dependencies, agent assignments, and approval gates', 'Track live progress as agents execute each stage with tool calls']} />
+          <PipelineView persona="engineering" accentColor="slate-900" />
+        </div>
+      )}
       {activeSection === 'history' && <EngHistoryContent />}
     </UnifiedPersonaLayout>
   );
