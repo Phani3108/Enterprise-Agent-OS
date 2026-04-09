@@ -9,8 +9,55 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import DemoPreviewBanner from './shared/DemoPreviewBanner';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+
+// ── SevenLabs Demo Visions ──────────────────────────────────
+const DEMO_VISIONS: VisionStatement[] = [
+  {
+    id: 'vis-demo-1', statement: 'Become the #1 AI-powered fintech platform for community banks by Q4 2026',
+    createdBy: 'CEO', createdAt: '2026-01-15T09:00:00Z', status: 'active',
+    decomposition: {
+      visionId: 'vis-demo-1',
+      strategicObjectives: [
+        { id: 'so-1', title: 'Launch Card Modernization v2', description: 'Ship next-gen card management platform with AI-powered fraud detection and real-time analytics.', assignedTo: 'cto', priority: 'critical', status: 'in-progress', okrs: [],
+          regimentTasks: [
+            { id: 'rt-1', objectiveId: 'so-1', title: 'Complete payment gateway integration', description: 'Integrate with 3 major payment processors', assignedToColonel: 'Atlas', assignedToRegiment: 'Olympian', status: 'in-progress', createdAt: '2026-04-01T09:00:00Z' },
+            { id: 'rt-2', objectiveId: 'so-1', title: 'Ship fraud detection ML model', description: 'Deploy real-time fraud scoring engine', assignedToColonel: 'Atlas', assignedToRegiment: 'Olympian', status: 'pending', createdAt: '2026-04-01T09:00:00Z' },
+          ] },
+        { id: 'so-2', title: 'Acquire 50 community bank customers', description: 'Execute multi-channel campaign targeting community banks in Southeast and Midwest.', assignedTo: 'cmo', priority: 'high', status: 'in-progress', okrs: [],
+          regimentTasks: [
+            { id: 'rt-3', objectiveId: 'so-2', title: 'Launch Community Banks campaign', description: 'LinkedIn + Email + Webinar campaign', assignedToColonel: 'Hyperion', assignedToRegiment: 'Titan', status: 'completed', createdAt: '2026-03-15T09:00:00Z' },
+            { id: 'rt-4', objectiveId: 'so-2', title: 'Hire 3 enterprise sales reps', description: 'Fintech-experienced AEs for Southeast territory', assignedToColonel: 'Rhea', assignedToRegiment: 'Explorer', status: 'in-progress', createdAt: '2026-03-20T09:00:00Z' },
+          ] },
+        { id: 'so-3', title: 'Achieve product-market fit (NPS > 60)', description: 'Iterate with pilot banks, measure NPS, and close feedback loops.', assignedTo: 'cpo', priority: 'high', status: 'in-progress', okrs: [],
+          regimentTasks: [
+            { id: 'rt-5', objectiveId: 'so-3', title: 'Run 5 pilot bank feedback sessions', description: 'Structured interviews with pilot customers', assignedToColonel: 'Themis', assignedToRegiment: 'Asgard', status: 'in-progress', createdAt: '2026-04-01T09:00:00Z' },
+          ] },
+      ],
+      decomposedBy: 'CEO Agent', decomposedAt: '2026-01-16T10:00:00Z', rationale: 'Three pillars: ship the product, acquire customers, validate fit.',
+    },
+  },
+  {
+    id: 'vis-demo-2', statement: 'Build the most trusted enterprise AI orchestration layer',
+    createdBy: 'CEO', createdAt: '2026-02-01T09:00:00Z', status: 'active',
+    decomposition: {
+      visionId: 'vis-demo-2',
+      strategicObjectives: [
+        { id: 'so-4', title: 'SOC 2 Type II certification by Q3', description: 'Complete audit and certification for enterprise customers.', assignedTo: 'cto', priority: 'critical', status: 'in-progress', okrs: [],
+          regimentTasks: [
+            { id: 'rt-6', objectiveId: 'so-4', title: 'Complete security audit', description: 'Engage auditor and remediate findings', assignedToColonel: 'Atlas', assignedToRegiment: 'Olympian', status: 'in-progress', createdAt: '2026-03-01T09:00:00Z' },
+          ] },
+        { id: 'so-5', title: 'Ship governance-first agent platform', description: 'Full RBAC, audit trails, cost controls, and compliance dashboard.', assignedTo: 'cpo', priority: 'high', status: 'in-progress', okrs: [],
+          regimentTasks: [
+            { id: 'rt-7', objectiveId: 'so-5', title: 'Build governance dashboard', description: 'License, cost, audit, compliance views', assignedToColonel: 'Themis', assignedToRegiment: 'Asgard', status: 'completed', createdAt: '2026-02-15T09:00:00Z' },
+          ] },
+      ],
+      decomposedBy: 'CEO Agent', decomposedAt: '2026-02-02T10:00:00Z', rationale: 'Enterprise trust = security certification + governance tooling.',
+    },
+  },
+];
 
 interface KeyResult { id: string; description: string; target: string; current: string; progress: number; }
 interface OKR { id: string; objective: string; owner: string; quarter: string; status: string; keyResults: KeyResult[]; }
@@ -74,12 +121,17 @@ export default function VisionDashboard() {
   const [pmoReport, setPmoReport] = useState<PMOReport | null>(null);
   const [showPMO, setShowPMO] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
 
   const refresh = useCallback(() => {
     fetch(`${API}/api/vision`)
       .then(r => r.json())
-      .then(data => { setVisions(data.visions ?? []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(data => {
+        if (data.visions?.length) { setVisions(data.visions); }
+        else { setVisions(DEMO_VISIONS); setIsDemo(true); setSelected(DEMO_VISIONS[0]); }
+        setLoading(false);
+      })
+      .catch(() => { setVisions(DEMO_VISIONS); setIsDemo(true); setSelected(DEMO_VISIONS[0]); setLoading(false); });
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -180,6 +232,12 @@ export default function VisionDashboard() {
             </button>
           </div>
         </div>
+
+        {isDemo && <DemoPreviewBanner pageName="Vision & Strategy" steps={[
+          'Start the gateway — visions are stored and decomposed via the Vision API',
+          'Type a vision statement and click "Set Vision"',
+          'Click "Decompose" to cascade into strategic objectives → regiment tasks',
+        ]} />}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Vision List */}
