@@ -25,6 +25,7 @@ import { createUTCPPacket, storePacket, getPacket, getRecentPackets, getPacketsB
 import { createA2AMessage, respondToA2A, createMeeting, createSwarm, storeMessage, getMessage, getRecentMessages, getMessagesByTask, getPendingMessages, storeMeeting, getMeeting, getRecentMeetings, getActiveMeetings, storeSwarm, getSwarm, getActiveSwarms, getRecentSwarms, type A2AAgent } from './a2a-protocol.js';
 import { createMCPAction, executeMCPAction, getToolCapabilities, getToolCapability, getExecutionLog as getMCPLog, getToolStats } from './mcp-executor.js';
 import { createAgentRuntime, createEphemeralAgent, addReACTIteration, completeExecution, assembleFullPrompt, storeRuntime, getRuntime, getActiveRuntimes, getAllRuntimes, terminateRuntime } from './agent-runtime.js';
+import { initAgentStatusReconciler, getAgentStatusSnapshot, getAgentStatus, subscribeToAgentStatus } from './agent-status-reconciler.js';
 import { startMeetingFromTemplate, delegateTask, escalateTask, getDelegationChain, getDelegationChainsByTask, getAgentRoster, getMeetingTemplates, type MeetingTemplate } from './agent-meetings.js';
 import { launchSwarm, advanceSwarmPhase, dissolveSwarm, getSwarmTemplates, getSwarmTemplate, getSwarmStats } from './swarm-manager.js';
 import { getFlagshipWorkflows, getFlagshipWorkflow, getFlagshipWorkflowsByPersona } from './flagship-workflows.js';
@@ -46,7 +47,12 @@ import { PRODUCT_SKILLS, getProductSkill, getProductSkillsByCluster } from './pr
 import { HR_SKILLS, getHRSkill, getHRSkillsByCluster } from './hr-skills-data.js';
 import { TA_SKILLS, getTASkill, getTASkillsByCluster } from './ta-skills-data.js';
 import { PROGRAM_SKILLS, getProgramSkill, getProgramSkillsByCluster } from './program-skills-data.js';
-import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep, getAgentKPIs, getAgentKPI, initPersonaStore, getExecutionStats, getAllExecutions, getAfterActionReport, listAfterActionReports, getRetrainingFlags, getRetrainingFlag, acknowledgeRetrainingFlag, dismissRetrainingFlag } from './persona-api.js';
+import { createPersonaExecution, getPersonaExecution, listPersonaExecutions, approvePersonaStep, getAgentKPIs, getAgentKPI, initPersonaStore, getExecutionStats, getAllExecutions, getAfterActionReport, listAfterActionReports, getRetrainingFlags, getRetrainingFlag, acknowledgeRetrainingFlag, dismissRetrainingFlag, runSkillExecution } from './persona-api.js';
+import { startWorkers, registerTaskHandler } from './task-worker.js';
+import { getQueueStats, listTasks, getTask, cancelTask as cancelQueueTask, retryTask as retryQueueTask } from './task-queue.js';
+import { createSession as createChatSession, getSession as getChatSession, listSessions as listChatSessions, archiveSession as archiveChatSession, listMessages as listChatMessages } from './chat-store.js';
+import { postMessage as postChatMessage } from './chat-engine.js';
+import { getFsSkills, reloadFsSkills, getAllFsSkills } from './skill-fs-loader.js';
 import type { AfterActionReport, RetrainingFlag } from './persona-api.js';
 import { getAvailableProviders, getDefaultProvider } from './llm-provider.js';
 import { getFullRegistry, getAgentIdentity, getAgentsByPersona, getCSuiteAgents, getAllCSuiteProfiles, getCSuiteProfile, getChainOfCommand, getOrgTree } from './agent-registry.js';
@@ -69,7 +75,7 @@ import { getAgentMemory, getAllAgentMemorySnapshots, recordAgentMemory, _exportD
 // (all execution flows use persona-api.ts sequential model)
 // import { executeWorkflow, getWorkflowExecution, resumeWorkflow } from './workflow-bridge.js';
 import { initOTel, shutdownOTel } from '@agentos/observability';
-import { attachWebSocket, broadcastEvent, getWSClientCount } from './ws.js';
+import { attachWebSocket, broadcastEvent, getWSClientCount, getWSMetrics } from './ws.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import nodePath from 'node:path';
@@ -90,6 +96,16 @@ wireNotificationBridge(); // Wire event bus patterns → notification dispatch
 initInnovationStore(store); // Wire innovation labs experiments, hackathons & graduations
 initBudgetStore(store); // Wire agent budgets, spend log & cost alerts
 initImprovementStore(store); // Wire performance reviews, improvement plans & feedback
+initAgentStatusReconciler(); // Wire agent status reconciler (subscribes to execution events + 5s ground-truth sweep)
+
+// Bridge agent status changes to WebSocket clients on the "agents" channel
+subscribeToAgentStatus((record) => {
+  try { broadcastEvent('agents', 'agent.status.changed', record as unknown as Record<string, unknown>); } catch {}
+});
+
+// Register task handlers and start workers (Phase 3 — Task Queue with atomic claim)
+registerTaskHandler('runSkillExecution', runSkillExecution);
+startWorkers({ workerCount: 4, maxConcurrentPerAgent: 2, maxConcurrentPerPersona: 8 });
 const promptStore = new PromptStore();
 const capabilityGraph = new CapabilityGraph();
 const personaSystem = new PersonaSystem();
@@ -289,6 +305,114 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // Rate limiting status
         if (path === '/api/rate-limits' && method === 'GET') {
             sendJSON(res, 200, { circuits: getAllCircuitStates() });
+            return;
+        }
+
+        // WebSocket metrics (backpressure, slow clients, drops)
+        if (path === '/api/ws/metrics' && method === 'GET') {
+            sendJSON(res, 200, getWSMetrics());
+            return;
+        }
+
+        // ── Task Queue (Phase 3) ──
+        if (path === '/api/queue/stats' && method === 'GET') {
+            sendJSON(res, 200, getQueueStats());
+            return;
+        }
+
+        if (path === '/api/queue/tasks' && method === 'GET') {
+            const statusFilter = url.searchParams.get('status') as any;
+            const personaFilter = url.searchParams.get('persona') as any;
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            const tasks = listTasks({ status: statusFilter || undefined, persona: personaFilter || undefined, limit });
+            sendJSON(res, 200, { tasks, total: tasks.length });
+            return;
+        }
+
+        if (path.startsWith('/api/queue/tasks/') && path.endsWith('/cancel') && method === 'POST') {
+            const taskId = path.replace('/api/queue/tasks/', '').replace('/cancel', '');
+            const ok = cancelQueueTask(taskId);
+            sendJSON(res, ok ? 200 : 404, { ok, taskId });
+            return;
+        }
+
+        if (path.startsWith('/api/queue/tasks/') && path.endsWith('/retry') && method === 'POST') {
+            const taskId = path.replace('/api/queue/tasks/', '').replace('/retry', '');
+            const ok = retryQueueTask(taskId);
+            sendJSON(res, ok ? 200 : 404, { ok, taskId });
+            return;
+        }
+
+        if (path.startsWith('/api/queue/tasks/') && method === 'GET') {
+            const taskId = path.replace('/api/queue/tasks/', '');
+            const task = getTask(taskId);
+            if (!task) { sendJSON(res, 404, { error: 'Task not found' }); return; }
+            sendJSON(res, 200, { task });
+            return;
+        }
+
+        // ── Chat (Phase 4) ──
+        if (path === '/api/chat/sessions' && method === 'GET') {
+            const sessions = listChatSessions(userId);
+            sendJSON(res, 200, { sessions });
+            return;
+        }
+
+        if (path === '/api/chat/sessions' && method === 'POST') {
+            const body = await readBody(req);
+            const session = createChatSession({
+                userId,
+                title: (body.title as string) ?? undefined,
+                agentId: (body.agentId as string) ?? undefined,
+                persona: (body.persona as any) ?? undefined,
+            });
+            sendJSON(res, 201, { session });
+            return;
+        }
+
+        if (path.match(/^\/api\/chat\/sessions\/[^/]+$/) && method === 'GET') {
+            const sessionId = path.split('/')[4]!;
+            const session = getChatSession(sessionId);
+            if (!session) { sendJSON(res, 404, { error: 'Session not found' }); return; }
+            const messages = listChatMessages(sessionId, 100);
+            sendJSON(res, 200, { session, messages });
+            return;
+        }
+
+        if (path.match(/^\/api\/chat\/sessions\/[^/]+$/) && method === 'DELETE') {
+            const sessionId = path.split('/')[4]!;
+            const ok = archiveChatSession(sessionId);
+            sendJSON(res, ok ? 200 : 404, { ok });
+            return;
+        }
+
+        if (path.match(/^\/api\/chat\/sessions\/[^/]+\/messages$/) && method === 'POST') {
+            const sessionId = path.split('/')[4]!;
+            const body = await readBody(req);
+            const content = (body.content as string) ?? '';
+            if (!content.trim()) { sendJSON(res, 400, { error: 'content required' }); return; }
+            const result = await postChatMessage({ sessionId, userId, content });
+            sendJSON(res, result.replyPath === 'error' ? 500 : 200, result);
+            return;
+        }
+
+        // ── Skills File System (Phase 5) ──
+        if (path === '/api/skills/fs' && method === 'GET') {
+            const persona = url.searchParams.get('persona');
+            if (persona) {
+                const result = getFsSkills(persona);
+                sendJSON(res, 200, { persona, ...result, available: !!result });
+            } else {
+                sendJSON(res, 200, { skills: getAllFsSkills() });
+            }
+            return;
+        }
+
+        if (path === '/api/skills/fs/reload' && method === 'POST') {
+            const body = await readBody(req);
+            const persona = (body.persona as string) ?? undefined;
+            const result = reloadFsSkills(persona);
+            sendJSON(res, 200, result);
             return;
         }
 
@@ -1265,6 +1389,24 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const active = url.searchParams.get('active') === 'true';
             const agents = active ? getActiveRuntimes() : getAllRuntimes();
             sendJSON(res, 200, { agents, total: agents.length });
+            return;
+        }
+
+        // Agent Status Reconciler (ground-truth live status)
+        if (path === '/api/agents/status' && method === 'GET') {
+            const snapshot = getAgentStatusSnapshot();
+            const working = snapshot.filter(s => s.state === 'working').length;
+            const waiting = snapshot.filter(s => s.state === 'waiting_approval').length;
+            const idle = snapshot.filter(s => s.state === 'idle').length;
+            sendJSON(res, 200, { agents: snapshot, summary: { total: snapshot.length, working, waiting, idle } });
+            return;
+        }
+
+        if (path.startsWith('/api/agents/status/') && method === 'GET') {
+            const agentId = path.replace('/api/agents/status/', '');
+            const record = getAgentStatus(agentId);
+            if (!record) { sendJSON(res, 404, { error: 'Agent not tracked' }); return; }
+            sendJSON(res, 200, { agent: record });
             return;
         }
 

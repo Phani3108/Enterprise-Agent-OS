@@ -7,8 +7,49 @@
  */
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { RetrainingAlerts } from './RetrainingAlerts';
+
+const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
+
+// ── Live agent status (Phase 1 reconciler) ──────────────────────
+interface LiveAgentStatus {
+  agentId: string;
+  callSign: string;
+  state: 'idle' | 'working' | 'waiting_approval' | 'error' | 'terminated';
+  currentSkillName?: string;
+  lastActiveAt: string;
+  tasksThisHour: number;
+}
+
+function useLiveAgentStatus(): { byCallSign: Map<string, LiveAgentStatus>; summary: { total: number; working: number; waiting: number; idle: number } } {
+  const [snapshot, setSnapshot] = useState<LiveAgentStatus[]>([]);
+  const [summary, setSummary] = useState({ total: 0, working: 0, waiting: 0, idle: 0 });
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const r = await fetch(`${GATEWAY_URL}/api/agents/status`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (Array.isArray(d.agents)) setSnapshot(d.agents);
+        if (d.summary) setSummary(d.summary);
+      } catch {}
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Index by callSign for fast lookups (agents in the roster use callSigns)
+  const byCallSign = useMemo(() => {
+    const m = new Map<string, LiveAgentStatus>();
+    for (const s of snapshot) m.set(s.callSign.toLowerCase(), s);
+    return m;
+  }, [snapshot]);
+
+  return { byCallSign, summary };
+}
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -1895,7 +1936,7 @@ const RELATIONSHIP_LABELS: Record<string, { label: string; color: string }> = {
 
 // ── Agent Card ────────────────────────────────────────────────────
 
-function AgentCard({ agent }: { agent: AgentEmployee }) {
+function AgentCard({ agent, liveStatus }: { agent: AgentEmployee; liveStatus?: Map<string, LiveAgentStatus> }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'jd' | 'kpis' | 'coordination' | 'growth'>('jd');
   const lc = LEVEL_CONFIG[agent.level];
@@ -1929,6 +1970,21 @@ function AgentCard({ agent }: { agent: AgentEmployee }) {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
               </span>
             )}
+            {(() => {
+              const live = liveStatus?.get(agent.callSign.toLowerCase());
+              if (!live) return null;
+              if (live.state === 'working') return (
+                <span className="flex items-center gap-1 text-[10px] text-blue-600 font-semibold" title={live.currentSkillName}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> Working {live.currentSkillName ? `on ${live.currentSkillName.slice(0, 24)}` : ''}
+                </span>
+              );
+              if (live.state === 'waiting_approval') return (
+                <span className="flex items-center gap-1 text-[10px] text-amber-600 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Awaiting Approval
+                </span>
+              );
+              return null;
+            })()}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -2079,6 +2135,9 @@ export default function AgentsPanel({ personaFilter }: { personaFilter?: Persona
   const [filterPersona, setFilterPersona] = useState<Persona | null>(personaFilter ?? null);
   const [viewMode, setViewMode] = useState<'hierarchy' | 'grid'>('hierarchy');
 
+  // Phase 1: Live agent status from reconciler
+  const { byCallSign: liveStatus, summary: liveSummary } = useLiveAgentStatus();
+
   const agents = useMemo(() => {
     let list = AGENT_ROSTER;
     if (filterLevel) list = list.filter(a => a.level === filterLevel);
@@ -2105,6 +2164,22 @@ export default function AgentsPanel({ personaFilter }: { personaFilter?: Persona
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {liveSummary.working > 0 && (
+            <div className="flex items-center gap-1 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-xs font-semibold text-blue-700">
+                {liveSummary.working} working
+              </span>
+            </div>
+          )}
+          {liveSummary.waiting > 0 && (
+            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-xs font-semibold text-amber-700">
+                {liveSummary.waiting} awaiting approval
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-semibold text-emerald-700">
@@ -2220,7 +2295,7 @@ export default function AgentsPanel({ personaFilter }: { personaFilter?: Persona
                   <div className="flex-1 border-t border-slate-100" />
                 </div>
                 <div className="space-y-2">
-                  {levelAgents.map(a => <AgentCard key={a.id} agent={a} />)}
+                  {levelAgents.map(a => <AgentCard key={a.id} agent={a} liveStatus={liveStatus} />)}
                 </div>
               </div>
             );
@@ -2228,7 +2303,7 @@ export default function AgentsPanel({ personaFilter }: { personaFilter?: Persona
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {agents.map(a => <AgentCard key={a.id} agent={a} />)}
+          {agents.map(a => <AgentCard key={a.id} agent={a} liveStatus={liveStatus} />)}
         </div>
       )}
 

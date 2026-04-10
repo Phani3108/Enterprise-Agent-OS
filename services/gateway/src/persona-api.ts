@@ -16,6 +16,7 @@ import { createA2AMessage, storeMessage } from './a2a-protocol.js';
 import { createMCPAction, executeMCPAction } from './mcp-executor.js';
 import { memoryGraph } from './memory-graph.js';
 import { eventBus } from './event-bus.js';
+import { enqueue as taskEnqueue, type PersonaId as QueuePersonaId } from './task-queue.js';
 import { getAgentIdentity, getAgentsByPersona, validateHandoff, type AgentIdentity } from './agent-registry.js';
 import { buildAgentMemoryContext, extractAndStoreMemory, initAgentMemory } from './agent-memory.js';
 import type { Store } from './db.js';
@@ -1776,14 +1777,69 @@ export function createPersonaExecution(
   // ── Event Bus: Execution started ──
   eventBus.emit('execution.started', { execId: id, persona, skillName: skill.name, utcpTaskId: exec.utcpTaskId }).catch(() => {});
 
-  // Fire execution asynchronously
-  processSkillSteps(id, persona, skill, inputs, simulate ?? false, customPrompt, provider, modelId).catch((err) => {
-    console.error(`[persona-api] processSkillSteps error for ${id}:`, err);
-    const e = executions.get(id);
-    if (e) { e.status = 'failed'; persistExec(e); }
-  });
+  // ── Task Queue: enqueue instead of fire-and-forget ──
+  // Primary agent = first step's agent (falls back to 'unknown')
+  const primaryAgent = skill.steps[0]?.agent ?? 'unknown';
+  try {
+    taskEnqueue({
+      taskId: id,
+      persona: persona as QueuePersonaId,
+      agentId: primaryAgent,
+      runFn: 'runSkillExecution',
+      payload: {
+        execId: id,
+        persona,
+        skill,
+        inputs,
+        simulate: simulate ?? false,
+        customPrompt,
+        provider,
+        modelId,
+      },
+      priority: 50,
+      maxAttempts: 1, // execution pipeline has its own retry; queue doesn't re-drive it
+    });
+  } catch (err) {
+    // Fallback: if the queue isn't available (shouldn't happen), run directly
+    console.error(`[persona-api] task-queue enqueue failed for ${id}, falling back to direct run:`, err);
+    processSkillSteps(id, persona, skill, inputs, simulate ?? false, customPrompt, provider, modelId).catch((err2) => {
+      console.error(`[persona-api] processSkillSteps error for ${id}:`, err2);
+      const e = executions.get(id);
+      if (e) { e.status = 'failed'; persistExec(e); }
+    });
+  }
 
   return exec;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Task worker entry point — invoked by task-worker.ts after claim()
+// ═══════════════════════════════════════════════════════════════
+
+export interface RunSkillExecutionPayload {
+  execId: string;
+  persona: 'engineering' | 'product' | 'hr' | 'marketing';
+  skill: PersonaSkillDef;
+  inputs: Record<string, unknown>;
+  simulate: boolean;
+  customPrompt?: string;
+  provider?: LLMProviderId;
+  modelId?: string;
+}
+
+export async function runSkillExecution(payload: unknown): Promise<void> {
+  const p = payload as RunSkillExecutionPayload;
+  if (!p || !p.execId || !p.skill) {
+    throw new Error('runSkillExecution: invalid payload');
+  }
+  try {
+    await processSkillSteps(p.execId, p.persona, p.skill, p.inputs, p.simulate, p.customPrompt, p.provider, p.modelId);
+  } catch (err) {
+    console.error(`[persona-api] processSkillSteps error for ${p.execId}:`, err);
+    const e = executions.get(p.execId);
+    if (e) { e.status = 'failed'; persistExec(e); }
+    throw err;
+  }
 }
 
 export function getPersonaExecution(execId: string): PersonaExecutionRecord | undefined {

@@ -40,6 +40,7 @@ import ProtocolMonitor from '../components/ProtocolMonitor';
 import WorkflowCanvas from '../components/WorkflowCanvas';
 import { TAHub } from '../components/TAHub';
 import { ProgramHub } from '../components/ProgramHub';
+import ChatPanel from '../components/ChatPanel';
 
 function MainContent({ section }: { section: string }) {
   // Dynamic connector detail pages: connector-detail-{connectorId}
@@ -81,6 +82,7 @@ function MainContent({ section }: { section: string }) {
     case 'platform-swarms':         return <SwarmView />;
     case 'platform-protocols':      return <ProtocolMonitor />;
     case 'platform-workflows':      return <WorkflowCanvas />;
+    case 'platform-chat':           return <ChatPanel />;
 
     // Operations
     case 'ops-integrations':        return <ToolsRegistry />;
@@ -117,7 +119,7 @@ export default function Home() {
       'ws-marketing','ws-engineering','ws-product','ws-hr','ws-ta','ws-program',
       'exec-marketing','exec-engineering','exec-product','exec-hr','exec-ta','exec-program',
       'platform-agents','platform-connections','platform-meetings','platform-swarms',
-      'platform-protocols','platform-workflows','platform-innovation',
+      'platform-protocols','platform-workflows','platform-chat','platform-innovation',
       'ops-executions','ops-notifications','ops-integrations','ops-discussions','ops-blog',
       'admin-governance','admin-usage','admin-settings',
     ];

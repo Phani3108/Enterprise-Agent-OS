@@ -1,15 +1,26 @@
 /**
- * Gateway WebSocket Server — Live Execution Streaming
+ * Gateway WebSocket Server — Live Execution Streaming with Backpressure
  *
  * Provides real-time streaming of execution events to connected clients.
- * Uses Server-Sent Events (SSE) pattern over WebSocket for bi-directional communication.
+ * Uses RFC 6455 WebSocket framing with per-client backpressure tracking.
  *
  * Protocol:
  *   Client sends:   { type: 'subscribe', sessionId: string }
- *   Client sends:   { type: 'unsubscribe', sessionId: string }
- *   Server sends:   StreamEvent JSON (phase.started, reasoning.step, tool.completed, etc.)
+ *                   { type: 'subscribe', channel: string }
+ *                   { type: 'unsubscribe', sessionId: string }
+ *                   { type: 'unsubscribe', channel: string }
+ *   Server sends:   StreamEvent JSON
+ *
+ * Backpressure:
+ *   - Each client has a writableLength threshold (1 MB).
+ *   - Clients exceeding threshold for 3 consecutive ticks are disconnected.
+ *   - Per-client ring buffer (64 slots) for messages during backpressure.
+ *   - Overflow of ring buffer → disconnect.
  *
  * Connect: ws://localhost:3000/ws
+ *
+ * @author Phani Marupaka <https://linkedin.com/in/phani-marupaka>
+ * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
 import { createHash } from 'node:crypto';
@@ -17,13 +28,30 @@ import type http from 'node:http';
 import type { Duplex } from 'node:stream';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types & Constants
 // ---------------------------------------------------------------------------
+
+const BACKPRESSURE_THRESHOLD_BYTES = 1_048_576; // 1 MB
+const SLOW_TICKS_BEFORE_DISCONNECT = 3;
+const RING_BUFFER_SIZE = 64;
+const STALL_TIMEOUT_MS = 2_000;
 
 interface WSClient {
     socket: Duplex;
+    /** Legacy session-ID subscriptions (kept for backwards compatibility) */
     subscriptions: Set<string>;
+    /** New channel-based subscriptions (agents, chat:<id>, execution:<id>) */
+    channels: Set<string>;
     alive: boolean;
+    /** Number of consecutive ticks where writableLength exceeded threshold */
+    slowTicks: number;
+    /** Buffered messages when socket is draining */
+    pendingBuffer: string[];
+    /** Total messages dropped for this client */
+    droppedCount: number;
+    /** Last time the socket drained below threshold */
+    lastDrainAt: number;
+    connectedAt: number;
 }
 
 type BroadcastEvent = {
@@ -34,10 +62,12 @@ type BroadcastEvent = {
 };
 
 // ---------------------------------------------------------------------------
-// WebSocket Server (RFC 6455, no external deps)
+// WebSocket Server State
 // ---------------------------------------------------------------------------
 
 const clients = new Set<WSClient>();
+let totalDroppedMessages = 0;
+let totalDisconnectedForSlow = 0;
 
 /**
  * Attach WebSocket handling to an existing HTTP server.
@@ -70,12 +100,26 @@ export function attachWebSocket(server: http.Server): void {
             '\r\n',
         );
 
+        const now = Date.now();
         const client: WSClient = {
             socket,
             subscriptions: new Set(),
+            channels: new Set(),
             alive: true,
+            slowTicks: 0,
+            pendingBuffer: [],
+            droppedCount: 0,
+            lastDrainAt: now,
+            connectedAt: now,
         };
         clients.add(client);
+
+        // When socket drains, try to flush the ring buffer
+        socket.on('drain', () => {
+            client.lastDrainAt = Date.now();
+            client.slowTicks = 0;
+            flushPending(client);
+        });
 
         socket.on('data', (buf: Buffer) => {
             const parsed = decodeFrame(buf);
@@ -99,11 +143,14 @@ export function attachWebSocket(server: http.Server): void {
                     const msg = JSON.parse(parsed.payload) as {
                         type: string;
                         sessionId?: string;
+                        channel?: string;
                     };
-                    if (msg.type === 'subscribe' && msg.sessionId) {
-                        client.subscriptions.add(msg.sessionId);
-                    } else if (msg.type === 'unsubscribe' && msg.sessionId) {
-                        client.subscriptions.delete(msg.sessionId);
+                    if (msg.type === 'subscribe') {
+                        if (msg.sessionId) client.subscriptions.add(msg.sessionId);
+                        if (msg.channel) client.channels.add(msg.channel);
+                    } else if (msg.type === 'unsubscribe') {
+                        if (msg.sessionId) client.subscriptions.delete(msg.sessionId);
+                        if (msg.channel) client.channels.delete(msg.channel);
                     }
                 } catch {
                     // Ignore malformed messages
@@ -115,7 +162,37 @@ export function attachWebSocket(server: http.Server): void {
         socket.on('error', () => removeClient(client));
     });
 
-    // Heartbeat every 30s
+    // Heartbeat + backpressure sweep every 1s (faster than old 30s heartbeat
+    // because backpressure checks want sub-second reaction).
+    setInterval(() => {
+        const now = Date.now();
+        for (const client of clients) {
+            const buffered = (client.socket as any).writableLength ?? 0;
+
+            // Check backpressure threshold
+            if (buffered > BACKPRESSURE_THRESHOLD_BYTES) {
+                client.slowTicks++;
+                if (client.slowTicks >= SLOW_TICKS_BEFORE_DISCONNECT) {
+                    console.warn(`[ws] disconnecting slow client (buffered ${buffered}b, ${client.slowTicks} slow ticks)`);
+                    totalDisconnectedForSlow++;
+                    removeClient(client);
+                    continue;
+                }
+            } else {
+                client.slowTicks = 0;
+            }
+
+            // Stall timeout: buffer isn't draining
+            if (client.pendingBuffer.length > 0 && (now - client.lastDrainAt) > STALL_TIMEOUT_MS) {
+                console.warn(`[ws] disconnecting stalled client (${client.pendingBuffer.length} pending, ${now - client.lastDrainAt}ms since drain)`);
+                totalDisconnectedForSlow++;
+                removeClient(client);
+                continue;
+            }
+        }
+    }, 1_000).unref();
+
+    // Separate slower heartbeat (15s) for ping/pong liveness
     setInterval(() => {
         for (const client of clients) {
             if (!client.alive) {
@@ -130,11 +207,67 @@ export function attachWebSocket(server: http.Server): void {
                 removeClient(client);
             }
         }
-    }, 30_000).unref();
+    }, 15_000).unref();
+}
+
+// ---------------------------------------------------------------------------
+// Writing & Backpressure Handling
+// ---------------------------------------------------------------------------
+
+/** Try to flush pending messages from the per-client ring buffer. */
+function flushPending(client: WSClient): void {
+    while (client.pendingBuffer.length > 0) {
+        const msg = client.pendingBuffer.shift()!;
+        const canWrite = client.socket.writable && !(client.socket as any).writableNeedDrain;
+        if (!canWrite) {
+            // Put it back; we'll flush again on next drain
+            client.pendingBuffer.unshift(msg);
+            return;
+        }
+        try {
+            client.socket.write(encodeFrame(0x1, msg));
+        } catch {
+            removeClient(client);
+            return;
+        }
+    }
+}
+
+/** Write a message to a client with backpressure handling. */
+function writeToClient(client: WSClient, payload: string): void {
+    // If the socket needs draining, enqueue to the ring buffer instead
+    const needDrain = (client.socket as any).writableNeedDrain === true;
+    if (needDrain) {
+        if (client.pendingBuffer.length >= RING_BUFFER_SIZE) {
+            // Ring buffer overflow → drop oldest, increment dropped count
+            client.pendingBuffer.shift();
+            client.droppedCount++;
+            totalDroppedMessages++;
+            if (client.droppedCount > RING_BUFFER_SIZE * 2) {
+                // Persistent overflow → disconnect
+                removeClient(client);
+                return;
+            }
+        }
+        client.pendingBuffer.push(payload);
+        return;
+    }
+
+    try {
+        const ok = client.socket.write(encodeFrame(0x1, payload));
+        if (!ok) {
+            // Backpressure signal — next write should enqueue until drain
+            client.lastDrainAt = Date.now();
+        }
+    } catch {
+        removeClient(client);
+    }
 }
 
 /**
- * Broadcast an event to all clients subscribed to the given sessionId.
+ * Broadcast an event to all clients subscribed to the given sessionId or channel.
+ * Backwards compatible: `sessionId` is still matched against both old subscriptions
+ * and new channels.
  */
 export function broadcastEvent(
     sessionId: string,
@@ -150,12 +283,12 @@ export function broadcastEvent(
     const payload = JSON.stringify(event);
 
     for (const client of clients) {
-        if (client.subscriptions.has(sessionId) || client.subscriptions.has('*')) {
-            try {
-                client.socket.write(encodeFrame(0x1, payload));
-            } catch {
-                removeClient(client);
-            }
+        if (
+            client.subscriptions.has(sessionId) ||
+            client.subscriptions.has('*') ||
+            client.channels.has(sessionId)
+        ) {
+            writeToClient(client, payload);
         }
     }
 }
@@ -165,6 +298,36 @@ export function broadcastEvent(
  */
 export function getWSClientCount(): number {
     return clients.size;
+}
+
+/**
+ * Get WebSocket server metrics.
+ */
+export function getWSMetrics(): {
+    total: number;
+    slow: number;
+    totalDropped: number;
+    totalDisconnectedForSlow: number;
+    avgBufferedBytes: number;
+    uptimeMs: number;
+} {
+    let slow = 0;
+    let totalBuffered = 0;
+    const now = Date.now();
+    let oldestConnection = now;
+    for (const c of clients) {
+        if (c.slowTicks > 0) slow++;
+        totalBuffered += (c.socket as any).writableLength ?? 0;
+        if (c.connectedAt < oldestConnection) oldestConnection = c.connectedAt;
+    }
+    return {
+        total: clients.size,
+        slow,
+        totalDropped: totalDroppedMessages,
+        totalDisconnectedForSlow,
+        avgBufferedBytes: clients.size > 0 ? Math.round(totalBuffered / clients.size) : 0,
+        uptimeMs: clients.size > 0 ? now - oldestConnection : 0,
+    };
 }
 
 // ---------------------------------------------------------------------------
