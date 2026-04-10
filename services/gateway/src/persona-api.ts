@@ -1154,7 +1154,7 @@ async function processSkillSteps(
     for (const step of exec.steps) {
       if (step.status === 'completed' || step.status === 'approval_required') {
         memoryGraph.updateAgentPerformance(step.agent, step.agentCallSign || step.agent, '', {
-          success: step.status !== 'failed',
+          success: true,
           confidence: (step.qualityScore || 5) / 10,
           latencyMs: step.latencyMs || 0,
           costUsd: step.tokenCost || 0,
