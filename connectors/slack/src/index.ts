@@ -208,6 +208,3 @@ export class SlackConnector {
 }
 
 export default SlackConnector;
-}
-
-export default SlackConnector;

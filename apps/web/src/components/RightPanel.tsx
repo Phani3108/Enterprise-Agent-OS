@@ -312,37 +312,75 @@ function HelpMode() {
 
 function ExecutionMode() {
   const [tab, setTab] = useState<'timeline' | 'logs' | 'actions'>('timeline');
-  const [steps] = useState<TimelineStep[]>(SEED_STEPS);
-  const [logs, setLogs] = useState<LogEntry[]>(SEED_LOGS);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   const activeExecution = useExecutionStore(s => s.activeExecution);
 
+  // Derive timeline steps from the live execution store. Fall back to seed
+  // data only when no execution is active (idle placeholder on first load).
+  const steps: TimelineStep[] = activeExecution
+    ? activeExecution.steps.map((s) => ({
+        id: s.stepId,
+        name: s.stepName,
+        stepType: s.tool ? 'tool' : 'agent',
+        status:
+          s.status === 'pending' ? 'queued'
+          : s.status === 'approval_required' ? 'queued'
+          : (s.status as TimelineStep['status']),
+        agentName: s.agent,
+        toolName: s.tool,
+        startedAt: s.startedAt,
+        durationMs: s.durationMs,
+      }))
+    : SEED_STEPS;
+
+  // Each time a step transitions state, append a log entry so users get a
+  // readable trace without polling a separate logs endpoint.
   useEffect(() => {
-    const MESSAGES = [
-      { level: 'info' as const, message: 'Agent heartbeat — status nominal' },
-      { level: 'info' as const, message: 'Memory graph updated with execution context' },
-      { level: 'warn' as const, message: 'Token budget at 65% for current execution' },
-      { level: 'info' as const, message: 'Tool call completed in 340ms' },
-      { level: 'debug' as const, message: 'Routing confidence recalculated: 0.88' },
-    ];
-    const t = setInterval(() => {
-      const msg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
-      setLogs(prev => [...prev.slice(-40), {
-        id: `l-${Date.now()}`,
-        level: msg.level,
-        message: msg.message,
-        createdAt: new Date().toISOString(),
-      }]);
-    }, 4000);
-    return () => clearInterval(t);
-  }, []);
+    if (!activeExecution) return;
+    const newLogs: LogEntry[] = [];
+    for (const s of activeExecution.steps) {
+      if (s.status === 'running') {
+        newLogs.push({
+          id: `log-${s.stepId}-run`,
+          level: 'info',
+          message: `${s.agent}: ${s.stepName} started${s.tool ? ` via ${s.tool}` : ''}`,
+          createdAt: s.startedAt ?? new Date().toISOString(),
+        });
+      } else if (s.status === 'completed') {
+        newLogs.push({
+          id: `log-${s.stepId}-done`,
+          level: 'info',
+          message: `${s.stepName} completed${s.durationMs ? ` in ${s.durationMs}ms` : ''}`,
+          createdAt: s.completedAt ?? new Date().toISOString(),
+        });
+      } else if (s.status === 'failed') {
+        newLogs.push({
+          id: `log-${s.stepId}-fail`,
+          level: 'error',
+          message: `${s.stepName} failed${s.error ? `: ${s.error}` : ''}`,
+          createdAt: s.completedAt ?? new Date().toISOString(),
+        });
+      }
+    }
+    // Replace log state — this mirrors the execution state instead of drifting.
+    setLogs(newLogs.length > 0 ? newLogs : SEED_LOGS);
+  }, [activeExecution]);
 
   useEffect(() => {
     if (tab === 'logs') logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs, tab]);
 
   const execType = activeExecution?.executableType ?? 'skill';
+  const completedCount = activeExecution?.steps.filter(s => s.status === 'completed').length ?? 4;
+  const totalCount = activeExecution?.steps.length ?? 5;
+  const durationSec = activeExecution?.totalDurationMs
+    ? (activeExecution.totalDurationMs / 1000).toFixed(1)
+    : '12.4';
+  const isRunning = activeExecution?.status === 'running';
+  const isCompleted = activeExecution?.status === 'completed';
+  const isFailed = activeExecution?.status === 'failed';
 
   return (
     <>
@@ -356,8 +394,14 @@ function ExecutionMode() {
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-[11px] text-slate-400">Running</span>
+          <span className={`w-2 h-2 rounded-full ${
+            isFailed ? 'bg-red-500' :
+            isCompleted ? 'bg-emerald-500' :
+            'bg-blue-500 animate-pulse'
+          }`} />
+          <span className="text-[11px] text-slate-400">
+            {isFailed ? 'Failed' : isCompleted ? 'Completed' : isRunning ? 'Running' : 'Queued'}
+          </span>
         </div>
       </div>
 
@@ -445,15 +489,17 @@ function ExecutionMode() {
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
             <p className="text-[11px] text-slate-400">Steps</p>
-            <p className="text-xs font-semibold text-slate-900">4 / 5</p>
+            <p className="text-xs font-semibold text-slate-900">{completedCount} / {totalCount}</p>
           </div>
           <div>
             <p className="text-[11px] text-slate-400">Duration</p>
-            <p className="text-xs font-semibold text-slate-900">12.4s</p>
+            <p className="text-xs font-semibold text-slate-900">{durationSec}s</p>
           </div>
           <div>
             <p className="text-[11px] text-slate-400">Cost</p>
-            <p className="text-xs font-semibold text-slate-900">$0.024</p>
+            <p className="text-xs font-semibold text-slate-900">
+              {activeExecution?.simulate ? 'sim' : '$0.024'}
+            </p>
           </div>
         </div>
       </div>

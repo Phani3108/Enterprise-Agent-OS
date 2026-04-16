@@ -405,7 +405,12 @@ export function disconnectTool(toolId: string): { success: boolean; message: str
   return { success: true, message: `${name} disconnected` };
 }
 
-export function testToolConnection(toolId: string): { success: boolean; message: string; latencyMs?: number } {
+/**
+ * Test a tool connection by calling a cheap, idempotent vendor endpoint when
+ * possible. Falls back to a credential-shape check for vendors we haven't
+ * wired yet. All network calls are wrapped in a 5s timeout.
+ */
+export async function testToolConnection(toolId: string): Promise<{ success: boolean; message: string; latencyMs?: number; account?: string }> {
   const start = Date.now();
   const stored = connectionStore.get(toolId);
   const graphTools = capabilityGraph.getAllTools();
@@ -417,19 +422,153 @@ export function testToolConnection(toolId: string): { success: boolean; message:
     return { success: false, message: 'Tool is not connected. Connect it first.' };
   }
 
-  if (stored?.apiKey && stored.apiKey.length < 8) {
-    return { success: false, message: 'Stored API key appears invalid (too short)' };
-  }
+  const token = stored?.accessToken ?? stored?.apiKey ?? '';
+  const apiKey = stored?.apiKey ?? '';
 
-  if (stored?.accessToken && stored.accessToken.length < 8) {
-    return { success: false, message: 'Stored access token appears invalid (too short)' };
+  // Per-vendor live probe. On failure, return the vendor's error message so
+  // users know exactly what to fix.
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+      switch (toolId) {
+        case 'hubspot': {
+          if (!token) return { success: false, message: 'No access token stored' };
+          const res = await fetch('https://api.hubapi.com/account-info/v3/details', {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          });
+          if (!res.ok) return { success: false, message: `HubSpot returned ${res.status}: ${await res.text().then(t => t.slice(0, 200))}` };
+          const data = await res.json() as { portalId?: number };
+          return { success: true, message: 'HubSpot connection valid', latencyMs: Date.now() - start, account: data.portalId ? `Portal ${data.portalId}` : undefined };
+        }
+        case 'salesforce': {
+          if (!token) return { success: false, message: 'No access token stored' };
+          const instance = stored?.accountName ?? 'login.salesforce.com';
+          const res = await fetch(`https://${instance}/services/oauth2/userinfo`, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          });
+          if (!res.ok) return { success: false, message: `Salesforce returned ${res.status}` };
+          const data = await res.json() as { email?: string };
+          return { success: true, message: 'Salesforce connection valid', latencyMs: Date.now() - start, account: data.email };
+        }
+        case 'linkedin-ads': {
+          if (!token) return { success: false, message: 'No access token stored' };
+          const res = await fetch('https://api.linkedin.com/v2/me', {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          });
+          if (!res.ok) return { success: false, message: `LinkedIn returned ${res.status}` };
+          const data = await res.json() as { localizedFirstName?: string };
+          return { success: true, message: 'LinkedIn Ads connection valid', latencyMs: Date.now() - start, account: data.localizedFirstName };
+        }
+        case 'wordpress': {
+          if (!apiKey) return { success: false, message: 'No application password stored' };
+          // Expect format "username:password". Try /wp-json/wp/v2/users/me on
+          // the site URL stored in accountName.
+          const siteUrl = stored?.accountName;
+          if (!siteUrl) return { success: false, message: 'Provide the WordPress site URL in accountName' };
+          const [user, pwd] = apiKey.split(':');
+          if (!user || !pwd) return { success: false, message: 'API key must be "username:password" format' };
+          const auth = Buffer.from(`${user}:${pwd}`).toString('base64');
+          const res = await fetch(`${siteUrl.replace(/\/+$/, '')}/wp-json/wp/v2/users/me`, {
+            headers: { Authorization: `Basic ${auth}` },
+            signal: controller.signal,
+          });
+          if (!res.ok) return { success: false, message: `WordPress returned ${res.status}` };
+          const data = await res.json() as { name?: string };
+          return { success: true, message: 'WordPress connection valid', latencyMs: Date.now() - start, account: data.name };
+        }
+        case 'gdrive': {
+          if (!token) return { success: false, message: 'No access token stored' };
+          const res = await fetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)', {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          });
+          if (!res.ok) return { success: false, message: `Google Drive returned ${res.status}` };
+          const data = await res.json() as { user?: { emailAddress?: string } };
+          return { success: true, message: 'Google Drive connection valid', latencyMs: Date.now() - start, account: data.user?.emailAddress };
+        }
+        case 'perplexity': {
+          if (!apiKey) return { success: false, message: 'No API key stored' };
+          // Perplexity doesn't expose /me; do a minimal echo-style chat
+          // completion with max_tokens=1 as a cheap probe.
+          const res = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'sonar-small-chat',
+              messages: [{ role: 'user', content: 'ping' }],
+              max_tokens: 1,
+            }),
+            signal: controller.signal,
+          });
+          if (!res.ok) return { success: false, message: `Perplexity returned ${res.status}` };
+          return { success: true, message: 'Perplexity connection valid', latencyMs: Date.now() - start };
+        }
+        case 'ga4': {
+          if (!token) return { success: false, message: 'No access token stored' };
+          const res = await fetch('https://analyticsadmin.googleapis.com/v1beta/accounts', {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          });
+          if (!res.ok) return { success: false, message: `GA4 returned ${res.status}` };
+          return { success: true, message: 'GA4 connection valid', latencyMs: Date.now() - start };
+        }
+        default: {
+          // Vendor not yet wired for live probe — do a minimal credential-shape sanity check.
+          if (stored?.apiKey && stored.apiKey.length < 8) {
+            return { success: false, message: 'Stored API key appears invalid (too short)' };
+          }
+          if (stored?.accessToken && stored.accessToken.length < 8) {
+            return { success: false, message: 'Stored access token appears invalid (too short)' };
+          }
+          return {
+            success: true,
+            message: 'Credentials stored. Live probe not yet available for this vendor — try running a skill to verify end-to-end.',
+            latencyMs: Date.now() - start,
+          };
+        }
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (err) {
+    const e = err as Error;
+    if (e.name === 'AbortError') {
+      return { success: false, message: `Vendor endpoint timed out after 5s`, latencyMs: Date.now() - start };
+    }
+    return { success: false, message: `Probe failed: ${e.message}`, latencyMs: Date.now() - start };
   }
+}
 
-  return {
-    success: true,
-    message: 'Connection looks valid. Credentials are stored and ready for use.',
-    latencyMs: Date.now() - start,
-  };
+/**
+ * Store a bearer token after a successful OAuth callback exchange.
+ * Called by the gateway's /api/tools/:id/oauth/callback route.
+ */
+export function storeOAuthToken(
+  toolId: string,
+  accessToken: string,
+  accountName?: string,
+  refreshToken?: string,
+): void {
+  const catalog = MARKETING_TOOL_CATALOG.find((t) => t.id === toolId);
+  const existing = connectionStore.get(toolId);
+  connectionStore.set(toolId, {
+    ...existing,
+    connected: true,
+    authType: 'oauth',
+    accessToken,
+    accountName: accountName ?? existing?.accountName,
+    connectedAt: new Date().toISOString(),
+    status: 'connected',
+    apiKey: refreshToken, // store refresh token in apiKey slot for later rotation
+    ...(catalog ? {} : {}),
+  });
 }
 
 /** Get the stored credential for use during workflow execution */

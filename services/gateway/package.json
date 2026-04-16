@@ -18,6 +18,9 @@
     },
     "dependencies": {
         "@agentos/auth": "workspace:*",
+        "@agentos/connector-github": "workspace:*",
+        "@agentos/connector-jira": "workspace:*",
+        "@agentos/connector-slack": "workspace:*",
         "@agentos/db": "workspace:*",
         "@agentos/observability": "workspace:*",
         "@agentos/skills": "workspace:*",

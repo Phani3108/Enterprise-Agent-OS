@@ -26,6 +26,21 @@ export interface ExecutionRecord {
   toolsUsed: string[];
   outputs: string[];
   ts: string;
+  // ── Data-moat enrichment (v2) ──────────────────────────────────
+  // Populated when available; backward-compatible (all optional) so
+  // existing callers keep working while new code paths fill these in.
+  modelProvider?: string;     // e.g. 'anthropic' | 'openai' | 'azure-openai'
+  modelId?: string;           // e.g. 'claude-3-5-sonnet-20241022'
+  promptTokens?: number;
+  completionTokens?: number;
+  /** 0..5 human/user-rated quality. Undefined = not yet rated. */
+  qualityScore?: number;
+  /** 'approved'|'rejected'|'auto' — outcome of gated approval step, if any. */
+  approvalOutcome?: 'approved' | 'rejected' | 'auto';
+  /** True if the user re-ran or edited the output. Signal of low quality. */
+  reworked?: boolean;
+  /** Simulation mode flag — excluded from benchmark datasets. */
+  simulated?: boolean;
 }
 
 export interface SkillFeedback {

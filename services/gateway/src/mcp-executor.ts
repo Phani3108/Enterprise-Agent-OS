@@ -8,6 +8,8 @@
  */
 
 import { randomUUID } from 'crypto';
+import { tryRealExecute } from './real-executor.js';
+import { checkPolicy } from './policy-store.js';
 
 // ═══════════════════════════════════════════════════════════════
 // Core Types
@@ -227,16 +229,44 @@ export async function executeMCPAction(action: MCPToolAction): Promise<MCPToolRe
   return response;
 }
 
-// Simulated tool call — in production, this calls real APIs
+// Tool call — tries real connector first (when env credentials are set),
+// falls back to deterministic simulated response otherwise. The simulated
+// output is still useful for demo flows and development without live APIs.
 async function executeToolCall(
   action: MCPToolAction,
   capability: MCPToolCapability,
   _creds: Record<string, string> | undefined
 ): Promise<Record<string, unknown>> {
-  // Simulate network latency
+  // Policy gate — deny-first. If any enabled policy denies this (tool, persona,
+  // agent) combo, refuse before hitting the vendor API. Errors here surface to
+  // the retry loop but never actually execute.
+  const policy = checkPolicy({ tool: action.tool_id });
+  if (!policy.allowed) {
+    const reasons = policy.matchedDenies.map((d) => d.reason).join('; ');
+    throw new Error(`Denied by policy: ${reasons}`);
+  }
+
+  // Attempt real execution first. Returns null if connector is not wired for
+  // this tool/action or if env credentials are missing; throws on API error,
+  // which propagates to the retry loop above.
+  try {
+    const real = await tryRealExecute({
+      tool_id: action.tool_id,
+      action: action.action,
+      resource_type: action.resource_type,
+      params: action.params,
+    });
+    if (real) return real;
+  } catch (err) {
+    // Real connector threw — rethrow so mcp-executor retry loop can decide
+    // whether to retry or return failure. Do NOT fall back to simulation on
+    // a real API error; that would mask genuine failures.
+    throw err;
+  }
+
+  // No real connector available — simulate
   await new Promise(r => setTimeout(r, 50 + Math.random() * 200));
 
-  // Return simulated responses based on tool and action
   const simulated: Record<string, unknown> = {
     tool: action.tool_id,
     action: action.action,

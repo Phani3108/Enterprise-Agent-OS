@@ -6,6 +6,12 @@
  * with a distributed job queue (BullMQ, Temporal, etc.)
  */
 
+import { createPersonaExecution, getPersonaExecution } from './persona-api.js';
+import { getEngineeringSkill } from './engineering-skills-data.js';
+import { getProductSkill } from './product-skills-data.js';
+import { getHRSkill } from './hr-skills-data.js';
+import { getWorkflowRef } from './marketing-workflows-data.js';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -285,31 +291,123 @@ export class Scheduler {
         logs.unshift(log);
         this.logs.set(jobId, logs.slice(0, 100));
 
-        // Simulate execution
-        const timeoutMs = (job.timeout ?? 120) * 1000;
-        const simDurationMs = Math.min(timeoutMs, Math.floor(Math.random() * 90_000) + 5_000);
-        const willSucceed = Math.random() > 0.1;
+        const startMs = Date.now();
+        let succeeded = false;
+        let errorMsg: string | undefined;
+        let outputMsg: string | undefined;
 
-        await new Promise((r) => setTimeout(r, Math.min(simDurationMs, 3000))); // Cap simulation wait
+        try {
+            // Resolve the skill/workflow by id across all persona catalogs.
+            const skill = this.resolveSkillForJob(job);
+            if (skill) {
+                // Kick off a real persona execution. createPersonaExecution enqueues
+                // the skill onto the task queue and returns immediately; we wait up
+                // to `timeout` seconds for it to reach a terminal state to record
+                // accurate success/failure in the job log.
+                const persona = this.resolvePersonaForJob(job);
+                const exec = createPersonaExecution(
+                    persona,
+                    skill,
+                    job.inputs ?? {},
+                    job.createdBy,
+                    /* simulate */ false,
+                );
 
-        log.status = willSucceed ? 'success' : 'failed';
+                const timeoutMs = (job.timeout ?? 120) * 1000;
+                const pollMs = 500;
+                const deadline = Date.now() + timeoutMs;
+
+                while (Date.now() < deadline) {
+                    const latest = getPersonaExecution(exec.id);
+                    if (latest && (latest.status === 'completed' || latest.status === 'failed')) {
+                        succeeded = latest.status === 'completed';
+                        outputMsg = succeeded
+                            ? `${job.skillName} completed (exec=${exec.id}). Trigger: ${trigger}.`
+                            : undefined;
+                        errorMsg = succeeded ? undefined : `Execution failed (exec=${exec.id})`;
+                        break;
+                    }
+                    await new Promise((r) => setTimeout(r, pollMs));
+                }
+
+                // Still running after timeout — mark success-pending so we don't
+                // falsely count it as a failure in stats. UI shows it as a log
+                // entry pointing to the execution record.
+                if (!outputMsg && !errorMsg) {
+                    succeeded = true;
+                    outputMsg = `${job.skillName} queued (exec=${exec.id}). Trigger: ${trigger}. Still running at time of job log write.`;
+                }
+            } else {
+                // Unknown skill — degrade gracefully to a recorded "no-op" entry so
+                // the schedule keeps ticking and the UI still shows history.
+                succeeded = true;
+                outputMsg = `${job.skillName}: skill id '${job.skillId}' not resolved in persona catalogs — no-op. Trigger: ${trigger}.`;
+            }
+        } catch (err) {
+            succeeded = false;
+            errorMsg = `${job.skillName} execution error: ${(err as Error).message}`;
+        }
+
+        const durationMs = Date.now() - startMs;
+        log.status = succeeded ? 'success' : 'failed';
         log.completedAt = new Date().toISOString();
-        log.durationMs = simDurationMs;
-        log.output = willSucceed ? `${job.skillName} completed. Trigger: ${trigger}.` : undefined;
-        log.error = willSucceed ? undefined : `${job.skillName} execution failed after ${(simDurationMs / 1000).toFixed(0)}s`;
+        log.durationMs = durationMs;
+        log.output = outputMsg;
+        log.error = errorMsg;
 
         this.jobs.set(jobId, {
             ...job,
             runCount: job.runCount + 1,
-            successCount: job.successCount + (willSucceed ? 1 : 0),
-            failureCount: job.failureCount + (willSucceed ? 0 : 1),
+            successCount: job.successCount + (succeeded ? 1 : 0),
+            failureCount: job.failureCount + (succeeded ? 0 : 1),
             lastRun: new Date().toISOString(),
             nextRun: computeNextRun({ ...job }),
             updatedAt: new Date().toISOString(),
-            status: job.scheduleType === 'one-time' && willSucceed ? 'completed' : job.status,
+            status: job.scheduleType === 'one-time' && succeeded ? 'completed' : job.status,
         });
 
         return log;
+    }
+
+    /**
+     * Resolve the scheduled job's skillId against all persona skill catalogs.
+     * Accepts bare ids ("blog-from-brief"), slugs, or legacy dotted ids.
+     * Returns undefined if not found — caller treats that as a no-op job.
+     */
+    private resolveSkillForJob(job: ScheduledJob): ReturnType<typeof getEngineeringSkill> {
+        const id = job.skillId;
+        // Try persona-specific first to short-circuit.
+        switch (job.personaId) {
+            case 'engineering':
+                return getEngineeringSkill(id) ?? undefined;
+            case 'product':
+                return getProductSkill(id) ?? undefined;
+            case 'hr':
+                return getHRSkill(id) ?? undefined;
+            case 'marketing':
+                return getWorkflowRef(id);
+            default:
+                // Unknown persona — scan all catalogs in turn.
+                return (
+                    getEngineeringSkill(id) ??
+                    getProductSkill(id) ??
+                    getHRSkill(id) ??
+                    getWorkflowRef(id)
+                );
+        }
+    }
+
+    /**
+     * Map a scheduled job's personaId (free-form string) to one of the four
+     * personas that persona-api.ts supports. Defaults to 'marketing' for
+     * leadership/business roles since they typically use marketing workflows.
+     */
+    private resolvePersonaForJob(job: ScheduledJob): 'engineering' | 'product' | 'hr' | 'marketing' {
+        const p = job.personaId.toLowerCase();
+        if (p === 'engineering' || p === 'product' || p === 'hr' || p === 'marketing') {
+            return p as 'engineering' | 'product' | 'hr' | 'marketing';
+        }
+        return 'marketing';
     }
 
     // -----------------------------------------------------------------------

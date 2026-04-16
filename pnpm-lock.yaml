@@ -518,6 +518,15 @@ importers:
       '@agentos/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@agentos/connector-github':
+        specifier: workspace:*
+        version: link:../../connectors/github
+      '@agentos/connector-jira':
+        specifier: workspace:*
+        version: link:../../connectors/jira
+      '@agentos/connector-slack':
+        specifier: workspace:*
+        version: link:../../connectors/slack
       '@agentos/db':
         specifier: workspace:*
         version: link:../../packages/db

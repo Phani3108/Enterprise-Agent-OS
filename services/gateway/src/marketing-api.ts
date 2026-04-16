@@ -12,6 +12,7 @@ import { createCampaignGraph } from './campaign-graph.js';
 import { createProject, createTask, updateProject } from './marketing-program.js';
 import { callLLM, type LLMProviderId } from './llm-provider.js';
 import { getAgentIdentity } from './agent-registry.js';
+import { waitForApproval } from './approval-bus.js';
 
 // In-memory execution store (replace with DB in production)
 const executions = new Map<string, MarketingExecutionRecord>();
@@ -918,20 +919,50 @@ async function processExecutionSteps(
       const outputKey = step.outputKey ?? step.id;
       stepOutputs[outputKey] = output;
 
-      // Update step as completed (or approval_required if flagged — skip approval in simulation)
-      const stepStatus = (step.requiresApproval && !simulate) ? 'approval_required' : 'completed';
-      updateMarketingExecutionStep(execId, step.id, {
-        status: stepStatus,
-        completedAt: new Date().toISOString(),
-        outputPreview: output.slice(0, 300),
-        outputKey,
-      });
-
       // Persist outputs to execution record after each step
       const freshExec = executions.get(execId);
       if (freshExec) {
         const merged = { ...freshExec.outputs, [outputKey]: output };
         executions.set(execId, { ...freshExec, outputs: merged });
+      }
+
+      if (step.requiresApproval && !simulate) {
+        // Block the workflow here until a user explicitly approves or rejects
+        // via POST /api/executions/:id/approve/:stepId. Emits 'approval.requested'
+        // on the event bus so Slack / email notifiers can surface the wait.
+        updateMarketingExecutionStep(execId, step.id, {
+          status: 'approval_required',
+          outputPreview: output.slice(0, 300),
+          outputKey,
+        });
+        updateMarketingExecution(execId, { status: 'paused' });
+
+        const decision = await waitForApproval(execId, step.id, {
+          stepName: step.name,
+        });
+
+        if (!decision.approved) {
+          updateMarketingExecutionStep(execId, step.id, {
+            status: 'failed',
+            error: decision.reason ?? 'Rejected by approver',
+            completedAt: new Date().toISOString(),
+          });
+          updateMarketingExecution(execId, { status: 'failed', completedAt: new Date().toISOString() });
+          return;
+        }
+
+        updateMarketingExecutionStep(execId, step.id, {
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+        });
+        updateMarketingExecution(execId, { status: 'running' });
+      } else {
+        updateMarketingExecutionStep(execId, step.id, {
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+          outputPreview: output.slice(0, 300),
+          outputKey,
+        });
       }
 
       // Small delay between steps for UX visibility

@@ -26,6 +26,8 @@ import { createA2AMessage, respondToA2A, createMeeting, createSwarm, storeMessag
 import { createMCPAction, executeMCPAction, getToolCapabilities, getToolCapability, getExecutionLog as getMCPLog, getToolStats } from './mcp-executor.js';
 import { createAgentRuntime, createEphemeralAgent, addReACTIteration, completeExecution, assembleFullPrompt, storeRuntime, getRuntime, getActiveRuntimes, getAllRuntimes, terminateRuntime } from './agent-runtime.js';
 import { initAgentStatusReconciler, getAgentStatusSnapshot, getAgentStatus, subscribeToAgentStatus } from './agent-status-reconciler.js';
+import { initSlackNotifier } from './slack-notifier.js';
+import { seedDemoScenario } from './demo-seeder.js';
 import { startMeetingFromTemplate, delegateTask, escalateTask, getDelegationChain, getDelegationChainsByTask, getAgentRoster, getMeetingTemplates, type MeetingTemplate } from './agent-meetings.js';
 import { launchSwarm, advanceSwarmPhase, dissolveSwarm, getSwarmTemplates, getSwarmTemplate, getSwarmStats } from './swarm-manager.js';
 import { getFlagshipWorkflows, getFlagshipWorkflow, getFlagshipWorkflowsByPersona } from './flagship-workflows.js';
@@ -42,6 +44,7 @@ import { getProject, getProjectTasks, getRecentProjects } from './marketing-prog
 import { getCampaignGraph } from './campaign-graph.js';
 import { getMarketingToolConnections, getToolConnectionStatus, connectTool, disconnectTool, testToolConnection, MARKETING_TOOL_CATALOG } from './marketing-tool-connections.js';
 import { getToolConnectFlow, shouldRedirectToOAuth } from './tool-connect-flows.js';
+import { exchangeOAuthCode, renderOAuthResultHtml } from './oauth-callback.js';
 import { getNotificationConfig, setNotificationConfig } from './marketing-notifications.js';
 import { ENGINEERING_SKILLS, getEngineeringSkill, getEngineeringSkillsByCluster } from './engineering-skills-data.js';
 import { PRODUCT_SKILLS, getProductSkill, getProductSkillsByCluster } from './product-skills-data.js';
@@ -71,6 +74,30 @@ import { createExperiment, getExperiment, listExperiments, updateExperiment, tra
 import { setBudget, getBudget, listBudgets, deleteBudget, recordSpend, getSpendLog, getBurnRate, listAlerts as listCostAlerts, acknowledgeAlert, getCFODashboard, initBudgetStore } from './budget-intelligence.js';
 import { createReview, getReview, listReviews, createPlan, getPlan, listPlans, updatePlanStatus, updateObjective, submitFeedback, listFeedback, getFeedbackSummary, addExemplar, listExemplars, deleteExemplar, getAgentHealthReport, initImprovementStore } from './agent-improvement.js';
 import { registerStore, initGatewayPersistence, flushGatewayPersistence } from './gateway-persistence.js';
+import { approve as approveViaBus, reject as rejectViaBus, listPending as listPendingApprovals, getDecision as getApprovalDecision, getApprovalSlaSummary } from './approval-bus.js';
+import { createPolicy, updatePolicy, deletePolicy, getPolicy, listPolicies, checkPolicy, seedExamplePolicies } from './policy-store.js';
+import { redact as redactPII, containsPII } from './pii-redactor.js';
+import { contributeExecution, getContributionLog, getContributionStats } from './benchmark-ingest.js';
+import {
+  createCampaign, updateCampaign, getCampaign, listCampaigns, deleteCampaign,
+  linkExecutionToCampaign, addAsset, approveAsset, getAsset, listCampaignAssets,
+  searchAssets, getAssetLineage, getCampaignStats, getControlTowerSummary,
+} from './campaign-dag.js';
+import {
+  trainModelRouter, routeRequest, computeLeaderboard, forecastDrift, computeSEI,
+} from './data-moat.js';
+import {
+  validatePacket, canonicalize, hashPacket,
+  toMcpEnvelope, fromMcpEnvelope,
+  listAdopters, registerAdopter,
+} from './utcp-sdk.js';
+import {
+  importPoliciesFromYaml, exportPoliciesAsYaml,
+  createRoutingRule, listRoutingRules, deleteRoutingRule, resolveApprovers,
+  createResidencyRule, listResidencyRules, deleteResidencyRule, checkResidency,
+  listComplianceControls, getComplianceSummary,
+  runRedTeamScan,
+} from './governance-v2.js';
 import { getAgentMemory, getAllAgentMemorySnapshots, recordAgentMemory, _exportData as exportAgentMemory, _importData as importAgentMemory } from './agent-memory.js';
 // Workflow engine available as library but not exposed as API routes
 // (all execution flows use persona-api.ts sequential model)
@@ -80,6 +107,7 @@ import { attachWebSocket, broadcastEvent, getWSClientCount, getWSMetrics } from 
 import http from 'node:http';
 import fs from 'node:fs';
 import nodePath from 'node:path';
+import { createHash as nodeCreateHash } from 'node:crypto';
 import { URL } from 'node:url';
 import { fileURLToPath } from 'node:url';
 
@@ -98,6 +126,24 @@ initInnovationStore(store); // Wire innovation labs experiments, hackathons & gr
 initBudgetStore(store); // Wire agent budgets, spend log & cost alerts
 initImprovementStore(store); // Wire performance reviews, improvement plans & feedback
 initAgentStatusReconciler(); // Wire agent status reconciler (subscribes to execution events + 5s ground-truth sweep)
+initSlackNotifier();          // Post execution.completed summaries to SLACK_WEBHOOK_URL for hero workflows
+
+// Seed a consistent demo scenario so first-run dashboards show realistic data.
+// Skipped when real executions already exist, or when SEED_DEMO=false is set.
+if (process.env.SEED_DEMO !== 'false') {
+  try { seedDemoScenario(); } catch (err) { console.warn('[server] demo seed failed:', (err as Error).message); }
+  try { seedExamplePolicies(); } catch (err) { console.warn('[server] policy seed failed:', (err as Error).message); }
+}
+
+// Benchmark auto-forward — when BENCHMARK_CONTRIBUTE=true, route every completed
+// execution through the ingest pipeline. Safe no-op when opt-in is off.
+eventBus.on('execution.completed', async (event) => {
+  const exec = (event.data as { execution?: Parameters<typeof contributeExecution>[0] })?.execution;
+  if (!exec) return;
+  try { await contributeExecution(exec); } catch (err) {
+    console.warn('[benchmark-ingest] auto-forward failed:', (err as Error).message);
+  }
+});
 
 // Bridge agent status changes to WebSocket clients on the "agents" channel
 subscribeToAgentStatus((record) => {
@@ -140,6 +186,9 @@ registerStore('event_log',
   () => eventBus._exportLog() as unknown as Record<string, unknown>[],
   (rows) => eventBus._importLog(rows as any[])
 );
+// Memory graph persistence — full coverage of every sub-store. This is the
+// dataset that powers the data moat: executions + decisions + corrections +
+// agent perf + prompt perf + entity graph all survive restarts.
 registerStore('memory_graph',
   () => {
     const d = memoryGraph._exportData();
@@ -147,12 +196,24 @@ registerStore('memory_graph',
       ...d.executions.map(e => ({ ...e, _type: 'execution' } as Record<string, unknown>)),
       ...d.feedback.map(f => ({ ...f, _type: 'feedback' } as Record<string, unknown>)),
       ...d.comments.map(c => ({ ...c, _type: 'comment' } as Record<string, unknown>)),
+      ...d.decisionTraces.map(dt => ({ ...dt, _type: 'decision' } as Record<string, unknown>)),
+      ...d.corrections.map(cr => ({ ...cr, _type: 'correction' } as Record<string, unknown>)),
+      ...d.agentPerformance.map(ap => ({ ...ap, _type: 'agent_perf' } as Record<string, unknown>)),
+      ...d.promptPerformance.map(pp => ({ ...pp, _type: 'prompt_perf' } as Record<string, unknown>)),
+      ...d.entities.map(en => ({ ...en, _type: 'entity' } as Record<string, unknown>)),
+      ...d.edges.map(ed => ({ ...ed, _type: 'edge' } as Record<string, unknown>)),
     ];
   },
   (rows) => memoryGraph._importData({
     executions: rows.filter(r => r._type === 'execution') as any[],
     feedback: rows.filter(r => r._type === 'feedback') as any[],
     comments: rows.filter(r => r._type === 'comment') as any[],
+    decisionTraces: rows.filter(r => r._type === 'decision') as any[],
+    corrections: rows.filter(r => r._type === 'correction') as any[],
+    agentPerformance: rows.filter(r => r._type === 'agent_perf') as any[],
+    promptPerformance: rows.filter(r => r._type === 'prompt_perf') as any[],
+    entities: rows.filter(r => r._type === 'entity') as any[],
+    edges: rows.filter(r => r._type === 'edge') as any[],
   })
 );
 registerStore('agent_memory',
@@ -164,12 +225,45 @@ registerStore('agent_memory',
 interface ConnectionRecord { connectorId: string; status: string; connectedAt?: string; lastTestedAt?: string; credentials?: Record<string, string>; error?: string; }
 const connectionStore = new Map<string, ConnectionRecord>();
 
-// Real audit log — records actual gateway operations
-interface AuditEntry { id: string; timestamp: string; user: string; action: string; target: string; result: 'success' | 'failed' | 'warning'; detail?: string; }
+// Real audit log — records actual gateway operations.
+// Tamper-evident via hash-chain: each entry includes SHA-256(prev_hash || entry_json),
+// so any mutation invalidates all later entries. Verifiable via /api/governance/audit/verify.
+interface AuditEntry { id: string; timestamp: string; user: string; action: string; target: string; result: 'success' | 'failed' | 'warning'; detail?: string; prevHash?: string; hash?: string; }
 const auditLog: AuditEntry[] = [];
+const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
+function computeAuditHash(prevHash: string, entry: Omit<AuditEntry, 'hash'>): string {
+    // Deterministic serialization (stable key order) prevents hash drift.
+    const canonical = JSON.stringify({
+        id: entry.id, ts: entry.timestamp, u: entry.user, a: entry.action,
+        t: entry.target, r: entry.result, d: entry.detail ?? null, p: prevHash,
+    });
+    return nodeCreateHash('sha256').update(canonical).digest('hex');
+}
 function recordAudit(user: string, action: string, target: string, result: AuditEntry['result'] = 'success', detail?: string): void {
-    auditLog.push({ id: `au-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), user, action, target, result, detail });
-    if (auditLog.length > 500) auditLog.splice(0, auditLog.length - 500); // keep last 500
+    const prevHash = auditLog.length > 0 ? (auditLog[auditLog.length - 1]!.hash ?? GENESIS_HASH) : GENESIS_HASH;
+    const entry: AuditEntry = {
+        id: `au-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        timestamp: new Date().toISOString(),
+        user, action, target, result, detail,
+        prevHash,
+    };
+    entry.hash = computeAuditHash(prevHash, entry);
+    auditLog.push(entry);
+    // Keep last 5000 (was 500) — audit evidence value beats RAM cost.
+    if (auditLog.length > 5000) auditLog.splice(0, auditLog.length - 5000);
+}
+/** Verify the entire hash chain. Returns { valid, brokenAt } for CISO inspection. */
+function verifyAuditChain(): { valid: boolean; brokenAt?: number; total: number } {
+    let prevHash = GENESIS_HASH;
+    for (let i = 0; i < auditLog.length; i++) {
+        const e = auditLog[i]!;
+        const expected = computeAuditHash(prevHash, { id: e.id, timestamp: e.timestamp, user: e.user, action: e.action, target: e.target, result: e.result, detail: e.detail, prevHash });
+        if (e.prevHash !== prevHash || e.hash !== expected) {
+            return { valid: false, brokenAt: i, total: auditLog.length };
+        }
+        prevHash = e.hash;
+    }
+    return { valid: true, total: auditLog.length };
 }
 
 // Course engagement tracking
@@ -261,6 +355,27 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
     const userId = auth.user?.id ?? 'anonymous';
     const authUser = auth.user;
+
+    /**
+     * Route guard: require the authenticated user to have at least the
+     * specified role. Sends a 403 and returns true if blocked; caller should
+     * return immediately when true.
+     *
+     * Dev note: in dev mode (NODE_ENV !== production) the fallback user is
+     * 'user', so admin-only routes will 403 unless the caller sends an admin
+     * API key (eos-dev-key) or JWT. This is intentional — it matches prod
+     * behavior and makes RBAC testable end-to-end.
+     */
+    const guardRole = (requiredRole: 'operator' | 'admin'): boolean => {
+        if (!authUser || !requireRole(authUser, requiredRole)) {
+            sendJSON(res, 403, {
+                error: `Forbidden: '${requiredRole}' role required`,
+                userRole: authUser?.role ?? 'anonymous',
+            });
+            return true;
+        }
+        return false;
+    };
 
     try {
         // Health — liveness check
@@ -537,8 +652,50 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             const parts = path.split('/');
             const execId = parts[3]!;
             const stepId = parts[5]!;
-            const result = approvePersonaStep(execId, stepId);
+            // Unified approve route: flips persona store synchronously AND releases
+            // any marketing loop blocked on approval-bus.waitForApproval().
+            const body = await readBody(req).catch(() => ({})) as { approverId?: string };
+            const personaRes = approvePersonaStep(execId, stepId);
+            const busRes = approveViaBus(execId, stepId, body.approverId ?? userId);
+            const success = personaRes.success || busRes.success;
+            const message = success ? 'Step approved' : `${personaRes.message} / ${busRes.message}`;
+            recordAudit(userId, 'approval.granted', `${execId}/${stepId}`);
+            sendJSON(res, success ? 200 : 400, { success, message });
+            return;
+        }
+
+        // POST /api/executions/:id/reject/:stepId — reject a step (mirror of approve)
+        if (path.match(/^\/api\/executions\/[^/]+\/reject\/[^/]+$/) && method === 'POST') {
+            const parts = path.split('/');
+            const execId = parts[3]!;
+            const stepId = parts[5]!;
+            const body = await readBody(req).catch(() => ({})) as { reason?: string };
+            const result = rejectViaBus(execId, stepId, userId, body.reason);
+            recordAudit(userId, 'approval.rejected', `${execId}/${stepId}`);
             sendJSON(res, result.success ? 200 : 400, result);
+            return;
+        }
+
+        // GET /api/approvals/pending — list pending approvals (for dashboards)
+        if (path === '/api/approvals/pending' && method === 'GET') {
+            sendJSON(res, 200, { pending: listPendingApprovals() });
+            return;
+        }
+
+        // GET /api/approvals/sla — SLA summary (total pending, breaching, near-breach)
+        if (path === '/api/approvals/sla' && method === 'GET') {
+            sendJSON(res, 200, getApprovalSlaSummary());
+            return;
+        }
+
+        // GET /api/approvals/:execId/:stepId — lookup single decision
+        if (path.match(/^\/api\/approvals\/[^/]+\/[^/]+$/) && method === 'GET') {
+            const parts = path.split('/');
+            const execId = parts[3]!;
+            const stepId = parts[4]!;
+            const decision = getApprovalDecision(execId, stepId);
+            if (!decision) { sendJSON(res, 404, { error: 'No decision recorded' }); return; }
+            sendJSON(res, 200, { decision });
             return;
         }
 
@@ -1664,6 +1821,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path === '/api/scheduler/jobs' && method === 'POST') {
+            if (guardRole('operator')) return;
             const body = await readBody(req);
             const { name, skillId, skillName, personaId, scheduleType, cronExpression, intervalMs, eventTrigger, oneTimeAt, timeout, retries, tags, inputs } = body as Record<string, unknown>;
             if (!name || !skillId || !scheduleType) {
@@ -1701,6 +1859,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path.match(/^\/api\/scheduler\/jobs\/[^/]+$/) && method === 'PATCH') {
+            if (guardRole('operator')) return;
             const jobId = path.split('/').pop()!;
             const body = await readBody(req);
             const job = scheduler.updateJob(jobId, body as Parameters<typeof scheduler.updateJob>[1]);
@@ -1710,6 +1869,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path.match(/^\/api\/scheduler\/jobs\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('operator')) return;
             const jobId = path.split('/').pop()!;
             const ok = scheduler.deleteJob(jobId);
             if (!ok) { sendJSON(res, 404, { error: 'Job not found' }); return; }
@@ -2015,7 +2175,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path.match(/^\/api\/evals\/agents\/[^/]+$/) && method === 'PUT') {
+            if (guardRole('operator')) return;
             const agentId = path.split('/')[4];
+            const body = await readBody(req);
             const updated = agentEvalsStore.updateConfig(agentId, body);
             if (!updated) { sendJSON(res, 404, { error: 'Agent not found' }); return; }
             sendJSON(res, 200, { agent: updated });
@@ -2037,6 +2199,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path.match(/^\/api\/evals\/agents\/[^/]+\/baseline$/) && method === 'POST') {
+            if (guardRole('operator')) return;
             const agentId = path.split('/')[4];
             const agent = agentEvalsStore.setBaseline(agentId);
             if (!agent) { sendJSON(res, 404, { error: 'Agent not found' }); return; }
@@ -2111,9 +2274,348 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // Governance — Audit Log
         // -----------------------------------------------------------------------
         if (path === '/api/governance/audit' && method === 'GET') {
+            if (guardRole('operator')) return;
             const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
             const entries = auditLog.slice(-limit).reverse();
             sendJSON(res, 200, { audit: entries, total: auditLog.length });
+            return;
+        }
+
+        // Verify the audit hash-chain — tamper-evidence endpoint for CISOs.
+        if (path === '/api/governance/audit/verify' && method === 'GET') {
+            if (guardRole('operator')) return;
+            const result = verifyAuditChain();
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Governance — Policy Engine (allow/deny rules per agent/tool/persona)
+        // -----------------------------------------------------------------------
+        if (path === '/api/governance/policies' && method === 'GET') {
+            sendJSON(res, 200, { policies: listPolicies() });
+            return;
+        }
+        if (path === '/api/governance/policies' && method === 'POST') {
+            if (guardRole('operator')) return;
+            const body = await readBody(req) as Parameters<typeof createPolicy>[0];
+            const p = createPolicy({ ...body, createdBy: userId });
+            recordAudit(userId, 'policy.create', p.id, 'success', p.name);
+            sendJSON(res, 201, p);
+            return;
+        }
+        if (path.match(/^\/api\/governance\/policies\/[^/]+$/) && method === 'GET') {
+            const id = path.split('/')[4]!;
+            const p = getPolicy(id);
+            if (!p) { sendJSON(res, 404, { error: 'Policy not found' }); return; }
+            sendJSON(res, 200, p);
+            return;
+        }
+        if (path.match(/^\/api\/governance\/policies\/[^/]+$/) && method === 'PUT') {
+            if (guardRole('operator')) return;
+            const id = path.split('/')[4]!;
+            const body = await readBody(req);
+            const p = updatePolicy(id, body as Parameters<typeof updatePolicy>[1]);
+            if (!p) { sendJSON(res, 404, { error: 'Policy not found' }); return; }
+            recordAudit(userId, 'policy.update', id);
+            sendJSON(res, 200, p);
+            return;
+        }
+        if (path.match(/^\/api\/governance\/policies\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('operator')) return;
+            const id = path.split('/')[4]!;
+            const ok = deletePolicy(id);
+            if (!ok) { sendJSON(res, 404, { error: 'Policy not found' }); return; }
+            recordAudit(userId, 'policy.delete', id);
+            sendJSON(res, 204, null);
+            return;
+        }
+        if (path === '/api/governance/policies/check' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof checkPolicy>[0];
+            const result = checkPolicy(body);
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Governance v2 — YAML import/export, routing, residency, compliance, red-team
+        // -----------------------------------------------------------------------
+        if (path === '/api/governance/policies/export' && method === 'GET') {
+            if (guardRole('operator')) return;
+            const yaml = exportPoliciesAsYaml();
+            res.writeHead(200, {
+                'Content-Type': 'application/yaml; charset=utf-8',
+                'Content-Disposition': 'attachment; filename="policies.yaml"',
+            });
+            res.end(yaml);
+            return;
+        }
+        if (path === '/api/governance/policies/import' && method === 'POST') {
+            if (guardRole('operator')) return;
+            // accept raw YAML or JSON with { yaml: "..." }
+            const buf = await new Promise<string>((resolve, reject) => {
+                let s = ''; req.on('data', (c) => { s += c; });
+                req.on('end', () => resolve(s)); req.on('error', reject);
+            });
+            let yamlText = buf;
+            try {
+                const parsed = JSON.parse(buf);
+                if (parsed && typeof parsed === 'object' && typeof parsed.yaml === 'string') {
+                    yamlText = parsed.yaml;
+                }
+            } catch { /* treat buffer itself as YAML */ }
+            const result = importPoliciesFromYaml(yamlText, userId);
+            recordAudit(userId, 'policy.import', `count=${result.imported}`, result.errors.length ? 'warning' : 'success');
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        // Approval routing
+        if (path === '/api/governance/routing' && method === 'GET') {
+            sendJSON(res, 200, { rules: listRoutingRules() });
+            return;
+        }
+        if (path === '/api/governance/routing' && method === 'POST') {
+            if (guardRole('operator')) return;
+            const body = await readBody(req) as Parameters<typeof createRoutingRule>[0];
+            if (!body?.name || !Array.isArray(body?.approvers)) {
+                sendJSON(res, 400, { error: 'name and approvers[] required' }); return;
+            }
+            const rule = createRoutingRule({
+                name: body.name,
+                match: body.match ?? {},
+                approvers: body.approvers,
+                slaHours: body.slaHours ?? 24,
+                enabled: body.enabled ?? true,
+            });
+            recordAudit(userId, 'routing.create', rule.id);
+            sendJSON(res, 201, rule);
+            return;
+        }
+        const routingIdMatch = path.match(/^\/api\/governance\/routing\/([a-zA-Z0-9_-]+)$/);
+        if (routingIdMatch && method === 'DELETE') {
+            if (guardRole('operator')) return;
+            const ok = deleteRoutingRule(routingIdMatch[1]!);
+            if (!ok) { sendJSON(res, 404, { error: 'Routing rule not found' }); return; }
+            recordAudit(userId, 'routing.delete', routingIdMatch[1]!);
+            sendJSON(res, 204, null);
+            return;
+        }
+        if (path === '/api/governance/routing/resolve' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof resolveApprovers>[0];
+            sendJSON(res, 200, resolveApprovers(body));
+            return;
+        }
+
+        // Data residency
+        if (path === '/api/governance/residency' && method === 'GET') {
+            sendJSON(res, 200, { rules: listResidencyRules() });
+            return;
+        }
+        if (path === '/api/governance/residency' && method === 'POST') {
+            if (guardRole('operator')) return;
+            const body = await readBody(req) as Parameters<typeof createResidencyRule>[0];
+            if (!body?.name || !Array.isArray(body?.allowedRegions)) {
+                sendJSON(res, 400, { error: 'name and allowedRegions[] required' }); return;
+            }
+            const rule = createResidencyRule({
+                name: body.name,
+                match: body.match ?? {},
+                allowedRegions: body.allowedRegions,
+                allowedProviders: body.allowedProviders,
+                enabled: body.enabled ?? true,
+            });
+            recordAudit(userId, 'residency.create', rule.id);
+            sendJSON(res, 201, rule);
+            return;
+        }
+        const residencyIdMatch = path.match(/^\/api\/governance\/residency\/([a-zA-Z0-9_-]+)$/);
+        if (residencyIdMatch && method === 'DELETE') {
+            if (guardRole('operator')) return;
+            const ok = deleteResidencyRule(residencyIdMatch[1]!);
+            if (!ok) { sendJSON(res, 404, { error: 'Residency rule not found' }); return; }
+            recordAudit(userId, 'residency.delete', residencyIdMatch[1]!);
+            sendJSON(res, 204, null);
+            return;
+        }
+        if (path === '/api/governance/residency/check' && method === 'POST') {
+            const body = await readBody(req) as Parameters<typeof checkResidency>[0];
+            sendJSON(res, 200, checkResidency(body));
+            return;
+        }
+
+        // Compliance pack
+        if (path === '/api/governance/compliance/controls' && method === 'GET') {
+            const f = url.searchParams.get('framework') as 'SOC2' | 'ISO27001' | 'GDPR' | null;
+            sendJSON(res, 200, { controls: listComplianceControls(f ?? undefined) });
+            return;
+        }
+        if (path === '/api/governance/compliance/summary' && method === 'GET') {
+            sendJSON(res, 200, getComplianceSummary());
+            return;
+        }
+
+        // Red-team scanner
+        if (path === '/api/governance/redteam/scan' && method === 'POST') {
+            if (guardRole('operator')) return;
+            const body = await readBody(req).catch(() => ({})) as {
+                publicRoutes?: string[]; jwtSecretPresent?: boolean; allowAnon?: boolean;
+                hasPolicies?: boolean; residencyConfigured?: boolean;
+            };
+            // Auto-fill detectable values.
+            const result = runRedTeamScan({
+                ...body,
+                jwtSecretPresent: body.jwtSecretPresent ?? Boolean(process.env.JWT_SECRET ?? process.env.AUTH_SECRET),
+                allowAnon: body.allowAnon ?? (process.env.ALLOW_ANON === 'true'),
+                hasPolicies: body.hasPolicies ?? (listPolicies().length > 0),
+                residencyConfigured: body.residencyConfigured ?? (listResidencyRules().length > 0),
+            });
+            recordAudit(userId, 'redteam.scan', `findings=${result.findings.length}`,
+                result.findings.some((f) => f.severity === 'critical' || f.severity === 'high') ? 'warning' : 'success');
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Data Moat — Model router, leaderboard, drift, SEI
+        // -----------------------------------------------------------------------
+        if (path === '/api/intelligence/model-router' && method === 'GET') {
+            const routes = trainModelRouter();
+            sendJSON(res, 200, { routes, total: routes.length });
+            return;
+        }
+        if (path === '/api/intelligence/model-router/route' && method === 'GET') {
+            const persona = url.searchParams.get('persona') ?? undefined;
+            const skillId = url.searchParams.get('skillId') ?? undefined;
+            const route = routeRequest(persona, skillId);
+            if (!route) { sendJSON(res, 404, { error: 'No route available (insufficient telemetry)' }); return; }
+            sendJSON(res, 200, route);
+            return;
+        }
+        if (path === '/api/intelligence/leaderboard' && method === 'GET') {
+            const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
+            sendJSON(res, 200, computeLeaderboard(limit));
+            return;
+        }
+        if (path === '/api/intelligence/drift-forecast' && method === 'GET') {
+            sendJSON(res, 200, { forecasts: forecastDrift() });
+            return;
+        }
+        if (path === '/api/intelligence/skill-effectiveness' && method === 'GET') {
+            const scores = computeSEI();
+            sendJSON(res, 200, { scores, total: scores.length });
+            return;
+        }
+        const seiBySkillMatch = path.match(/^\/api\/intelligence\/skill-effectiveness\/([a-zA-Z0-9_-]+)$/);
+        if (seiBySkillMatch && method === 'GET') {
+            const scores = computeSEI();
+            const s = scores.find((x) => x.skillId === seiBySkillMatch[1]);
+            if (!s) { sendJSON(res, 404, { error: 'No SEI data for this skill' }); return; }
+            sendJSON(res, 200, s);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Protocol — UTCP spec + JSON Schema (public, no auth required)
+        // -----------------------------------------------------------------------
+        if (path === '/api/protocol/utcp/spec' && method === 'GET') {
+            const content = readDocsFile('utcp-spec.md');
+            if (!content) { sendJSON(res, 404, { error: 'Spec not found' }); return; }
+            res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+            res.end(content);
+            return;
+        }
+        if (path === '/api/protocol/utcp/schema' && method === 'GET') {
+            const content = readDocsFile('utcp-packet.schema.json');
+            if (!content) { sendJSON(res, 404, { error: 'Schema not found' }); return; }
+            res.writeHead(200, { 'Content-Type': 'application/schema+json; charset=utf-8' });
+            res.end(content);
+            return;
+        }
+        if (path === '/api/protocol/utcp/adoption' && method === 'GET') {
+            const content = readDocsFile('utcp-adoption.md');
+            if (!content) { sendJSON(res, 404, { error: 'Adoption doc not found' }); return; }
+            res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+            res.end(content);
+            return;
+        }
+        if (path === '/api/protocol/utcp/validate' && method === 'POST') {
+            const body = await readBody(req);
+            sendJSON(res, 200, validatePacket(body));
+            return;
+        }
+        if (path === '/api/protocol/utcp/canonicalize' && method === 'POST') {
+            const body = await readBody(req);
+            const v = validatePacket(body);
+            if (!v.valid) { sendJSON(res, 400, { error: 'Invalid packet', details: v.errors }); return; }
+            const pkt = body as unknown as import('./utcp-protocol.js').UTCPPacket;
+            sendJSON(res, 200, { canonical: canonicalize(pkt), digest: hashPacket(pkt) });
+            return;
+        }
+        if (path === '/api/protocol/utcp/envelope' && method === 'POST') {
+            const body = await readBody(req) as { packet?: unknown; method?: string };
+            if (!body?.packet) { sendJSON(res, 400, { error: 'packet required' }); return; }
+            const v = validatePacket(body.packet);
+            if (!v.valid) { sendJSON(res, 400, { error: 'Invalid packet', details: v.errors }); return; }
+            const pkt = body.packet as import('./utcp-protocol.js').UTCPPacket;
+            sendJSON(res, 200, toMcpEnvelope(pkt, body.method));
+            return;
+        }
+        if (path === '/api/protocol/utcp/envelope/decode' && method === 'POST') {
+            const body = await readBody(req);
+            const result = fromMcpEnvelope(body);
+            sendJSON(res, result.errors.length ? 400 : 200, result);
+            return;
+        }
+        if (path === '/api/protocol/utcp/adopters' && method === 'GET') {
+            sendJSON(res, 200, { adopters: listAdopters() });
+            return;
+        }
+        if (path === '/api/protocol/utcp/adopters' && method === 'POST') {
+            if (guardRole('operator')) return;
+            const body = await readBody(req) as Parameters<typeof registerAdopter>[0];
+            if (!body?.org || !body?.status) { sendJSON(res, 400, { error: 'org and status required' }); return; }
+            const entry = registerAdopter(body);
+            recordAudit(userId, 'utcp.adopter.register', entry.id);
+            sendJSON(res, 201, entry);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Benchmark — opt-in anonymized telemetry contribution
+        // -----------------------------------------------------------------------
+        if (path === '/api/benchmark/stats' && method === 'GET') {
+            sendJSON(res, 200, getContributionStats());
+            return;
+        }
+        if (path === '/api/benchmark/log' && method === 'GET') {
+            if (guardRole('operator')) return;
+            const limit = parseInt(url.searchParams.get('limit') ?? '100', 10);
+            sendJSON(res, 200, { entries: getContributionLog(limit) });
+            return;
+        }
+        if (path === '/api/benchmark/contribute' && method === 'POST') {
+            const body = await readBody(req) as { execution?: Parameters<typeof contributeExecution>[0] };
+            if (!body?.execution) { sendJSON(res, 400, { error: 'execution required' }); return; }
+            const result = await contributeExecution(body.execution);
+            if (result.submitted) recordAudit(userId, 'benchmark.contribute', body.execution.id ?? 'anon');
+            sendJSON(res, 200, result);
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Governance — PII Redaction (preview endpoint)
+        // -----------------------------------------------------------------------
+        if (path === '/api/governance/pii/scan' && method === 'POST') {
+            const body = await readBody(req) as { text?: string };
+            const text = body?.text ?? '';
+            const result = redactPII(text);
+            const hasPII = containsPII(text);
+            if (result.events.length > 0) {
+                recordAudit(userId, 'pii.redacted', `${result.events.length}_items`, 'warning',
+                    result.events.map((e) => e.type).join(','));
+            }
+            sendJSON(res, 200, { hasPII, redactedText: result.text, events: result.events });
             return;
         }
 
@@ -2121,6 +2623,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // Governance — Cost Attribution
         // -----------------------------------------------------------------------
         if (path === '/api/governance/costs' && method === 'GET') {
+            if (guardRole('operator')) return;
             // Real cost attribution from actual execution data
             const execStats = getExecutionStats();
             const now = new Date();
@@ -2137,6 +2640,160 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 totalExecutions: execStats.totalExecutions,
                 breakdown,
             });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Marketing Control Tower — Campaigns + Campaign DAG + Asset Vault
+        // -----------------------------------------------------------------------
+
+        // Control Tower summary — authenticated but role-open.
+        if (path === '/api/campaigns/summary' && method === 'GET') {
+            sendJSON(res, 200, getControlTowerSummary());
+            return;
+        }
+
+        // Searchable asset vault (cross-campaign).
+        if (path === '/api/campaigns/assets/search' && method === 'GET') {
+            const q = url.searchParams.get('q') ?? '';
+            const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+            sendJSON(res, 200, { query: q, results: searchAssets(q, limit) });
+            return;
+        }
+
+        // GET single asset / PATCH approve / GET lineage
+        const singleAssetMatch = path.match(/^\/api\/campaigns\/assets\/([a-zA-Z0-9_-]+)$/);
+        if (singleAssetMatch && method === 'GET') {
+            const a = getAsset(singleAssetMatch[1]!);
+            if (!a) { sendJSON(res, 404, { error: 'Asset not found' }); return; }
+            sendJSON(res, 200, a);
+            return;
+        }
+        const assetLineageMatch = path.match(/^\/api\/campaigns\/assets\/([a-zA-Z0-9_-]+)\/lineage$/);
+        if (assetLineageMatch && method === 'GET') {
+            sendJSON(res, 200, { lineage: getAssetLineage(assetLineageMatch[1]!) });
+            return;
+        }
+        const assetApproveMatch = path.match(/^\/api\/campaigns\/assets\/([a-zA-Z0-9_-]+)\/approve$/);
+        if (assetApproveMatch && method === 'POST') {
+            const a = approveAsset(assetApproveMatch[1]!, userId);
+            if (!a) { sendJSON(res, 404, { error: 'Asset not found' }); return; }
+            recordAudit(userId, 'campaign.asset.approved', a.id);
+            sendJSON(res, 200, a);
+            return;
+        }
+
+        // Campaign collection routes.
+        if (path === '/api/campaigns' && method === 'GET') {
+            const owner = url.searchParams.get('owner') ?? undefined;
+            const status = (url.searchParams.get('status') ?? undefined) as
+              | 'draft' | 'active' | 'paused' | 'completed' | 'archived' | undefined;
+            const tag = url.searchParams.get('tag') ?? undefined;
+            sendJSON(res, 200, { campaigns: listCampaigns({ owner, status, tag }) });
+            return;
+        }
+        if (path === '/api/campaigns' && method === 'POST') {
+            const body = await readBody(req) as {
+              name?: string; description?: string; owner?: string;
+              status?: 'draft' | 'active' | 'paused' | 'completed' | 'archived';
+              targetAudience?: string; objectives?: string[];
+              startDate?: string; endDate?: string; tags?: string[];
+            };
+            if (!body?.name) { sendJSON(res, 400, { error: 'name required' }); return; }
+            const c = createCampaign({
+              name: body.name,
+              description: body.description,
+              owner: body.owner ?? userId,
+              status: body.status,
+              targetAudience: body.targetAudience,
+              objectives: body.objectives,
+              startDate: body.startDate,
+              endDate: body.endDate,
+              tags: body.tags,
+            });
+            recordAudit(userId, 'campaign.create', c.id);
+            sendJSON(res, 201, c);
+            return;
+        }
+
+        // Single-campaign routes.
+        const cmpIdMatch = path.match(/^\/api\/campaigns\/([a-zA-Z0-9_-]+)$/);
+        if (cmpIdMatch && method === 'GET') {
+            const c = getCampaign(cmpIdMatch[1]!);
+            if (!c) { sendJSON(res, 404, { error: 'Campaign not found' }); return; }
+            sendJSON(res, 200, c);
+            return;
+        }
+        if (cmpIdMatch && method === 'PATCH') {
+            const body = await readBody(req) as Partial<ReturnType<typeof getCampaign>> & Record<string, unknown>;
+            const updated = updateCampaign(cmpIdMatch[1]!, body as never);
+            if (!updated) { sendJSON(res, 404, { error: 'Campaign not found' }); return; }
+            recordAudit(userId, 'campaign.update', updated.id);
+            sendJSON(res, 200, updated);
+            return;
+        }
+        if (cmpIdMatch && method === 'DELETE') {
+            if (guardRole('operator')) return;
+            const ok = deleteCampaign(cmpIdMatch[1]!);
+            if (!ok) { sendJSON(res, 404, { error: 'Campaign not found' }); return; }
+            recordAudit(userId, 'campaign.delete', cmpIdMatch[1]!);
+            sendJSON(res, 200, { ok: true });
+            return;
+        }
+
+        const cmpStatsMatch = path.match(/^\/api\/campaigns\/([a-zA-Z0-9_-]+)\/stats$/);
+        if (cmpStatsMatch && method === 'GET') {
+            const stats = getCampaignStats(cmpStatsMatch[1]!);
+            if (!stats.campaign) { sendJSON(res, 404, { error: 'Campaign not found' }); return; }
+            sendJSON(res, 200, stats);
+            return;
+        }
+
+        const cmpAssetsMatch = path.match(/^\/api\/campaigns\/([a-zA-Z0-9_-]+)\/assets$/);
+        if (cmpAssetsMatch && method === 'GET') {
+            sendJSON(res, 200, { assets: listCampaignAssets(cmpAssetsMatch[1]!) });
+            return;
+        }
+        if (cmpAssetsMatch && method === 'POST') {
+            const body = await readBody(req) as {
+              type?: 'brief' | 'outline' | 'blog' | 'ad' | 'email' | 'post' | 'landing_page' | 'creative' | 'research' | 'other';
+              title?: string; ref?: string; content?: string;
+              producedBy?: string; sourceExecutionId?: string; skillId?: string;
+              parents?: string[]; tags?: string[];
+            };
+            if (!body?.type || !body?.title) {
+                sendJSON(res, 400, { error: 'type and title required' });
+                return;
+            }
+            try {
+                const a = addAsset({
+                    campaignId: cmpAssetsMatch[1]!,
+                    type: body.type,
+                    title: body.title,
+                    ref: body.ref,
+                    content: body.content,
+                    producedBy: body.producedBy ?? userId,
+                    sourceExecutionId: body.sourceExecutionId,
+                    skillId: body.skillId,
+                    parents: body.parents,
+                    tags: body.tags,
+                });
+                recordAudit(userId, 'campaign.asset.create', a.id);
+                sendJSON(res, 201, a);
+            } catch (e) {
+                sendJSON(res, 400, { error: (e as Error).message });
+            }
+            return;
+        }
+
+        const cmpLinkMatch = path.match(/^\/api\/campaigns\/([a-zA-Z0-9_-]+)\/executions$/);
+        if (cmpLinkMatch && method === 'POST') {
+            const body = await readBody(req) as { executionId?: string };
+            if (!body?.executionId) { sendJSON(res, 400, { error: 'executionId required' }); return; }
+            const c = linkExecutionToCampaign(cmpLinkMatch[1]!, body.executionId);
+            if (!c) { sendJSON(res, 404, { error: 'Campaign not found' }); return; }
+            recordAudit(userId, 'campaign.link.execution', `${c.id}/${body.executionId}`);
+            sendJSON(res, 200, c);
             return;
         }
 
@@ -2314,6 +2971,37 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
 
+        // OAuth callback — vendor redirects here with ?code=xxx after auth.
+        // Supports both legacy /callback and explicit /oauth/callback paths.
+        if (
+            (path.match(/^\/api\/tools\/[^/]+\/(oauth\/)?callback$/)) &&
+            method === 'GET'
+        ) {
+            const parts = path.split('/');
+            const toolId = parts[3]!;
+            const code = url.searchParams.get('code');
+            const err = url.searchParams.get('error');
+            const baseUrl = process.env.GATEWAY_URL ?? `http://${req.headers.host ?? 'localhost:3000'}`;
+            const redirectUri = `${baseUrl}/api/tools/${toolId}/callback`;
+
+            if (err) {
+                res.writeHead(400, { 'Content-Type': 'text/html' });
+                res.end(renderOAuthResultHtml(toolId, false, `Vendor error: ${err}`));
+                return;
+            }
+            if (!code) {
+                res.writeHead(400, { 'Content-Type': 'text/html' });
+                res.end(renderOAuthResultHtml(toolId, false, 'Missing ?code in callback'));
+                return;
+            }
+
+            const result = await exchangeOAuthCode(toolId, code, redirectUri);
+            recordAudit(userId, result.success ? 'tool.oauth.success' : 'tool.oauth.failure', toolId);
+            res.writeHead(result.success ? 200 : 400, { 'Content-Type': 'text/html' });
+            res.end(renderOAuthResultHtml(toolId, result.success, result.error ?? (result.accountName ? `Connected as ${result.accountName}` : 'Connected')));
+            return;
+        }
+
         if (path === '/api/marketing/notifications/config' && method === 'GET') {
             const config = getNotificationConfig();
             sendJSON(res, 200, { config });
@@ -2336,6 +3024,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path === '/api/notifications/channels' && method === 'POST') {
+            if (guardRole('operator')) return;
             const body = await readBody(req) as { channel: string; name: string; config: unknown };
             const ch = createChannel(body.channel as Parameters<typeof createChannel>[0], body.name, body.config as Parameters<typeof createChannel>[2]);
             recordAudit(userId, 'notification.channel.create', ch.id);
@@ -2350,6 +3039,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/notifications\/channels\/[^/]+$/) && method === 'PUT') {
+            if (guardRole('operator')) return;
             const id = path.split('/')[4]!;
             const body = await readBody(req);
             const ch = updateChannel(id, body as Parameters<typeof updateChannel>[1]);
@@ -2359,6 +3049,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/notifications\/channels\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('operator')) return;
             const id = path.split('/')[4]!;
             const ok = deleteChannel(id);
             if (!ok) { sendJSON(res, 404, { error: 'Channel not found' }); return; }
@@ -2373,6 +3064,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path === '/api/notifications/rules' && method === 'POST') {
+            if (guardRole('operator')) return;
             const body = await readBody(req) as { name: string; trigger: string; channelId: string; eventPattern?: string; template?: string; recipientOverride?: string };
             const rule = createRule(body.name, body.trigger as Parameters<typeof createRule>[1], body.channelId, { eventPattern: body.eventPattern, template: body.template, recipientOverride: body.recipientOverride });
             recordAudit(userId, 'notification.rule.create', rule.id);
@@ -2387,6 +3079,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/notifications\/rules\/[^/]+$/) && method === 'PUT') {
+            if (guardRole('operator')) return;
             const id = path.split('/')[4]!;
             const body = await readBody(req);
             const rule = updateRule(id, body as Parameters<typeof updateRule>[1]);
@@ -2396,6 +3089,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/notifications\/rules\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('operator')) return;
             const id = path.split('/')[4]!;
             const ok = deleteRule(id);
             if (!ok) { sendJSON(res, 404, { error: 'Rule not found' }); return; }
@@ -2441,6 +3135,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path === '/api/webhooks/endpoints' && method === 'POST') {
+            if (guardRole('operator')) return;
             const body = await readBody(req) as { name: string; source: string; eventPrefix?: string };
             const ep = createEndpoint(body.name, body.source, body.eventPrefix);
             recordAudit(userId, 'webhook.endpoint.create', ep.id);
@@ -2455,6 +3150,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/webhooks\/endpoints\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('operator')) return;
             const id = path.split('/')[4]!;
             const ok = deleteEndpoint(id);
             if (!ok) { sendJSON(res, 404, { error: 'Endpoint not found' }); return; }
@@ -2469,6 +3165,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path === '/api/webhooks/subscriptions' && method === 'POST') {
+            if (guardRole('operator')) return;
             const body = await readBody(req) as { name: string; eventPattern: string; targetUrl: string; headers?: Record<string, string> };
             const sub = createSubscription(body.name, body.eventPattern, body.targetUrl, { headers: body.headers });
             recordAudit(userId, 'webhook.subscription.create', sub.id);
@@ -2483,6 +3180,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/webhooks\/subscriptions\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('operator')) return;
             const id = path.split('/')[4]!;
             const ok = deleteSubscription(id);
             if (!ok) { sendJSON(res, 404, { error: 'Subscription not found' }); return; }
@@ -2675,6 +3373,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path === '/api/budget/agents' && method === 'POST') {
+            if (guardRole('operator')) return;
             const body = await readBody(req) as Parameters<typeof setBudget>[0];
             const b = setBudget(body);
             recordAudit(userId, 'budget.set', b.agentId);
@@ -2689,6 +3388,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/budget\/agents\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('operator')) return;
             const agentId = path.split('/')[4]!;
             const ok = deleteBudget(agentId);
             if (!ok) { sendJSON(res, 404, { error: 'Budget not found' }); return; }
@@ -2704,8 +3404,10 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         // Spend log
         if (path === '/api/budget/spend' && method === 'POST') {
+            if (guardRole('operator')) return;
             const body = await readBody(req) as Parameters<typeof recordSpend>[0];
             const entry = recordSpend(body);
+            recordAudit(userId, 'budget.spend.recorded', (body as { agentId?: string })?.agentId ?? 'unknown');
             sendJSON(res, 201, entry);
             return;
         }
@@ -2727,9 +3429,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             return;
         }
         if (path.match(/^\/api\/budget\/alerts\/[^/]+\/acknowledge$/) && method === 'POST') {
+            if (guardRole('operator')) return;
             const id = path.split('/')[4]!;
             const ok = acknowledgeAlert(id);
             if (!ok) { sendJSON(res, 404, { error: 'Alert not found' }); return; }
+            recordAudit(userId, 'budget.alert.ack', id);
             sendJSON(res, 200, { success: true });
             return;
         }
@@ -2886,6 +3590,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         // POST /api/tools/:toolId/disconnect — clear connection
         if (path.match(/^\/api\/tools\/[^/]+\/disconnect$/) && method === 'POST') {
+            if (guardRole('operator')) return;
             const toolId = path.split('/')[3]!;
             const result = disconnectTool(toolId);
             recordAudit(userId, 'tool.disconnect', toolId);
@@ -2896,7 +3601,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // POST /api/tools/:toolId/test — validate current connection
         if (path.match(/^\/api\/tools\/[^/]+\/test$/) && method === 'POST') {
             const toolId = path.split('/')[3]!;
-            const result = testToolConnection(toolId);
+            const result = await testToolConnection(toolId);
             sendJSON(res, result.success ? 200 : 400, result);
             return;
         }
@@ -3821,6 +4526,29 @@ function sendJSON(res: http.ServerResponse, status: number, data: unknown): void
         'X-Author-URL': 'https://linkedin.com/in/phani-marupaka',
     });
     res.end(JSON.stringify(data));
+}
+
+/**
+ * Read a file from the repo's top-level docs/ folder.
+ * Tries multiple candidate locations so the route works when the gateway is
+ * run from the repo root, from within services/gateway, or from a build
+ * output directory.
+ */
+function readDocsFile(name: string): string | null {
+  const gatewayDir = nodePath.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    nodePath.join(process.cwd(), 'docs', name),
+    nodePath.resolve(gatewayDir, '..', '..', '..', 'docs', name),
+    nodePath.resolve(gatewayDir, '..', '..', 'docs', name),
+  ];
+  for (const p of candidates) {
+    try {
+      return fs.readFileSync(p, 'utf-8');
+    } catch {
+      // try next
+    }
+  }
+  return null;
 }
 
 async function readBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {

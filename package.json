@@ -28,6 +28,7 @@
     "dev": "turbo run dev",
     "test": "turbo run test",
     "test:api": "node --experimental-strip-types tests/api.test.ts",
+    "test:integration": "tsx tests/integration.test.ts",
     "test:all": "bash scripts/test-all.sh",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

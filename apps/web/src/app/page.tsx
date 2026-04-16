@@ -42,6 +42,7 @@ import { TAHub } from '../components/TAHub';
 import { ProgramHub } from '../components/ProgramHub';
 import ChatPanel from '../components/ChatPanel';
 import AgentEvalsPanel from '../components/AgentEvalsPanel';
+import { DemoModeBanner, useGatewayReachable } from '../components/DemoModeBanner';
 
 function MainContent({ section }: { section: string }) {
   // Dynamic connector detail pages: connector-detail-{connectorId}
@@ -78,6 +79,15 @@ function MainContent({ section }: { section: string }) {
     // Platform (cross-persona)
     case 'platform-agents':         return <AgentsPanel />;
     case 'platform-connections':    return <ConnectionsHub />;
+    // Connector category routes — all render ConnectionsHub which syncs category from activeSection
+    case 'conn-ai-models':
+    case 'conn-storage':
+    case 'conn-design':
+    case 'conn-crm':
+    case 'conn-devtools':
+    case 'conn-cms':
+    case 'conn-messaging':
+    case 'conn-data':               return <ConnectionsHub />;
     case 'platform-innovation':     return <InnovationLabs />;
     case 'platform-meetings':       return <AgentMeetingView />;
     case 'platform-swarms':         return <SwarmView />;
@@ -122,10 +132,14 @@ export default function Home() {
       'exec-marketing','exec-engineering','exec-product','exec-hr','exec-ta','exec-program',
       'platform-agents','platform-connections','platform-meetings','platform-swarms',
       'platform-protocols','platform-workflows','platform-chat','platform-innovation',
+      'conn-ai-models','conn-storage','conn-design','conn-crm',
+      'conn-devtools','conn-cms','conn-messaging','conn-data',
       'ops-executions','ops-notifications','ops-integrations','ops-discussions','ops-blog',
       'admin-governance','admin-evals','admin-usage','admin-settings',
     ];
-    setActiveSection(knownSections.includes(path) ? path : 'landing');
+    // Allow connector-detail-{id} dynamic sections to round-trip through URL
+    const isKnown = knownSections.includes(path) || path.startsWith('connector-detail-');
+    setActiveSection(isKnown ? path : 'landing');
     assertProvenance();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -169,11 +183,20 @@ export default function Home() {
     );
   }
 
+  const gatewayOk = useGatewayReachable();
+
   return (
     <div className="flex h-screen bg-white text-slate-900 overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopBar />
+        {!gatewayOk && (
+          <DemoModeBanner
+            active
+            variant="floating"
+            message="Gateway offline — screens may show demo data"
+          />
+        )}
         {showIntentBar && (
           <div className="px-6 py-2.5 border-b border-slate-100 bg-slate-50/50 flex-shrink-0">
             <IntentRouter />

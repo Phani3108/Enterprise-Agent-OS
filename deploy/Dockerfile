@@ -41,5 +41,10 @@ USER eaos
 
 EXPOSE 3000 3001 3002 3004 3005 3006 3007
 
-# Use shell form so SERVICE env var is expanded at runtime
-CMD node services/${SERVICE_NAME}/dist/index.js
+# Use shell form so SERVICE env var is expanded at runtime.
+# Gateway compiles to dist/server.js; other services fall back to dist/index.js.
+CMD if [ -f services/${SERVICE_NAME}/dist/server.js ]; then \
+      node services/${SERVICE_NAME}/dist/server.js; \
+    else \
+      node services/${SERVICE_NAME}/dist/index.js; \
+    fi

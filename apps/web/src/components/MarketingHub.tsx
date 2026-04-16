@@ -13,6 +13,16 @@ import { OutputsView, type OutputExecution } from './persona/OutputsView';
 import { PromptLibrary } from './PromptLibraryDeep';
 import { PipelineView } from './PipelineView';
 import AgentsPanel from './AgentsPanel';
+import {
+  MarketingCampaignsView,
+  MarketingContentStudioView,
+  MarketingCreativeStudioView,
+  MarketingResearchHubView,
+  MarketingAnalyticsHubView,
+  MarketingEventsView,
+  MarketingSalesEnableView,
+  MarketingWebsiteSEOView,
+} from './marketing/MarketingSectionViews';
 import { useMarketingStore } from '../store/marketing-store';
 import { useConnectionsStore } from '../store/connections-store';
 
@@ -387,27 +397,63 @@ function MarketingHistoryContent() {
 // Library — Browse skills, prompts, agent definitions
 // ---------------------------------------------------------------------------
 
+type LibraryTab =
+  | 'skills'
+  | 'prompts'
+  | 'agents'
+  | 'campaigns'
+  | 'content'
+  | 'creative'
+  | 'research'
+  | 'analytics'
+  | 'events'
+  | 'sales'
+  | 'seo';
+
+const LIBRARY_TABS: Array<{ id: LibraryTab; label: string; icon: string }> = [
+  { id: 'skills',    label: 'Skills',          icon: '⚡' },
+  { id: 'prompts',   label: 'Prompts',         icon: '✨' },
+  { id: 'agents',    label: 'Agents',          icon: '🤖' },
+  { id: 'campaigns', label: 'Campaigns',       icon: '📡' },
+  { id: 'content',   label: 'Content Studio',  icon: '✍️' },
+  { id: 'creative',  label: 'Creative Studio', icon: '🎨' },
+  { id: 'research',  label: 'Research',        icon: '🔍' },
+  { id: 'analytics', label: 'Analytics',       icon: '📊' },
+  { id: 'events',    label: 'Events',          icon: '🎤' },
+  { id: 'sales',     label: 'Sales Enable',    icon: '💼' },
+  { id: 'seo',       label: 'Website / SEO',   icon: '🌐' },
+];
+
 function MarketingLibraryContent() {
-  const [tab, setTab] = useState<'skills' | 'prompts' | 'agents'>('skills');
+  const [tab, setTab] = useState<LibraryTab>('skills');
   return (
     <div>
       {/* Sub-tabs */}
-      <div className="flex border-b border-slate-200 px-6 pt-4">
-        {(['skills', 'prompts', 'agents'] as const).map(t => (
+      <div className="flex gap-1 border-b border-slate-200 px-6 pt-4 overflow-x-auto scrollbar-hide">
+        {LIBRARY_TABS.map(t => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors capitalize ${
-              tab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              tab === t.id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            {t === 'skills' ? '⚡ Skills' : t === 'prompts' ? '✨ Prompts' : '🤖 Agents'}
+            <span>{t.icon}</span>
+            <span>{t.label}</span>
           </button>
         ))}
       </div>
       {tab === 'skills' && <MarketingAgentBrowser />}
       {tab === 'prompts' && <PromptLibrary personaFilter="marketing" />}
       {tab === 'agents' && <AgentsPanel personaFilter="Marketing" />}
+      {tab === 'campaigns' && <MarketingCampaignsView />}
+      {tab === 'content' && <MarketingContentStudioView />}
+      {tab === 'creative' && <MarketingCreativeStudioView />}
+      {tab === 'research' && <MarketingResearchHubView />}
+      {tab === 'analytics' && <MarketingAnalyticsHubView />}
+      {tab === 'events' && <MarketingEventsView />}
+      {tab === 'sales' && <MarketingSalesEnableView />}
+      {tab === 'seo' && <MarketingWebsiteSEOView />}
     </div>
   );
 }

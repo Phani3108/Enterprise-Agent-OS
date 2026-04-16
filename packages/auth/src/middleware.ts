@@ -34,6 +34,15 @@ const DEV_API_KEYS: Record<string, AuthUser> = {
 /** JWT signing secret — set via env (required in production) */
 const JWT_SECRET = process.env.JWT_SECRET ?? process.env.AUTH_SECRET ?? '';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+/** Opt-out anonymous fallback in non-prod via explicit env (ALLOW_ANON='false') */
+const ALLOW_ANON = process.env.ALLOW_ANON !== 'false';
+
+// Fail fast: refuse to run in production without a signing secret.
+if (IS_PRODUCTION && !JWT_SECRET) {
+    throw new Error(
+        '[auth] FATAL: JWT_SECRET (or AUTH_SECRET) must be set when NODE_ENV=production',
+    );
+}
 
 export function authenticateRequest(headers: Record<string, string | undefined>): AuthResult {
     // 1. Try X-API-Key header first
@@ -62,8 +71,9 @@ export function authenticateRequest(headers: Record<string, string | undefined>)
         }
     }
 
-    // 3. Dev mode fallback — allow unauthenticated access
-    if (!IS_PRODUCTION) {
+    // 3. Dev-only anonymous fallback. Hard-off in production (per governance moat).
+    //    Additionally opt-out-able in any environment via ALLOW_ANON=false.
+    if (!IS_PRODUCTION && ALLOW_ANON) {
         return {
             authenticated: true,
             user: { id: 'anonymous', email: 'anon@local', name: 'Anonymous', role: 'user', teams: [], personaScopes: ['*'] },

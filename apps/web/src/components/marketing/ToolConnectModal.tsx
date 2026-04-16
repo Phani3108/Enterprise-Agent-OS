@@ -33,8 +33,11 @@ interface ToolConnectModalProps {
   onConnected: (toolId: string, connected: boolean) => void;
 }
 
-type Phase = 'idle' | 'connecting' | 'testing' | 'disconnecting';
+type Phase = 'idle' | 'connecting' | 'testing' | 'disconnecting' | 'oauth';
 type TestResult = { success: boolean; message: string } | null;
+
+/** Vendors that support the gateway-side OAuth callback exchange. */
+const OAUTH_CAPABLE = new Set(['slack', 'gdrive', 'hubspot', 'linkedin-ads', 'salesforce']);
 
 export function ToolConnectModal({ tool, onClose, onConnected }: ToolConnectModalProps) {
   const [credentialValue, setCredentialValue] = useState('');
@@ -111,6 +114,49 @@ export function ToolConnectModal({ tool, onClose, onConnected }: ToolConnectModa
     } finally {
       setPhase('idle');
     }
+  };
+
+  /**
+   * Launch the vendor OAuth flow in a popup. The gateway's
+   * /api/tools/:id/oauth/callback route handles the code exchange and posts a
+   * result message back to window.opener, which we listen for here.
+   */
+  const handleOAuthConnect = () => {
+    setError(null);
+    setSuccessMsg(null);
+    setTestResult(null);
+    setPhase('oauth');
+
+    const authorizeUrl = `${GATEWAY_URL}/api/tools/${tool.toolId}/connect`;
+    const popup = window.open(authorizeUrl, 'agentos-oauth', 'width=600,height=720');
+    if (!popup) {
+      setError('Popup blocked — please allow popups for this site.');
+      setPhase('idle');
+      return;
+    }
+
+    const onMessage = (evt: MessageEvent) => {
+      const d = evt.data as { type?: string; toolId?: string; success?: boolean; message?: string };
+      if (d?.type !== 'oauth-result' || d.toolId !== tool.toolId) return;
+      window.removeEventListener('message', onMessage);
+      setPhase('idle');
+      if (d.success) {
+        setSuccessMsg(d.message || `${tool.toolName} connected via OAuth`);
+        onConnected(tool.toolId, true);
+      } else {
+        setError(d.message || 'OAuth connection failed');
+      }
+    };
+    window.addEventListener('message', onMessage);
+
+    // Safety net: if the popup is closed manually without completion, reset.
+    const watchdog = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(watchdog);
+        window.removeEventListener('message', onMessage);
+        setPhase((p) => (p === 'oauth' ? 'idle' : p));
+      }
+    }, 1000);
   };
 
   const handleTest = async () => {
@@ -264,13 +310,24 @@ export function ToolConnectModal({ tool, onClose, onConnected }: ToolConnectModa
         {/* Actions */}
         <div className="px-6 pb-6 flex items-center gap-2">
           {!tool.connected ? (
-            <button
-              onClick={handleConnect}
-              disabled={isLoading || !credentialValue.trim()}
-              className="flex-1 px-4 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {phase === 'connecting' ? 'Connecting…' : 'Connect'}
-            </button>
+            <>
+              {tool.authType === 'oauth' && OAUTH_CAPABLE.has(tool.toolId) && (
+                <button
+                  onClick={handleOAuthConnect}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {phase === 'oauth' ? 'Opening…' : `Sign in with ${tool.toolName}`}
+                </button>
+              )}
+              <button
+                onClick={handleConnect}
+                disabled={isLoading || !credentialValue.trim()}
+                className="flex-1 px-4 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {phase === 'connecting' ? 'Connecting…' : 'Paste Token'}
+              </button>
+            </>
           ) : (
             <>
               <button

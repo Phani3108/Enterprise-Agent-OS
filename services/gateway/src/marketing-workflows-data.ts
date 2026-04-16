@@ -8,6 +8,7 @@
  */
 
 import type { UnifiedSkillDef, UnifiedStepDef } from '@agentos/skills/schema';
+import { getRichDescription } from './marketing-workflow-descriptions.js';
 
 // Re-export for backward compat
 export type WorkflowStepRef = UnifiedStepDef;
@@ -48,5 +49,16 @@ export const MARKETING_WORKFLOW_REFS: UnifiedSkillDef[] = [
 ];
 
 export function getWorkflowRef(idOrSlug: string): WorkflowRef | undefined {
-  return MARKETING_WORKFLOW_REFS.find((w) => w.id === idOrSlug || w.slug === idOrSlug);
+  const wf = MARKETING_WORKFLOW_REFS.find((w) => w.id === idOrSlug || w.slug === idOrSlug);
+  if (!wf) return undefined;
+  const rich = getRichDescription(wf.id) ?? getRichDescription(wf.slug);
+  return rich ? { ...wf, description: rich } : wf;
+}
+
+/** Returns the full workflow list with rich descriptions applied. */
+export function getAllWorkflowRefs(): WorkflowRef[] {
+  return MARKETING_WORKFLOW_REFS.map((wf) => {
+    const rich = getRichDescription(wf.id) ?? getRichDescription(wf.slug);
+    return rich ? { ...wf, description: rich } : wf;
+  });
 }
