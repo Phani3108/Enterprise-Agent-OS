@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { getForumThreads, createForumThread, voteForumThread, getForumComments, addForumComment, type ForumThreadEntry, type ForumCommentEntry } from '../lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -54,124 +55,47 @@ const CATEGORIES = [
 
 const AVATARS = ['👨‍💻', '👩‍💼', '👨‍🔬', '👩‍🎨', '🧑‍🚀', '👩‍💻', '🧑‍💼'];
 
-const SAMPLE_POSTS: ForumPost[] = [
-  {
-    id: 'p1',
-    title: 'Best workflow for generating product roadmaps from customer feedback?',
-    body: 'I\'ve been trying to use the PRD Generator skill to build product roadmaps, but I\'m struggling to ingest bulk customer feedback from Jira and Intercom simultaneously. Has anyone solved this multi-source ingestion pattern?\n\nSpecifically:\n1. We have ~500 Jira issues tagged "customer-feedback"\n2. Intercom has ~2000 conversation threads\n3. We want to cluster these and generate a themed roadmap\n\nAny recommended workflow or skill configuration would be very helpful!',
-    author: 'Sarah Chen',
-    authorAvatar: '👩‍💻',
-    category: 'workflows',
-    tags: ['product', 'roadmap', 'jira', 'customer-feedback'],
-    upvotes: 42,
-    downvotes: 2,
-    commentCount: 8,
-    views: 234,
-    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-    isPinned: true,
-    isAnswered: true,
-    comments: [
-      {
-        id: 'c1', postId: 'p1', author: 'Alex Kim', authorAvatar: '👨‍💻',
-        body: 'I solved this exact problem last month! Use the Knowledge Graph skill with the multi-source connector. Set `sources: ["jira", "intercom"]` in the config. The skill clusters semantically and outputs a JSON roadmap you can then pipe into the PRD Generator.',
-        upvotes: 28, createdAt: new Date(Date.now() - 2.5 * 86400000).toISOString(),
-        isAccepted: true, replies: [],
-      },
-      {
-        id: 'c2', postId: 'p1', author: 'Priya Sharma', authorAvatar: '👩‍🎨',
-        body: 'Also worth looking at the Campaign Strategy skill — it has a feedback-synthesis mode. Not exactly what you need but the clustering logic is top-notch.',
-        upvotes: 11, createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        replies: [],
-      },
-    ],
-  },
-  {
-    id: 'p2',
-    title: 'Recommendation: Add GitHub Actions integration to the CI/CD skill',
-    body: 'Currently the CI/CD skill only connects to Jenkins and CircleCI. Many teams (including ours) are fully on GitHub Actions. I\'d love to see native support for:\n\n- Workflow file generation\n- Pipeline status monitoring\n- Auto-triggering skills on PR merge\n\nUpvote if you want this too!',
-    author: 'Marcus Webb',
-    authorAvatar: '👨‍🔬',
-    category: 'skills',
-    tags: ['github', 'ci-cd', 'feature-request'],
-    upvotes: 67,
-    downvotes: 1,
-    commentCount: 5,
-    views: 389,
-    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-    comments: [
-      {
-        id: 'c3', postId: 'p2', author: 'Jordan Lee', authorAvatar: '🧑‍💼',
-        body: 'Strongly +1 on this. We\'re already using the GitHub tool integration — it just needs workflow file support in the skill layer.',
-        upvotes: 19, createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
-        replies: [],
-      },
-    ],
-  },
-  {
-    id: 'p3',
-    title: 'How do you handle rate limits when running 10+ agents in parallel?',
-    body: 'When we run our full engineering workflow (incident analysis + PR review + docs update all at once), we hit OpenAI rate limits within a minute.\n\nCurrent approach: we\'re adding `rateLimitDelay: 2000` manually but it breaks the parallelism.\n\nIs there a built-in rate limit manager in the Agent Runtime? Or should we be using the queue-based execution mode?',
-    author: 'Yuki Tanaka',
-    authorAvatar: '🧑‍🚀',
-    category: 'agents',
-    tags: ['rate-limits', 'parallelism', 'engineering'],
-    upvotes: 31,
-    downvotes: 0,
-    commentCount: 4,
-    views: 178,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    comments: [
-      {
-        id: 'c4', postId: 'p3', author: 'Admin', authorAvatar: '👨‍💼',
-        body: 'The Agent Runtime has a built-in token bucket limiter. Set `execution.maxConcurrency: 5` and `execution.rateLimitStrategy: "token-bucket"` in your workflow config. This will automatically queue excess agents and retry with exponential backoff.',
-        upvotes: 22, createdAt: new Date(Date.now() - 18 * 3600000).toISOString(),
-        replies: [],
-      },
-    ],
-  },
-  {
-    id: 'p4',
-    title: 'Canva integration returning 403 — OAuth scope issue?',
-    body: 'Just connected Canva via the Tools page. Authentication appears to succeed (green checkmark) but when I run the Brand Asset Generator skill, it throws:\n\n```\nCanvaAPI: 403 Forbidden — insufficient_scope: write:designs\n```\n\nI can see designs in read mode but can\'t create new ones. Any idea which OAuth scope I need to add?',
-    author: 'Fatima Al-Hassan',
-    authorAvatar: '👩‍💼',
-    category: 'tools',
-    tags: ['canva', 'oauth', 'troubleshooting'],
-    upvotes: 15,
-    downvotes: 0,
-    commentCount: 3,
-    views: 91,
-    createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+const SAMPLE_POSTS: ForumPost[] = [];
+
+function avatarForId(id: string): string {
+  const code = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return AVATARS[Math.abs(code) % AVATARS.length];
+}
+
+function mapThreadToPost(t: ForumThreadEntry): ForumPost {
+  return {
+    id: t.id,
+    title: t.title,
+    body: t.body,
+    author: t.authorName,
+    authorAvatar: avatarForId(t.authorId),
+    category: t.category,
+    tags: t.tags,
+    upvotes: t.upvotes,
+    downvotes: t.downvotes,
+    commentCount: t.commentCount,
+    views: t.viewCount,
+    createdAt: t.createdAt,
+    isPinned: t.isPinned,
+    isAnswered: !!t.acceptedCommentId,
     comments: [],
-  },
-  {
-    id: 'p5',
-    title: 'Weekly thread: Share your favorite AgentOS skill combos!',
-    body: 'Every week I\'ll post a thread for the community to share their favorite skill combinations and workflows. I\'ll kick it off:\n\n**My favorite combo**: Transcript → Actions → Sprint Planning → Jira Epic Creator\n\nOne meeting turns into fully created Jira epics with stories and acceptance criteria. Saves our team ~4 hours per sprint.',
-    author: 'Riley Johnson',
-    authorAvatar: '👩‍💼',
-    category: 'general',
-    tags: ['showcase', 'weekly', 'productivity'],
-    upvotes: 89,
-    downvotes: 3,
-    commentCount: 12,
-    views: 512,
-    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    isPinned: true,
-    comments: [
-      {
-        id: 'c5', postId: 'p5', author: 'Dev Team Lead', authorAvatar: '👨‍💻',
-        body: '**Mine**: PR Architecture Review → Security Scan → Auto-merge on pass. Zero manual review overhead for small PRs.',
-        upvotes: 34, createdAt: new Date(Date.now() - 44 * 3600000).toISOString(), replies: [],
-      },
-      {
-        id: 'c6', postId: 'p5', author: 'Marketing Ops', authorAvatar: '👩‍🎨',
-        body: '**Marketing combo**: ICP Analysis → Campaign Strategy → LinkedIn Ad Generator → HubSpot workflow. Full GTM motion in 2 hours!',
-        upvotes: 27, createdAt: new Date(Date.now() - 36 * 3600000).toISOString(), replies: [],
-      },
-    ],
-  },
-];
+  };
+}
+
+function mapCommentToLocal(c: ForumCommentEntry): ForumComment {
+  return {
+    id: c.id,
+    postId: c.threadId,
+    author: c.authorName,
+    authorAvatar: avatarForId(c.authorId),
+    body: c.body,
+    upvotes: c.upvotes,
+    createdAt: c.createdAt,
+    isAccepted: c.isAccepted,
+    parentId: c.parentId,
+    replies: [],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Helper Components
@@ -575,12 +499,38 @@ function NewPostModal({ onClose, onSubmit }: {
 // ---------------------------------------------------------------------------
 
 export function DiscussionForum() {
-  const [posts, setPosts] = useState<ForumPost[]>(SAMPLE_POSTS);
+  const [posts, setPosts] = useState<ForumPost[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState<'hot' | 'new' | 'top'>('hot');
   const [search, setSearch] = useState('');
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
   const [showNewPost, setShowNewPost] = useState(false);
+  const [forumStats, setForumStats] = useState<{ discussions: number; comments: number; contributors: number } | null>(null);
+
+  const fetchThreads = useCallback(async () => {
+    try {
+      const filters: { category?: string; sort?: string; q?: string } = {};
+      if (activeCategory !== 'all') filters.category = activeCategory;
+      if (sortBy) filters.sort = sortBy;
+      if (search) filters.q = search;
+      const { threads, stats } = await getForumThreads(filters);
+      setPosts(threads.map(mapThreadToPost));
+      if (stats && typeof stats === 'object') {
+        const s = stats as Record<string, number>;
+        setForumStats({
+          discussions: s.totalThreads ?? threads.length,
+          comments: s.totalComments ?? 0,
+          contributors: s.totalContributors ?? 0,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load forum threads:', err);
+    }
+  }, [activeCategory, sortBy, search]);
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads]);
 
   // Filter & sort
   const filtered = posts
@@ -601,48 +551,37 @@ export function DiscussionForum() {
       return scoreB - scoreA;
     });
 
-  const handleVote = (postId: string, dir: 'up' | 'down') => {
-    setPosts((prev) => prev.map((p) => {
-      if (p.id !== postId) return p;
-      const wasUp = p.userVote === 'up';
-      const wasDown = p.userVote === 'down';
-      if (dir === 'up') {
-        return { ...p, upvotes: wasUp ? p.upvotes - 1 : p.upvotes + 1, downvotes: wasDown ? p.downvotes - 1 : p.downvotes, userVote: wasUp ? null : 'up' };
-      } else {
-        return { ...p, downvotes: wasDown ? p.downvotes - 1 : p.downvotes + 1, upvotes: wasUp ? p.upvotes - 1 : p.upvotes, userVote: wasDown ? null : 'down' };
+  const handleVote = async (postId: string, dir: 'up' | 'down') => {
+    try {
+      const { thread } = await voteForumThread(postId, dir);
+      const updated = mapThreadToPost(thread);
+      setPosts((prev) => prev.map((p) =>
+        p.id === postId ? { ...p, upvotes: updated.upvotes, downvotes: updated.downvotes } : p
+      ));
+      if (selectedPost?.id === postId) {
+        setSelectedPost((prev) =>
+          prev ? { ...prev, upvotes: updated.upvotes, downvotes: updated.downvotes } : prev
+        );
       }
-    }));
-    // Update selected if open
-    if (selectedPost?.id === postId) {
-      setSelectedPost((prev) => {
-        if (!prev) return prev;
-        const p = prev;
-        const wasUp = p.userVote === 'up';
-        const wasDown = p.userVote === 'down';
-        if (dir === 'up') return { ...p, upvotes: wasUp ? p.upvotes - 1 : p.upvotes + 1, downvotes: wasDown ? p.downvotes - 1 : p.downvotes, userVote: wasUp ? null : 'up' };
-        return { ...p, downvotes: wasDown ? p.downvotes - 1 : p.downvotes + 1, upvotes: wasUp ? p.upvotes - 1 : p.upvotes, userVote: wasDown ? null : 'down' };
-      });
+    } catch (err) {
+      console.error('Failed to vote on thread:', err);
     }
   };
 
-  const handleAddComment = (body: string) => {
+  const handleAddComment = async (body: string) => {
     if (!selectedPost) return;
-    const newComment: ForumComment = {
-      id: `c-${Date.now()}`,
-      postId: selectedPost.id,
-      author: 'You',
-      authorAvatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],
-      body,
-      upvotes: 0,
-      createdAt: new Date().toISOString(),
-      replies: [],
-    };
-    setPosts((prev) => prev.map((p) =>
-      p.id === selectedPost.id
-        ? { ...p, comments: [...p.comments, newComment], commentCount: p.commentCount + 1 }
-        : p
-    ));
-    setSelectedPost((prev) => prev ? { ...prev, comments: [...prev.comments, newComment] } : prev);
+    try {
+      const { comment } = await addForumComment(selectedPost.id, body);
+      const mapped = mapCommentToLocal(comment);
+      setPosts((prev) => prev.map((p) =>
+        p.id === selectedPost.id
+          ? { ...p, comments: [...p.comments, mapped], commentCount: p.commentCount + 1 }
+          : p
+      ));
+      setSelectedPost((prev) => prev ? { ...prev, comments: [...prev.comments, mapped], commentCount: prev.commentCount + 1 } : prev);
+    } catch (err) {
+      console.error('Failed to add comment:', err);
+    }
   };
 
   const handleVoteComment = (commentId: string) => {
@@ -658,29 +597,34 @@ export function DiscussionForum() {
     ));
   };
 
-  const handleNewPost = (data: Partial<ForumPost>) => {
-    const newPost: ForumPost = {
-      id: `p-${Date.now()}`,
-      title: data.title ?? '',
-      body: data.body ?? '',
-      author: 'You',
-      authorAvatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],
-      category: data.category ?? 'general',
-      tags: data.tags ?? [],
-      upvotes: 1,
-      downvotes: 0,
-      commentCount: 0,
-      views: 1,
-      createdAt: new Date().toISOString(),
-      userVote: 'up',
-      comments: [],
-    };
-    setPosts((prev) => [newPost, ...prev]);
+  const handleNewPost = async (data: Partial<ForumPost>) => {
+    try {
+      const { thread } = await createForumThread({
+        title: data.title ?? '',
+        body: data.body ?? '',
+        category: data.category ?? 'general',
+        tags: data.tags,
+      });
+      setPosts((prev) => [mapThreadToPost(thread), ...prev]);
+    } catch (err) {
+      console.error('Failed to create thread:', err);
+    }
   };
 
-  const totalPosts = posts.length;
-  const totalComments = posts.reduce((s, p) => s + p.commentCount, 0);
-  const totalUsers = new Set(posts.map((p) => p.author)).size;
+  const handleOpenPost = async (post: ForumPost) => {
+    setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, views: p.views + 1 } : p));
+    try {
+      const { comments } = await getForumComments(post.id);
+      const mappedComments = comments.map(mapCommentToLocal);
+      setSelectedPost({ ...post, views: post.views + 1, comments: mappedComments });
+    } catch {
+      setSelectedPost({ ...post, views: post.views + 1 });
+    }
+  };
+
+  const totalPosts = forumStats?.discussions ?? posts.length;
+  const totalComments = forumStats?.comments ?? posts.reduce((s, p) => s + p.commentCount, 0);
+  const totalUsers = forumStats?.contributors ?? new Set(posts.map((p) => p.author)).size;
 
   return (
     <div className="h-full flex flex-col bg-white overflow-hidden" data-testid="discussion-forum">
@@ -794,10 +738,7 @@ export function DiscussionForum() {
                     <PostCard
                       key={post.id}
                       post={post}
-                      onClick={() => {
-                        setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, views: p.views + 1 } : p));
-                        setSelectedPost({ ...post, views: post.views + 1 });
-                      }}
+                      onClick={() => handleOpenPost(post)}
                       onVote={(dir, e) => { e.stopPropagation(); handleVote(post.id, dir); }}
                     />
                   ))

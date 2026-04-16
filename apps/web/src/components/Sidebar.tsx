@@ -111,6 +111,7 @@ const NAV: NavGroup[] = [
     id: 'admin', label: 'Admin', collapsible: true,
     items: [
       { id: 'admin-governance', label: 'Governance', icon: 'governance' },
+      { id: 'admin-evals',      label: 'Agent Evals', icon: 'usage'     },
       { id: 'admin-usage',      label: 'Usage',      icon: 'usage'      },
       { id: 'admin-settings',   label: 'Settings',   icon: 'settings'   },
     ],

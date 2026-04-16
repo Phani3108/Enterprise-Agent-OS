@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getObservabilityExecutions, getObservabilityAgents, getObservabilityMetrics } from '../lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -268,14 +269,23 @@ type Tab = 'executions' | 'agents' | 'api' | 'metrics';
 // ---------------------------------------------------------------------------
 
 function WorkflowExecutionsTab() {
+  const [executions, setExecutions] = useState<WorkflowExecution[]>(SAMPLE_EXECUTIONS);
   const [selected, setSelected] = useState<WorkflowExecution | null>(null);
 
-  const totalTokens = SAMPLE_EXECUTIONS.reduce((s, e) => s + e.tokensUsed, 0);
-  const totalCost = SAMPLE_EXECUTIONS.reduce((s, e) => s + e.cost, 0);
+  useEffect(() => {
+    getObservabilityExecutions()
+      .then(d => {
+        if (d.executions?.length) setExecutions(d.executions as WorkflowExecution[]);
+      })
+      .catch(() => { /* keep generated fallback */ });
+  }, []);
+
+  const totalTokens = executions.reduce((s, e) => s + e.tokensUsed, 0);
+  const totalCost = executions.reduce((s, e) => s + e.cost, 0);
   const successRate = Math.round(
-    (SAMPLE_EXECUTIONS.filter((e) => e.status === 'completed').length / SAMPLE_EXECUTIONS.length) * 100
+    (executions.filter((e) => e.status === 'completed').length / executions.length) * 100
   );
-  const avgDuration = SAMPLE_EXECUTIONS.reduce((s, e) => s + e.durationMs, 0) / SAMPLE_EXECUTIONS.length;
+  const avgDuration = executions.reduce((s, e) => s + e.durationMs, 0) / executions.length;
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -284,7 +294,7 @@ function WorkflowExecutionsTab() {
         {/* Summary */}
         <div className="grid grid-cols-4 gap-px bg-slate-100 border-b border-slate-100">
           {[
-            { label: 'Executions', value: String(SAMPLE_EXECUTIONS.length) },
+            { label: 'Executions', value: String(executions.length) },
             { label: 'Success Rate', value: `${successRate}%` },
             { label: 'Avg Duration', value: formatMs(avgDuration) },
             { label: 'Total Cost', value: `$${totalCost.toFixed(3)}` },
@@ -297,7 +307,7 @@ function WorkflowExecutionsTab() {
         </div>
 
         <div className="p-3 space-y-2">
-          {SAMPLE_EXECUTIONS.map((exec) => (
+          {executions.map((exec) => (
             <div
               key={exec.id}
               onClick={() => setSelected(selected?.id === exec.id ? null : exec)}
@@ -378,12 +388,26 @@ function AgentActivityTab() {
   const [agents, setAgents] = useState<AgentActivity[]>(SAMPLE_AGENTS);
 
   useEffect(() => {
+    getObservabilityAgents()
+      .then(d => {
+        if (d.agents?.length) setAgents(d.agents as AgentActivity[]);
+      })
+      .catch(() => { /* keep generated fallback */ });
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      setAgents((prev) => prev.map((a) =>
-        a.status === 'active'
-          ? { ...a, durationMs: a.durationMs + 5000, tokensIn: a.tokensIn + Math.floor(Math.random() * 100) }
-          : a
-      ));
+      getObservabilityAgents()
+        .then(d => {
+          if (d.agents?.length) setAgents(d.agents as AgentActivity[]);
+        })
+        .catch(() => {
+          setAgents((prev) => prev.map((a) =>
+            a.status === 'active'
+              ? { ...a, durationMs: a.durationMs + 5000, tokensIn: a.tokensIn + Math.floor(Math.random() * 100) }
+              : a
+          ));
+        });
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -587,6 +611,17 @@ function ApiLogsTab() {
 
 function SystemMetricsTab() {
   const [metrics, setMetrics] = useState<SystemMetric[]>(generateMetrics);
+
+  useEffect(() => {
+    getObservabilityMetrics()
+      .then(d => {
+        if (d && Array.isArray((d as Record<string, unknown>).metrics)) {
+          const apiMetrics = (d as Record<string, unknown>).metrics as SystemMetric[];
+          if (apiMetrics.length) setMetrics(apiMetrics);
+        }
+      })
+      .catch(() => { /* keep generated fallback */ });
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {

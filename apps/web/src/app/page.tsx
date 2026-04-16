@@ -41,6 +41,7 @@ import WorkflowCanvas from '../components/WorkflowCanvas';
 import { TAHub } from '../components/TAHub';
 import { ProgramHub } from '../components/ProgramHub';
 import ChatPanel from '../components/ChatPanel';
+import AgentEvalsPanel from '../components/AgentEvalsPanel';
 
 function MainContent({ section }: { section: string }) {
   // Dynamic connector detail pages: connector-detail-{connectorId}
@@ -93,6 +94,7 @@ function MainContent({ section }: { section: string }) {
 
     // Admin
     case 'admin-governance':        return <GovernanceDashboard />;
+    case 'admin-evals':             return <AgentEvalsPanel />;
     case 'admin-usage':             return <AdminUsageView />;
     case 'admin-settings':          return <SettingsPanel />;
 
@@ -121,7 +123,7 @@ export default function Home() {
       'platform-agents','platform-connections','platform-meetings','platform-swarms',
       'platform-protocols','platform-workflows','platform-chat','platform-innovation',
       'ops-executions','ops-notifications','ops-integrations','ops-discussions','ops-blog',
-      'admin-governance','admin-usage','admin-settings',
+      'admin-governance','admin-evals','admin-usage','admin-settings',
     ];
     setActiveSection(knownSections.includes(path) ? path : 'landing');
     assertProvenance();

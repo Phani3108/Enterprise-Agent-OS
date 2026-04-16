@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { getScheduledJobs, createScheduledJob, deleteScheduledJob, runJobNow, toggleJob, getSchedulerStats, type ScheduledJobEntry } from '../lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,119 +45,6 @@ interface JobLog {
   output?: string;
   error?: string;
 }
-
-// ---------------------------------------------------------------------------
-// Sample Data
-// ---------------------------------------------------------------------------
-
-const SAMPLE_JOBS: ScheduledJob[] = [
-  {
-    id: 'job-1',
-    name: 'Daily Sprint Digest',
-    skillId: 'engineering.sprint.digest',
-    skillName: 'Sprint Digest Generator',
-    personaId: 'engineering',
-    scheduleType: 'cron',
-    cronExpression: '0 9 * * MON-FRI',
-    status: 'active',
-    lastRun: new Date(Date.now() - 3600000).toISOString(),
-    nextRun: new Date(Date.now() + 72000000).toISOString(),
-    runCount: 47,
-    successCount: 45,
-    failureCount: 2,
-    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-    timeout: 120,
-    retries: 2,
-    tags: ['engineering', 'daily'],
-    logs: [
-      { id: 'l1', jobId: 'job-1', status: 'success', startedAt: new Date(Date.now() - 3600000).toISOString(), completedAt: new Date(Date.now() - 3540000).toISOString(), durationMs: 58234, output: 'Sprint digest generated: 12 items, 3 blockers identified, 2 at-risk tickets.' },
-      { id: 'l2', jobId: 'job-1', status: 'success', startedAt: new Date(Date.now() - 90000000).toISOString(), completedAt: new Date(Date.now() - 89940000).toISOString(), durationMs: 61100, output: 'Sprint digest generated: 15 items, 1 blocker identified.' },
-      { id: 'l3', jobId: 'job-1', status: 'failed', startedAt: new Date(Date.now() - 176400000).toISOString(), durationMs: 30000, error: 'Jira API timeout after 30s. Retry 1/2 failed. Retry 2/2 failed.' },
-    ],
-  },
-  {
-    id: 'job-2',
-    name: 'Campaign Performance Monitor',
-    skillId: 'marketing.campaign.monitor',
-    skillName: 'Campaign Performance Monitor',
-    personaId: 'marketing',
-    scheduleType: 'cron',
-    cronExpression: '*/30 8-18 * * MON-FRI',
-    status: 'active',
-    lastRun: new Date(Date.now() - 1800000).toISOString(),
-    nextRun: new Date(Date.now() + 1800000).toISOString(),
-    runCount: 284,
-    successCount: 282,
-    failureCount: 2,
-    createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
-    timeout: 60,
-    retries: 1,
-    tags: ['marketing', 'monitoring'],
-    logs: [
-      { id: 'l4', jobId: 'job-2', status: 'success', startedAt: new Date(Date.now() - 1800000).toISOString(), completedAt: new Date(Date.now() - 1770000).toISOString(), durationMs: 28900, output: 'CTR: 2.4% (+0.3%), Impressions: 14,200. No anomalies detected.' },
-    ],
-  },
-  {
-    id: 'job-3',
-    name: 'PR Merge → Auto Review',
-    skillId: 'engineering.pr.architecture_review',
-    skillName: 'PR Architecture Review',
-    personaId: 'engineering',
-    scheduleType: 'event',
-    eventTrigger: 'github.pull_request.opened',
-    status: 'active',
-    lastRun: new Date(Date.now() - 7200000).toISOString(),
-    runCount: 128,
-    successCount: 126,
-    failureCount: 2,
-    createdAt: new Date(Date.now() - 45 * 86400000).toISOString(),
-    timeout: 180,
-    retries: 0,
-    tags: ['engineering', 'github', 'event-driven'],
-    logs: [
-      { id: 'l5', jobId: 'job-3', status: 'success', startedAt: new Date(Date.now() - 7200000).toISOString(), completedAt: new Date(Date.now() - 7140000).toISOString(), durationMs: 62400, output: 'PR #481 reviewed. Architecture: 94%, Security: 91%. 1 suggestion posted.' },
-      { id: 'l6', jobId: 'job-3', status: 'success', startedAt: new Date(Date.now() - 18000000).toISOString(), completedAt: new Date(Date.now() - 17940000).toISOString(), durationMs: 57800, output: 'PR #479 reviewed. Architecture: 88%, Security: 95%. 3 suggestions posted.' },
-    ],
-  },
-  {
-    id: 'job-4',
-    name: 'Weekly Business Review Report',
-    skillId: 'leadership.business.review',
-    skillName: 'Business Review Generator',
-    personaId: 'leadership',
-    scheduleType: 'cron',
-    cronExpression: '0 8 * * MON',
-    status: 'paused',
-    lastRun: new Date(Date.now() - 7 * 86400000).toISOString(),
-    nextRun: new Date(Date.now() + 86400000).toISOString(),
-    runCount: 12,
-    successCount: 11,
-    failureCount: 1,
-    createdAt: new Date(Date.now() - 90 * 86400000).toISOString(),
-    timeout: 300,
-    retries: 3,
-    tags: ['leadership', 'weekly'],
-    logs: [],
-  },
-  {
-    id: 'job-5',
-    name: 'One-Time: Q1 Board Report',
-    skillId: 'leadership.board.report',
-    skillName: 'Board Report Generator',
-    personaId: 'leadership',
-    scheduleType: 'one-time',
-    oneTimeAt: new Date(Date.now() + 3 * 86400000).toISOString(),
-    status: 'pending',
-    runCount: 0,
-    successCount: 0,
-    failureCount: 0,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    timeout: 600,
-    retries: 2,
-    tags: ['leadership', 'quarterly'],
-    logs: [],
-  },
-];
 
 // Common cron presets
 const CRON_PRESETS = [
@@ -566,18 +454,29 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
 // ---------------------------------------------------------------------------
 
 export function ExecutionScheduler() {
-  const [jobs, setJobs] = useState<ScheduledJob[]>(SAMPLE_JOBS);
+  const [jobs, setJobs] = useState<ScheduledJob[]>([]);
   const [selectedJob, setSelectedJob] = useState<ScheduledJob | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [filter, setFilter] = useState<JobStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [runningJobs, setRunningJobs] = useState<Set<string>>(new Set());
+  const [apiStats, setApiStats] = useState<{ total: number; active: number; paused: number; failed: number } | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval>>();
 
-  // Simulate next-run countdown
+  useEffect(() => {
+    getScheduledJobs().then((d) => {
+      setJobs((d.jobs || []).map((j) => ({ ...j, logs: (j as unknown as ScheduledJob).logs || [] })));
+    }).catch(() => {});
+    getSchedulerStats().then((d) => {
+      const s = d as Record<string, unknown>;
+      if (s && typeof s.total === 'number') {
+        setApiStats({ total: s.total as number, active: (s.active as number) ?? 0, paused: (s.paused as number) ?? 0, failed: (s.failed as number) ?? 0 });
+      }
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     tickRef.current = setInterval(() => {
-      // Force re-render to update relative times
       setJobs((prev) => [...prev]);
     }, 30000);
     return () => clearInterval(tickRef.current);
@@ -591,85 +490,104 @@ export function ExecutionScheduler() {
   });
 
   const handleToggle = (jobId: string) => {
-    setJobs((prev) => prev.map((j) =>
-      j.id === jobId
-        ? { ...j, status: j.status === 'active' ? 'paused' : 'active' }
-        : j
-    ));
-    if (selectedJob?.id === jobId) {
-      setSelectedJob((prev) => prev ? {
-        ...prev, status: prev.status === 'active' ? 'paused' : 'active'
-      } : prev);
-    }
+    toggleJob(jobId).then(({ job: updated }) => {
+      const mapped: ScheduledJob = { ...updated, logs: (updated as unknown as ScheduledJob).logs || [] };
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...mapped, logs: j.logs } : j)));
+      if (selectedJob?.id === jobId) {
+        setSelectedJob((prev) => prev ? { ...prev, status: mapped.status } : prev);
+      }
+    }).catch(() => {
+      setJobs((prev) => prev.map((j) =>
+        j.id === jobId ? { ...j, status: j.status === 'active' ? 'paused' : 'active' } : j
+      ));
+      if (selectedJob?.id === jobId) {
+        setSelectedJob((prev) => prev ? { ...prev, status: prev.status === 'active' ? 'paused' : 'active' } : prev);
+      }
+    });
   };
 
   const handleRunNow = (jobId: string) => {
     setRunningJobs((prev) => new Set(prev).add(jobId));
-    setTimeout(() => {
+    runJobNow(jobId).then(({ job: updated, log: rawLog }) => {
       setRunningJobs((prev) => { const s = new Set(prev); s.delete(jobId); return s; });
-      const log: JobLog = {
-        id: `l-${Date.now()}`,
-        jobId,
-        status: Math.random() > 0.1 ? 'success' : 'failed',
-        startedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        durationMs: Math.floor(Math.random() * 90000) + 5000,
-        output: 'Manual run completed successfully.',
-      };
-      setJobs((prev) => prev.map((j) =>
-        j.id === jobId
-          ? { ...j, runCount: j.runCount + 1, successCount: j.successCount + (log.status === 'success' ? 1 : 0),
-              failureCount: j.failureCount + (log.status === 'failed' ? 1 : 0),
-              lastRun: new Date().toISOString(), logs: [log, ...j.logs].slice(0, 20) }
-          : j
-      ));
+      const log = rawLog as JobLog | undefined;
+      setJobs((prev) => prev.map((j) => {
+        if (j.id !== jobId) return j;
+        const newLogs = log ? [log, ...j.logs].slice(0, 20) : j.logs;
+        return { ...j, ...updated, logs: newLogs };
+      }));
       if (selectedJob?.id === jobId) {
-        setSelectedJob((prev) => prev ? {
-          ...prev, runCount: prev.runCount + 1,
-          lastRun: new Date().toISOString(), logs: [log, ...prev.logs].slice(0, 20)
-        } : prev);
+        setSelectedJob((prev) => {
+          if (!prev) return prev;
+          const newLogs = log ? [log, ...prev.logs].slice(0, 20) : prev.logs;
+          return { ...prev, ...updated, logs: newLogs };
+        });
       }
-    }, 2000 + Math.random() * 3000);
+    }).catch(() => {
+      setRunningJobs((prev) => { const s = new Set(prev); s.delete(jobId); return s; });
+    });
   };
 
   const handleDelete = (jobId: string) => {
     if (!confirm('Delete this scheduled job?')) return;
-    setJobs((prev) => prev.filter((j) => j.id !== jobId));
-    if (selectedJob?.id === jobId) setSelectedJob(null);
+    deleteScheduledJob(jobId).then(() => {
+      setJobs((prev) => prev.filter((j) => j.id !== jobId));
+      if (selectedJob?.id === jobId) setSelectedJob(null);
+    }).catch(() => {});
   };
 
   const handleNewJob = (data: Partial<ScheduledJob>) => {
-    const newJob: ScheduledJob = {
-      id: `job-${Date.now()}`,
+    const payload = {
       name: data.name ?? 'New Job',
       skillId: data.skillId ?? '',
       skillName: data.skillName ?? '',
       personaId: 'engineering',
-      scheduleType: data.scheduleType ?? 'cron',
+      scheduleType: (data.scheduleType ?? 'cron') as string,
       cronExpression: data.cronExpression,
       intervalMs: data.intervalMs,
       eventTrigger: data.eventTrigger,
       oneTimeAt: data.oneTimeAt,
-      status: 'active',
-      runCount: 0,
-      successCount: 0,
-      failureCount: 0,
-      createdAt: new Date().toISOString(),
       timeout: data.timeout ?? 120,
       retries: data.retries ?? 2,
       tags: data.tags ?? [],
-      logs: [],
-      nextRun: new Date(Date.now() + 3600000).toISOString(),
     };
-    setJobs((prev) => [newJob, ...prev]);
+    createScheduledJob(payload).then(({ job: created }) => {
+      const mapped: ScheduledJob = { ...created, logs: [] };
+      setJobs((prev) => [mapped, ...prev]);
+    }).catch(() => {
+      const fallback: ScheduledJob = {
+        id: `job-${Date.now()}`,
+        name: payload.name,
+        skillId: payload.skillId,
+        skillName: payload.skillName,
+        personaId: payload.personaId,
+        scheduleType: data.scheduleType ?? 'cron',
+        cronExpression: data.cronExpression,
+        intervalMs: data.intervalMs,
+        eventTrigger: data.eventTrigger,
+        oneTimeAt: data.oneTimeAt,
+        status: 'active',
+        runCount: 0,
+        successCount: 0,
+        failureCount: 0,
+        createdAt: new Date().toISOString(),
+        timeout: payload.timeout,
+        retries: payload.retries,
+        tags: payload.tags,
+        logs: [],
+        nextRun: new Date(Date.now() + 3600000).toISOString(),
+      };
+      setJobs((prev) => [fallback, ...prev]);
+    });
   };
 
-  const stats = {
+  const localStats = {
     total: jobs.length,
     active: jobs.filter((j) => j.status === 'active').length,
     paused: jobs.filter((j) => j.status === 'paused').length,
     failed: jobs.filter((j) => j.status === 'failed').length,
   };
+  const stats = apiStats ?? localStats;
 
   return (
     <div className="h-full flex flex-col bg-white overflow-hidden" data-testid="execution-scheduler">

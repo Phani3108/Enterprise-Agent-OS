@@ -950,3 +950,413 @@ export async function uploadMarketingFile(
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// Blog API
+// ---------------------------------------------------------------------------
+
+export interface BlogPost {
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    contentHtml: string;
+    status: 'draft' | 'published' | 'archived';
+    authorId: string;
+    authorName: string;
+    tags: string[];
+    coverImage?: string;
+    destinations: string[];
+    publishedAt?: string;
+    scheduledFor?: string;
+    createdAt: string;
+    updatedAt: string;
+    viewCount: number;
+    likeCount: number;
+    externalUrls?: Record<string, string>;
+}
+
+export async function getBlogPosts(filters?: { status?: string; tag?: string }): Promise<{ posts: BlogPost[] }> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.tag) params.set('tag', filters.tag);
+    const qs = params.toString();
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts${qs ? `?${qs}` : ''}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getBlogPost(idOrSlug: string): Promise<{ post: BlogPost }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${idOrSlug}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function createBlogPost(data: { title: string; content?: string; contentHtml?: string; excerpt?: string; tags?: string[] }): Promise<{ post: BlogPost }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Promise<{ post: BlogPost }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function deleteBlogPost(id: string): Promise<{ deleted: boolean }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function publishBlogPost(postId: string, destinations: string[]): Promise<{ post: BlogPost; results: Array<{ destination: string; status: string; url?: string }> }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${postId}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destinations }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function likeBlogPost(postId: string): Promise<{ post: BlogPost }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/posts/${postId}/like`, { method: 'POST' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getBlogStats(): Promise<{ total: number; published: number; drafts: number; totalViews: number; totalLikes: number }> {
+    const res = await fetch(`${GATEWAY_URL}/api/blog/stats`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Forum API
+// ---------------------------------------------------------------------------
+
+export interface ForumThread {
+    id: string;
+    title: string;
+    body: string;
+    category: string;
+    tags: string[];
+    authorId: string;
+    authorName: string;
+    status: 'open' | 'answered' | 'closed' | 'pinned';
+    isPinned: boolean;
+    upvotes: number;
+    downvotes: number;
+    commentCount: number;
+    viewCount: number;
+    createdAt: string;
+    updatedAt: string;
+    lastActivityAt: string;
+    acceptedCommentId?: string;
+}
+
+export interface ForumComment {
+    id: string;
+    threadId: string;
+    parentId?: string;
+    body: string;
+    authorId: string;
+    authorName: string;
+    upvotes: number;
+    downvotes: number;
+    isAccepted: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export async function getForumThreads(filters?: { category?: string; sort?: string; q?: string }): Promise<{ threads: ForumThread[]; total: number }> {
+    const params = new URLSearchParams();
+    if (filters?.category && filters.category !== 'all') params.set('category', filters.category);
+    if (filters?.sort) params.set('sort', filters.sort);
+    if (filters?.q) params.set('q', filters.q);
+    const qs = params.toString();
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads${qs ? `?${qs}` : ''}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getForumThread(threadId: string): Promise<{ thread: ForumThread }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function createForumThread(data: { title: string; body: string; category: string; tags?: string[] }): Promise<{ thread: ForumThread }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function voteForumThread(threadId: string, vote: 'up' | 'down'): Promise<{ thread: ForumThread }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getForumComments(threadId: string): Promise<{ comments: ForumComment[] }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}/comments`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function addForumComment(threadId: string, body: string, parentId?: string): Promise<{ comment: ForumComment }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, parentId }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function voteForumComment(commentId: string, vote: 'up' | 'down'): Promise<{ comment: ForumComment }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/comments/${commentId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function acceptForumAnswer(threadId: string, commentId: string): Promise<{ thread: ForumThread }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/threads/${threadId}/accept/${commentId}`, {
+        method: 'POST',
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getForumStats(): Promise<{ totalThreads: number; totalComments: number; totalVotes: number; topCategories: Array<{ category: string; count: number }> }> {
+    const res = await fetch(`${GATEWAY_URL}/api/forum/stats`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Scheduler API
+// ---------------------------------------------------------------------------
+
+export interface SchedulerJob {
+    id: string;
+    name: string;
+    skillId: string;
+    skillName: string;
+    personaId: string;
+    scheduleType: 'cron' | 'interval' | 'event' | 'one-time';
+    cronExpression?: string;
+    intervalMs?: number;
+    eventTrigger?: string;
+    oneTimeAt?: string;
+    status: 'active' | 'paused' | 'failed' | 'completed' | 'pending';
+    lastRun?: string;
+    nextRun?: string;
+    runCount: number;
+    successCount: number;
+    failureCount: number;
+    timeout?: number;
+    retries?: number;
+    tags: string[];
+    createdAt: string;
+    logs: Array<{ id: string; status: string; startedAt: string; completedAt?: string; durationMs?: number; output?: string; error?: string }>;
+}
+
+export async function getSchedulerJobs(): Promise<{ jobs: SchedulerJob[] }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSchedulerJob(jobId: string): Promise<{ job: SchedulerJob }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function createSchedulerJob(data: {
+    name: string; skillId: string; skillName: string; personaId: string;
+    scheduleType: string; cronExpression?: string; intervalMs?: number;
+    eventTrigger?: string; oneTimeAt?: string; timeout?: number; retries?: number; tags?: string[];
+}): Promise<{ job: SchedulerJob }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function updateSchedulerJob(jobId: string, updates: Partial<SchedulerJob>): Promise<{ job: SchedulerJob }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function deleteSchedulerJob(jobId: string): Promise<{ deleted: boolean }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function runSchedulerJob(jobId: string): Promise<{ job: SchedulerJob }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}/run`, { method: 'POST' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function toggleSchedulerJob(jobId: string): Promise<{ job: SchedulerJob }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/jobs/${jobId}/toggle`, { method: 'POST' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getSchedulerStats(): Promise<{ totalJobs: number; activeJobs: number; pausedJobs: number; totalRuns: number; successRate: number }> {
+    const res = await fetch(`${GATEWAY_URL}/api/scheduler/stats`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Observability API
+// ---------------------------------------------------------------------------
+
+export async function getObservabilityExecutions(): Promise<{ executions: Array<Record<string, unknown>> }> {
+    const res = await fetch(`${GATEWAY_URL}/api/observability/executions`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getObservabilityAgents(): Promise<{ agents: Array<Record<string, unknown>> }> {
+    const res = await fetch(`${GATEWAY_URL}/api/observability/agents`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getObservabilityMetrics(): Promise<Record<string, unknown>> {
+    const res = await fetch(`${GATEWAY_URL}/api/observability/metrics`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Agent Evals API
+// ---------------------------------------------------------------------------
+
+export interface CognitiveFingerprint {
+    accuracy: number;
+    speed: number;
+    costEfficiency: number;
+    toolUsage: number;
+    creativity: number;
+    consistency: number;
+    errorRate: number;
+    satisfaction: number;
+}
+
+export interface EvalAlert {
+    id: string;
+    agentId: string;
+    agentName: string;
+    type: 'drift' | 'cost' | 'latency' | 'error_rate' | 'token_budget';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    message: string;
+    value: number;
+    threshold: number;
+    ts: string;
+    acknowledged: boolean;
+}
+
+export interface AgentEvalConfig {
+    agentId: string;
+    agentName: string;
+    driftThreshold: number;
+    costThreshold?: number;
+    tokenThreshold?: number;
+    latencyThresholdMs?: number;
+    baselineFingerprint?: CognitiveFingerprint;
+    currentFingerprint: CognitiveFingerprint;
+    healthScore: number;
+    driftScore: number;
+    totalExecutions: number;
+    lastEvalAt: string;
+}
+
+export async function getEvalAgents(): Promise<{ agents: AgentEvalConfig[] }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/agents`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getEvalAgent(agentId: string): Promise<{ agent: AgentEvalConfig }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/agents/${agentId}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function updateEvalAgent(agentId: string, updates: Partial<AgentEvalConfig>): Promise<{ agent: AgentEvalConfig }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/agents/${agentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getEvalReport(agentId: string): Promise<{ report: { agentId: string; healthScore: number; fingerprint: CognitiveFingerprint; driftScore: number; alerts: EvalAlert[]; predictedFailures: Array<{ type: string; confidence: number; message: string }> } }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/agents/${agentId}/report`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getEvalDrift(agentId: string): Promise<{ history: Array<{ ts: string; driftScore: number; fingerprint: CognitiveFingerprint }> }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/agents/${agentId}/drift`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function setEvalBaseline(agentId: string): Promise<{ agent: AgentEvalConfig }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/agents/${agentId}/baseline`, { method: 'POST' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getEvalAlerts(): Promise<{ alerts: EvalAlert[] }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/alerts`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}
+
+export async function getEvalDashboard(): Promise<{ totalAgents: number; avgHealthScore: number; activeAlerts: number; driftingAgents: number; agents: AgentEvalConfig[] }> {
+    const res = await fetch(`${GATEWAY_URL}/api/evals/dashboard`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return res.json();
+}

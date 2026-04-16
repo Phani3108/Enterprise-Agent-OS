@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, publishBlogPost, type BlogPostEntry as ApiBlogPost } from '../lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,33 +63,7 @@ function ToolbarButton({
 // Sample posts
 // ---------------------------------------------------------------------------
 
-const SAMPLE_POSTS: BlogPost[] = [
-  {
-    id: 'post-1',
-    title: 'How AgentOS Reduced Our Sprint Planning Time by 60%',
-    content: '<h2>Introduction</h2><p>Our engineering team was spending 3+ hours every sprint on planning ceremonies. With AgentOS, we automated the entire backlog grooming process using the PRD Generator skill...</p><h2>The Problem</h2><p>Manual backlog grooming was error-prone and time-consuming. Story points were inconsistent, dependencies were missed, and context was lost between sprints.</p><h2>The Solution</h2><p>We integrated AgentOS with Jira and ran the Sprint Planning skill every Monday morning. The AI analyzes previous sprint velocity, outstanding issues, and upcoming deadlines to auto-generate prioritized sprint backlogs.</p><h2>Results</h2><p>Sprint planning time dropped from 3 hours to 45 minutes. Story quality improved by 40% as measured by the number of stories needing revision post-sprint.</p>',
-    status: 'published',
-    destinations: ['internal'],
-    tags: ['engineering', 'productivity', 'case-study'],
-    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 6 * 86400000).toISOString(),
-    publishedAt: new Date(Date.now() - 6 * 86400000).toISOString(),
-    author: 'Phani Marupaka',
-    excerpt: 'How we used AgentOS to cut sprint planning time from 3 hours to 45 minutes.',
-  },
-  {
-    id: 'post-2',
-    title: 'Building Intelligent Marketing Campaigns with AI Agents',
-    content: '<h2>Overview</h2><p>The marketing team at our organization runs 15+ campaigns per quarter. Each campaign previously required 2 weeks of research, strategy, and content creation. AgentOS changed everything.</p><p>By connecting HubSpot, Canva, and LinkedIn Ads to a single orchestration layer, we can now launch a full campaign in under 4 hours.</p>',
-    status: 'draft',
-    destinations: [],
-    tags: ['marketing', 'ai', 'automation'],
-    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    author: 'Phani Marupaka',
-    excerpt: 'From 2 weeks to 4 hours — how AI agents are transforming campaign management.',
-  },
-];
+const SAMPLE_POSTS: BlogPost[] = [];
 
 // ---------------------------------------------------------------------------
 // Post List Sidebar
@@ -177,18 +152,19 @@ function PublishModal({
   const handlePublish = async () => {
     if (!selected.length) return;
     setPublishing(true);
-    // Simulate publish
-    await new Promise((r) => setTimeout(r, 1800));
-    const res: PublishResult[] = selected.map((dest) => ({
-      destination: dest,
-      status: 'success',
-      url: dest === 'internal' ? '/blog/' + post.id
-        : dest === 'linkedin' ? 'https://linkedin.com/pulse/' + post.id
-        : 'https://blogin.co/' + post.id,
-    }));
-    setPublishing(false);
-    setResults(res);
-    onPublished(res);
+    try {
+      const d = await publishBlogPost(post.id, selected);
+      const res: PublishResult[] = d.results.map((r) => ({
+        destination: r.destination,
+        status: r.status === 'success' ? 'success' : 'error',
+        url: r.url,
+      }));
+      setPublishing(false);
+      setResults(res);
+      onPublished(res);
+    } catch {
+      setPublishing(false);
+    }
   };
 
   return (
@@ -274,13 +250,34 @@ function PublishModal({
 // ---------------------------------------------------------------------------
 
 export function BlogEditor() {
-  const [posts, setPosts] = useState<BlogPost[]>(SAMPLE_POSTS);
-  const [activeId, setActiveId] = useState<string | null>(SAMPLE_POSTS[0].id);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    getBlogPosts().then(d => {
+      const mapped = (d.posts || []).map((p: ApiBlogPost) => ({
+        id: p.id,
+        title: p.title,
+        content: p.contentHtml || p.content,
+        status: p.status === 'archived' ? 'draft' as const : p.status,
+        destinations: p.destinations,
+        tags: p.tags,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        publishedAt: p.publishedAt,
+        author: p.authorName,
+        excerpt: p.excerpt,
+        coverImage: undefined,
+      }));
+      setPosts(mapped);
+      if (mapped.length > 0 && !activeId) setActiveId(mapped[0].id);
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activePost = posts.find((p) => p.id === activeId) ?? null;
 
@@ -313,6 +310,9 @@ export function BlogEditor() {
       setPosts((prev) => prev.map((p) =>
         p.id === activeId ? { ...p, content, updatedAt: new Date().toISOString() } : p
       ));
+      if (activeId) {
+        updateBlogPost(activeId, { content, contentHtml: content }).catch(() => {});
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }, 600);
@@ -328,27 +328,34 @@ export function BlogEditor() {
 
   const updateTitle = (title: string) => {
     setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, title, updatedAt: new Date().toISOString() } : p));
+    if (activeId) updateBlogPost(activeId, { title }).catch(() => {});
   };
 
   const updateExcerpt = (excerpt: string) => {
     setPosts((prev) => prev.map((p) => p.id === activeId ? { ...p, excerpt, updatedAt: new Date().toISOString() } : p));
+    if (activeId) updateBlogPost(activeId, { excerpt }).catch(() => {});
   };
 
   const createPost = () => {
-    const newPost: BlogPost = {
-      id: `post-${Date.now()}`,
-      title: '',
-      content: '<p>Start writing your post...</p>',
-      status: 'draft',
-      destinations: [],
-      tags: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      author: 'Phani Marupaka',
-      excerpt: '',
-    };
-    setPosts((prev) => [newPost, ...prev]);
-    setActiveId(newPost.id);
+    createBlogPost({ title: 'Untitled Post', content: '', excerpt: '' }).then(d => {
+      const p = d.post;
+      const mapped: BlogPost = {
+        id: p.id,
+        title: p.title,
+        content: p.contentHtml || p.content,
+        status: p.status === 'archived' ? 'draft' : p.status,
+        destinations: p.destinations,
+        tags: p.tags,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        publishedAt: p.publishedAt,
+        author: p.authorName,
+        excerpt: p.excerpt,
+        coverImage: undefined,
+      };
+      setPosts(prev => [mapped, ...prev]);
+      setActiveId(mapped.id);
+    }).catch(() => {});
   };
 
   const handlePublished = (results: PublishResult[]) => {
@@ -361,11 +368,13 @@ export function BlogEditor() {
   };
 
   const deletePost = () => {
-    if (!activePost) return;
+    if (!activePost || !activeId) return;
     if (!confirm('Delete this post?')) return;
-    const remaining = posts.filter((p) => p.id !== activeId);
-    setPosts(remaining);
-    setActiveId(remaining[0]?.id ?? null);
+    deleteBlogPost(activeId).then(() => {
+      const remaining = posts.filter((p) => p.id !== activeId);
+      setPosts(remaining);
+      setActiveId(remaining[0]?.id ?? null);
+    }).catch(() => {});
   };
 
   const wordCount = activePost

@@ -36,6 +36,7 @@ import { toolRegistry } from './tool-registry.js';
 import { scheduler } from './scheduler.js';
 import { blogStore } from './blog-store.js';
 import { forumStore } from './forum-store.js';
+import { agentEvalsStore } from './agent-evals.js';
 import * as marketingApi from './marketing-api.js';
 import { getProject, getProjectTasks, getRecentProjects } from './marketing-program.js';
 import { getCampaignGraph } from './campaign-graph.js';
@@ -200,6 +201,17 @@ const courseStats = {
 registerStore('course_stats',
   () => [courseStats as unknown as Record<string, unknown>],
   (rows) => { if (rows[0]) Object.assign(courseStats, rows[0]); }
+);
+
+registerStore('agent_evals',
+  () => {
+    const d = agentEvalsStore._exportData();
+    return [{ id: '__agent_evals__', configs: d.configs, driftHistory: d.driftHistory, alerts: d.alerts }] as unknown as Record<string, unknown>[];
+  },
+  (rows) => {
+    const d = rows[0] as any;
+    if (d) agentEvalsStore._importData({ configs: d.configs, driftHistory: d.driftHistory, alerts: d.alerts });
+  }
 );
 
 initGatewayPersistence(store); // Restore all ephemeral stores from backing store
@@ -1982,6 +1994,63 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 memory: memoryGraph.getStats(),
                 llm: { defaultProvider: getDefaultProvider(), availableProviders: getAvailableProviders().filter(p => p.available).map(p => p.id) },
             });
+            return;
+        }
+
+        // -----------------------------------------------------------------------
+        // Agent Evals (CipherClaw-inspired)
+        // -----------------------------------------------------------------------
+
+        if (path === '/api/evals/agents' && method === 'GET') {
+            sendJSON(res, 200, { agents: agentEvalsStore.getAllConfigs() });
+            return;
+        }
+
+        if (path.match(/^\/api\/evals\/agents\/[^/]+$/) && method === 'GET') {
+            const agentId = path.split('/')[4];
+            const agent = agentEvalsStore.getConfig(agentId);
+            if (!agent) { sendJSON(res, 404, { error: 'Agent not found' }); return; }
+            sendJSON(res, 200, { agent });
+            return;
+        }
+
+        if (path.match(/^\/api\/evals\/agents\/[^/]+$/) && method === 'PUT') {
+            const agentId = path.split('/')[4];
+            const updated = agentEvalsStore.updateConfig(agentId, body);
+            if (!updated) { sendJSON(res, 404, { error: 'Agent not found' }); return; }
+            sendJSON(res, 200, { agent: updated });
+            return;
+        }
+
+        if (path.match(/^\/api\/evals\/agents\/[^/]+\/report$/) && method === 'GET') {
+            const agentId = path.split('/')[4];
+            const report = agentEvalsStore.getReport(agentId);
+            if (!report) { sendJSON(res, 404, { error: 'Agent not found' }); return; }
+            sendJSON(res, 200, { report });
+            return;
+        }
+
+        if (path.match(/^\/api\/evals\/agents\/[^/]+\/drift$/) && method === 'GET') {
+            const agentId = path.split('/')[4];
+            sendJSON(res, 200, { history: agentEvalsStore.getDriftHistory(agentId) });
+            return;
+        }
+
+        if (path.match(/^\/api\/evals\/agents\/[^/]+\/baseline$/) && method === 'POST') {
+            const agentId = path.split('/')[4];
+            const agent = agentEvalsStore.setBaseline(agentId);
+            if (!agent) { sendJSON(res, 404, { error: 'Agent not found' }); return; }
+            sendJSON(res, 200, { agent });
+            return;
+        }
+
+        if (path === '/api/evals/alerts' && method === 'GET') {
+            sendJSON(res, 200, { alerts: agentEvalsStore.getAlerts() });
+            return;
+        }
+
+        if (path === '/api/evals/dashboard' && method === 'GET') {
+            sendJSON(res, 200, agentEvalsStore.getDashboard());
             return;
         }
 
