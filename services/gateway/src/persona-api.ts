@@ -10,6 +10,8 @@
 
 import type { PersonaSkillDef, SkillStep } from './engineering-skills-data.js';
 import { callLLM as callLLMProvider, type LLMProviderId, type LLMResponse } from './llm-provider.js';
+import { tracedLLMCall } from './llm-tracer.js';
+import { containsPII, redact as redactPII } from './pii-redactor.js';
 import { routedLLMCall, recordCostEntry, detectComplexity } from './model-router.js';
 import { createUTCPPacket, storePacket, getPacket, updatePacketStatus } from './utcp-protocol.js';
 import { createA2AMessage, storeMessage } from './a2a-protocol.js';
@@ -273,13 +275,13 @@ async function callLLMUnified(
   }
 
   // Direct provider call when model is explicitly specified
-  const response = await callLLMProvider({
+  const response = await tracedLLMCall({
     provider,
     model: modelId,
     systemPrompt,
     userPrompt,
     maxTokens: 4096,
-  });
+  }, `llm.call.${persona ?? 'unknown'}`);
 
   recordCostEntry(response.provider, response.model, persona ?? 'unknown', response.cost, response.inputTokens, response.outputTokens);
 
@@ -943,14 +945,19 @@ Guidelines:
     ? `\n\n## Additional Instructions (from selected prompt)\n${customPrompt}`
     : '';
 
-  const user = `## Skill Step: ${step.name}
+  let rawUser = `## Skill Step: ${step.name}
 
 ## User Inputs
 ${inputLines || 'No structured inputs provided.'}${prevContext}${customSection}
 
 Please execute this step now. Produce specific, high-quality output for: "${step.name}".`;
 
-  return { system, user };
+  // PII redaction — strip sensitive data before it leaves the process
+  if (containsPII(rawUser)) {
+    rawUser = redactPII(rawUser).text;
+  }
+
+  return { system, user: rawUser };
 }
 
 // ---------------------------------------------------------------------------

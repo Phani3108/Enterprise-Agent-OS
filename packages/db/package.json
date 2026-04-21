@@ -22,12 +22,16 @@
         "./unified-types": {
             "types": "./dist/unified-types.d.ts",
             "import": "./dist/unified-types.js"
+        },
+        "./workflow-store": {
+            "types": "./dist/workflow-store.d.ts",
+            "import": "./dist/workflow-store.js"
         }
     },
     "scripts": {
         "build": "tsc",
         "typecheck": "tsc --noEmit",
-        "migrate": "psql -d eaos -f migrations/001_initial.sql"
+        "migrate": "psql -d eaos -f migrations/001_initial.sql && psql -d eaos -f migrations/002_prompt_library.sql && psql -d eaos -f migrations/003_unified_execution.sql && psql -d eaos -f migrations/004_missing_tables.sql && psql -d eaos -f migrations/005_multi_tenancy.sql && psql -d eaos -f migrations/006_audit_persistence.sql"
     },
     "devDependencies": {
         "typescript": "^5.4.0",

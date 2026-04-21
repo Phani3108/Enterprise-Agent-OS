@@ -253,6 +253,8 @@ export function checkRateLimit(key: string, maxPerMinute: number): { allowed: bo
 
   if (!window || now > window.resetAt) {
     rateLimitWindows.set(key, { count: 1, resetAt: now + 60_000 });
+    // Also attempt Redis sliding window (async, non-blocking)
+    _redisRateLimit(key, maxPerMinute).catch(() => {});
     return { allowed: true, remaining: maxPerMinute - 1, resetInMs: 60_000 };
   }
 
@@ -261,7 +263,19 @@ export function checkRateLimit(key: string, maxPerMinute: number): { allowed: bo
   }
 
   window.count++;
+  _redisRateLimit(key, maxPerMinute).catch(() => {});
   return { allowed: true, remaining: maxPerMinute - window.count, resetInMs: window.resetAt - now };
+}
+
+async function _redisRateLimit(key: string, maxPerMinute: number): Promise<void> {
+  try {
+    const { getRedisSync } = await import('./redis-client.js');
+    const redis = getRedisSync();
+    if (!redis) return;
+    const windowKey = `rl:${key}:${Math.floor(Date.now() / 60_000)}`;
+    await redis.zadd(windowKey, Date.now(), `${Date.now()}-${Math.random()}`);
+    await redis.expire(windowKey, 120);
+  } catch { /* Redis unavailable */ }
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -58,12 +58,12 @@ import { createSession as createChatSession, getSession as getChatSession, listS
 import { postMessage as postChatMessage } from './chat-engine.js';
 import { getFsSkills, reloadFsSkills, getAllFsSkills } from './skill-fs-loader.js';
 import type { AfterActionReport, RetrainingFlag } from './persona-api.js';
-import { getAvailableProviders, getDefaultProvider } from './llm-provider.js';
+import { getAvailableProviders, getDefaultProvider, hasAnyLLMKey } from './llm-provider.js';
 import { getFullRegistry, getAgentIdentity, getAgentsByPersona, getCSuiteAgents, getAllCSuiteProfiles, getCSuiteProfile, getChainOfCommand, getOrgTree } from './agent-registry.js';
 import { processCognitivePipeline, decompose, reason, reflect, groundCheck, getCognitiveResult, getCognitiveTrace, type CognitiveRequest } from './cognitive-pipeline.js';
 import { eventBus } from './event-bus.js';
 import { submitGoal, getGoalExecution, listGoalExecutions, cancelGoal } from './gateway-orchestrator.js';
-import { PipelineEngine, getPipelineExecution, listPipelineExecutions, cancelPipeline, type GraphConfig, type OrchestratorConfig, type AgentDefinition } from './pipeline-engine.js';
+import { PipelineEngine, getPipelineExecution, listPipelineExecutions, cancelPipeline, initWorkflowStore, type GraphConfig, type OrchestratorConfig, type AgentDefinition } from './pipeline-engine.js';
 import { pluginRegistry } from './plugin-interfaces.js';
 import { createVision, getVision, listVisions, decomposeVision, cascadeToRegiment, createProgram, getProgram, listPrograms, updateProgram, generatePMOStatusReport, getVisionStatus, initVisionStore } from './vision-api.js';
 import type { VisionStatement, ProgramRecord } from './vision-api.js';
@@ -103,6 +103,7 @@ import { getAgentMemory, getAllAgentMemorySnapshots, recordAgentMemory, _exportD
 // (all execution flows use persona-api.ts sequential model)
 // import { executeWorkflow, getWorkflowExecution, resumeWorkflow } from './workflow-bridge.js';
 import { initOTel, shutdownOTel } from '@agentos/observability';
+import { validate, ValidationError, ExecuteSchema, GoalSchema, A2AMessageSchema, UTCPPacketSchema } from './validation.js';
 import { attachWebSocket, broadcastEvent, getWSClientCount, getWSMetrics } from './ws.js';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -115,6 +116,13 @@ import { fileURLToPath } from 'node:url';
 const usePostgres = !!process.env.DATABASE_URL;
 const useInMemory = process.env.PERSIST === 'false';
 const store = usePostgres ? new PostgresStore() : useInMemory ? new InMemoryStore() : new PersistentStore();
+
+// Raw pg.Pool for direct queries (API keys, tenant GUC, audit persistence).
+// Only available when DATABASE_URL is set; undefined otherwise.
+let pgPool: import('pg').Pool | undefined;
+if (usePostgres) {
+    import('@agentos/db/postgres-store').then(m => m.getRawPool()).then(p => { pgPool = p as any; }).catch(() => {});
+}
 const sessions = new SessionRepository(store);
 const executions = new ExecutionRepository(store);
 initPersonaStore(store); // Wire persona executions & KPIs to persistent backing store
@@ -249,8 +257,28 @@ function recordAudit(user: string, action: string, target: string, result: Audit
     };
     entry.hash = computeAuditHash(prevHash, entry);
     auditLog.push(entry);
-    // Keep last 5000 (was 500) — audit evidence value beats RAM cost.
-    if (auditLog.length > 5000) auditLog.splice(0, auditLog.length - 5000);
+    // Keep last 5000 — audit evidence value beats RAM cost.
+    // When in-memory hits 5000, flush oldest 1000 to DB rolling window.
+    if (auditLog.length > 5000) {
+        const toFlush = auditLog.splice(0, 1000);
+        if (pgPool) {
+            Promise.all(toFlush.map(e =>
+                pgPool!.query(
+                    `INSERT INTO audit_log (id, timestamp, user_id, action, resource_id, details, prev_hash, hash, result)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING`,
+                    [e.id, e.timestamp, e.user, e.action, e.target, JSON.stringify({ detail: e.detail }), e.prevHash, e.hash, e.result]
+                ).catch(() => {})
+            )).catch(() => {});
+        }
+    }
+    // Also persist every entry to DB asynchronously when pool is available
+    if (pgPool) {
+        pgPool.query(
+            `INSERT INTO audit_log (id, timestamp, user_id, action, resource_id, details, prev_hash, hash, result)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING`,
+            [entry.id, entry.timestamp, entry.user, entry.action, entry.target, JSON.stringify({ detail: entry.detail }), entry.prevHash, entry.hash, entry.result]
+        ).catch(() => {});
+    }
 }
 /** Verify the entire hash chain. Returns { valid, brokenAt } for CISO inspection. */
 function verifyAuditChain(): { valid: boolean; brokenAt?: number; total: number } {
@@ -309,6 +337,7 @@ registerStore('agent_evals',
 );
 
 initGatewayPersistence(store); // Restore all ephemeral stores from backing store
+initWorkflowStore();           // Rehydrate pipeline executions from file-backed workflow store
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
@@ -355,6 +384,16 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
     const userId = auth.user?.id ?? 'anonymous';
     const authUser = auth.user;
+
+    // Rate limiting — apply before any route processing
+    {
+        const { applyRateLimit } = await import('./rate-limiter.js');
+        const rl = applyRateLimit(res, userId, authUser?.role ?? 'unauthenticated');
+        if (rl.blocked) {
+            sendJSON(res, 429, { error: 'Rate limit exceeded', resetInMs: rl.resetInMs });
+            return;
+        }
+    }
 
     /**
      * Route guard: require the authenticated user to have at least the
@@ -564,7 +603,159 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         // GET /api/auth/me — return current user info from token
         if (path === '/api/auth/me' && method === 'GET') {
             if (!authUser) { sendJSON(res, 401, { error: 'Not authenticated' }); return; }
-            sendJSON(res, 200, { user: { id: authUser.id, email: authUser.email, name: authUser.name, role: authUser.role, teams: authUser.teams, personaScopes: authUser.personaScopes } });
+            sendJSON(res, 200, { user: { id: authUser.id, email: authUser.email, name: authUser.name, role: authUser.role, teams: authUser.teams, personaScopes: authUser.personaScopes, tenantId: authUser.tenantId } });
+            return;
+        }
+
+        // GET /api/auth/oidc/authorize — redirect to OIDC identity provider
+        if (path === '/api/auth/oidc/authorize' && method === 'GET') {
+            try {
+                const { buildAuthorizationUrl } = await import('./oidc-provider.js');
+                const { url } = await buildAuthorizationUrl();
+                res.writeHead(302, { Location: url });
+                res.end();
+            } catch (err) {
+                sendJSON(res, 500, { error: 'OIDC not configured: ' + (err as Error).message });
+            }
+            return;
+        }
+
+        // GET /api/auth/oidc/callback — exchange code, issue AgentOS JWT, redirect to frontend
+        if (path === '/api/auth/oidc/callback' && method === 'GET') {
+            try {
+                const params = new URL(req.url ?? '/', `http://${req.headers.host}`).searchParams;
+                const code = params.get('code');
+                const state = params.get('state') ?? '';
+                if (!code) { sendJSON(res, 400, { error: 'Missing code parameter' }); return; }
+
+                const { exchangeCode, verifyIdToken, provisionUser } = await import('./oidc-provider.js');
+                const tokens = await exchangeCode(code);
+                const claims = verifyIdToken(tokens.id_token, state);
+                const oidcUser = provisionUser(claims);
+
+                const agentosUser: AuthUser = {
+                    id: oidcUser.id,
+                    email: oidcUser.email,
+                    name: oidcUser.name,
+                    role: 'user',
+                    teams: [],
+                    personaScopes: ['*'],
+                    tenantId: oidcUser.tenantId,
+                };
+                const jwt = generateJWT(agentosUser, 86400);
+                const frontendUrl = process.env.FRONTEND_URL ?? '/';
+                res.writeHead(302, { Location: `${frontendUrl}?token=${jwt}` });
+                res.end();
+            } catch (err) {
+                sendJSON(res, 500, { error: 'OIDC callback failed: ' + (err as Error).message });
+            }
+            return;
+        }
+
+        // POST /api/users/apikeys — create new API key (returns raw key once, stores hash in DB)
+        if (path === '/api/users/apikeys' && method === 'POST') {
+            if (!authUser) { sendJSON(res, 401, { error: 'Authentication required' }); return; }
+            try {
+                const { generateApiKey } = await import('./auth.js');
+                const body = await readBody(req);
+                const label = typeof body.label === 'string' ? body.label : 'api-key';
+                const expiresAt = typeof body.expiresAt === 'string' ? body.expiresAt : null;
+                const { rawKey, keyHash, keyPrefix } = generateApiKey();
+                const keyId = `key_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+                if (pgPool) {
+                    await pgPool.query(
+                        `INSERT INTO api_keys (id, user_id, key_hash, key_prefix, label, expires_at, created_at, tenant_id)
+                         VALUES ($1,$2,$3,$4,$5,$6,NOW(),$7)
+                         ON CONFLICT (id) DO NOTHING`,
+                        [keyId, authUser.id, keyHash, keyPrefix, label, expiresAt, authUser.tenantId ?? 'default']
+                    );
+                }
+                sendJSON(res, 201, { id: keyId, rawKey, keyPrefix, label, expiresAt, warning: 'Save this key — it will not be shown again' });
+            } catch (err) {
+                sendJSON(res, 500, { error: (err as Error).message });
+            }
+            return;
+        }
+
+        // DELETE /api/users/apikeys/:keyId — revoke API key
+        if (path.startsWith('/api/users/apikeys/') && !path.endsWith('/rotate') && method === 'DELETE') {
+            if (!authUser) { sendJSON(res, 401, { error: 'Authentication required' }); return; }
+            const keyId = path.split('/')[4];
+            if (pgPool) {
+                await pgPool.query(`DELETE FROM api_keys WHERE id=$1 AND user_id=$2`, [keyId, authUser.id]);
+            }
+            sendJSON(res, 200, { revoked: keyId });
+            return;
+        }
+
+        // POST /api/users/apikeys/:keyId/rotate — generate replacement, revoke old atomically
+        if (path.startsWith('/api/users/apikeys/') && path.endsWith('/rotate') && method === 'POST') {
+            if (!authUser) { sendJSON(res, 401, { error: 'Authentication required' }); return; }
+            const keyId = path.split('/')[4];
+            try {
+                const { generateApiKey } = await import('./auth.js');
+                const { rawKey, keyHash, keyPrefix } = generateApiKey();
+                const newKeyId = `key_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+                if (pgPool) {
+                    const client = await pgPool.connect();
+                    try {
+                        await client.query('BEGIN');
+                        const existing = await client.query(`SELECT label, expires_at FROM api_keys WHERE id=$1 AND user_id=$2`, [keyId, authUser.id]);
+                        if (existing.rowCount === 0) { await client.query('ROLLBACK'); sendJSON(res, 404, { error: 'Key not found' }); return; }
+                        const { label, expires_at } = existing.rows[0];
+                        await client.query(`DELETE FROM api_keys WHERE id=$1`, [keyId]);
+                        await client.query(
+                            `INSERT INTO api_keys (id, user_id, key_hash, key_prefix, label, expires_at, created_at, tenant_id)
+                             VALUES ($1,$2,$3,$4,$5,$6,NOW(),$7)`,
+                            [newKeyId, authUser.id, keyHash, keyPrefix, label, expires_at, authUser.tenantId ?? 'default']
+                        );
+                        await client.query('COMMIT');
+                    } finally { client.release(); }
+                }
+                sendJSON(res, 200, { id: newKeyId, rawKey, keyPrefix, revokedId: keyId, warning: 'Save this key — it will not be shown again' });
+            } catch (err) {
+                sendJSON(res, 500, { error: (err as Error).message });
+            }
+            return;
+        }
+
+        // GET /api/audit — admin shortcut for audit log (alias of /api/governance/audit)
+        if (path === '/api/audit' && method === 'GET') {
+            if (guardRole('admin')) return;
+            const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10), 1000);
+            const entries = auditLog.slice(-limit).reverse();
+            sendJSON(res, 200, { audit: entries, total: auditLog.length });
+            return;
+        }
+
+        // GET /api/users/:id/export — GDPR Art.20 data portability
+        if (path.match(/^\/api\/users\/[^/]+\/export$/) && method === 'GET') {
+            const targetUserId = path.split('/')[3];
+            if (!authUser || (authUser.id !== targetUserId && !requireRole(authUser, 'admin'))) {
+                sendJSON(res, 403, { error: 'Forbidden' }); return;
+            }
+            if (!pgPool) { sendJSON(res, 503, { error: 'Database not available' }); return; }
+            try {
+                const { exportUserData } = await import('./gdpr-api.js');
+                const data = await exportUserData(targetUserId!, pgPool as any);
+                sendJSON(res, 200, data);
+            } catch (err) { sendJSON(res, 500, { error: (err as Error).message }); }
+            return;
+        }
+
+        // DELETE /api/users/:id — GDPR Art.17 right to erasure (admin only)
+        if (path.match(/^\/api\/users\/[^/]+$/) && method === 'DELETE') {
+            if (guardRole('admin')) return;
+            const targetUserId = path.split('/')[3];
+            if (!pgPool) { sendJSON(res, 503, { error: 'Database not available' }); return; }
+            try {
+                const { deleteUserData } = await import('./gdpr-api.js');
+                const result = await deleteUserData(targetUserId!, pgPool as any);
+                recordAudit(userId, 'gdpr.erasure', targetUserId ?? '', 'success');
+                sendJSON(res, 200, result);
+            } catch (err) { sendJSON(res, 500, { error: (err as Error).message }); }
             return;
         }
 
@@ -578,11 +769,18 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
         if (path === '/api/execute' && method === 'POST') {
             const body = await readBody(req);
-            const { persona, skillId, inputs, simulate, customPrompt, provider, modelId } = body as {
-                persona?: string; skillId?: string; inputs?: Record<string, unknown>;
-                simulate?: boolean; customPrompt?: string; provider?: string; modelId?: string;
-            };
-            if (!persona || !skillId) { sendJSON(res, 400, { error: 'persona and skillId required' }); return; }
+            let parsed: import('./validation.js').ExecuteBody;
+            try {
+                parsed = validate(ExecuteSchema, body);
+            } catch (err) {
+                if (err instanceof ValidationError) {
+                    sendJSON(res, 400, { error: err.message, issues: err.issues });
+                } else {
+                    sendJSON(res, 400, { error: 'Invalid request body' });
+                }
+                return;
+            }
+            const { persona, skillId, inputs, simulate, customPrompt, provider, modelId } = parsed;
 
             // Persona access check
             if (authUser && !requirePersonaAccess(authUser, persona)) {
@@ -598,7 +796,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
             else if (persona === 'marketing') {
                 // Marketing uses workflow execution (separate path for now)
                 try {
-                    const exec = marketingApi.createMarketingExecution(skillId, inputs ?? {}, userId, simulate === true, customPrompt, provider as any, modelId);
+                    const shouldSimulateMktg = simulate !== undefined ? simulate : !hasAnyLLMKey();
+                    const exec = marketingApi.createMarketingExecution(skillId, inputs ?? {}, userId, shouldSimulateMktg, customPrompt, provider as any, modelId);
                     recordAudit(userId, 'skill.execute', `Marketing / ${exec.workflowName}`);
                     broadcastEvent(exec.id, 'session.started', { persona: 'marketing', skillId, simulate, provider });
                     sendJSON(res, 201, { execution: exec });
@@ -608,7 +807,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 
             if (!skill) { sendJSON(res, 404, { error: `Skill not found: ${skillId}` }); return; }
 
-            const exec = createPersonaExecution(persona as any, skill, inputs ?? {}, userId, simulate, customPrompt, provider as any, modelId);
+            // If the client didn't send simulate, auto-detect: no key configured → sandbox mode
+            const shouldSimulate = simulate !== undefined ? simulate : !hasAnyLLMKey();
+            const exec = createPersonaExecution(persona as any, skill, inputs ?? {}, userId, shouldSimulate, customPrompt, provider as any, modelId);
             recordAudit(userId, 'skill.execute', `${persona} / ${skill.name}`);
             broadcastEvent(exec.id, 'session.started', { persona, skillId, simulate, provider });
             sendJSON(res, 201, { execution: exec });
@@ -1245,11 +1446,16 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         if (path === '/api/utcp/tasks' && method === 'POST') {
-            const body = await readBody(req);
+            const raw = await readBody(req);
+            let body: typeof raw;
+            try { body = validate(UTCPPacketSchema, raw); } catch (err) {
+                if (err instanceof ValidationError) { sendJSON(res, 400, { error: err.message }); return; }
+                body = raw;
+            }
             const packet = createUTCPPacket({
-                function: (body.function as string ?? 'engineering') as any,
-                stage: body.stage as string ?? 'intake',
-                intent: (body.intent as string) ?? (body.query as string) ?? '',
+                function: ((body as Record<string, unknown>).function as string ?? 'engineering') as any,
+                stage: (body as Record<string, unknown>).stage as string ?? 'intake',
+                intent: ((body as Record<string, unknown>).intent as string) ?? ((body as Record<string, unknown>).query as string) ?? '',
                 initiator: { user_id: userId, role: 'operator' },
                 objectives: (body.objectives as string[]) ?? [(body.intent as string) ?? ''],
                 tool_scopes: (body.tool_scopes as string[]) ?? [],

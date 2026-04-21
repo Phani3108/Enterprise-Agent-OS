@@ -10,6 +10,9 @@
 import { randomUUID } from 'crypto';
 import { tryRealExecute } from './real-executor.js';
 import { checkPolicy } from './policy-store.js';
+import { ToolSandbox } from '@agentos/sandbox';
+
+const toolSandbox = new ToolSandbox();
 
 // ═══════════════════════════════════════════════════════════════
 // Core Types
@@ -204,6 +207,22 @@ export async function executeMCPAction(action: MCPToolAction): Promise<MCPToolRe
     executionLog.push(response);
     return response;
   }
+
+  // Sandbox check — risk tier enforcement before any execution
+  const taskId = action.action_id;
+  const sandboxResult = toolSandbox.check(action.tool_id, taskId);
+  if (!sandboxResult.allowed) {
+    const response = buildResponse(action, 'error', { riskTier: sandboxResult.tier }, sandboxResult.violations.join('; '), startTime);
+    executionLog.push(response);
+    return response;
+  }
+  if (sandboxResult.requiresApproval) {
+    // High/critical tools surface as pending — callers (persona-api) handle approval gate
+    const response = buildResponse(action, 'error', { riskTier: sandboxResult.tier, requiresApproval: true }, `Tool '${action.tool_id}' requires human approval (${sandboxResult.tier})`, startTime);
+    executionLog.push(response);
+    return response;
+  }
+  toolSandbox.recordCall(action.tool_id, taskId);
 
   // Execute with retry
   let lastError = '';

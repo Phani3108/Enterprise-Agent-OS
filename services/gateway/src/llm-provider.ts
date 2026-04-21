@@ -48,8 +48,11 @@ export interface ProviderConfig {
 // ---------------------------------------------------------------------------
 
 const COST_TABLE: Record<string, { input: number; output: number }> = {
-  // Anthropic
-  'claude-sonnet-4-6-20251001': { input: 3, output: 15 },
+  // Anthropic Claude 4.x (current)
+  'claude-opus-4-7': { input: 15, output: 75 },
+  'claude-sonnet-4-6': { input: 3, output: 15 },
+  'claude-haiku-4-5-20251001': { input: 0.8, output: 4 },
+  // Anthropic Claude 3.x (legacy)
   'claude-3-5-sonnet-20241022': { input: 3, output: 15 },
   'claude-3-opus-20240229': { input: 15, output: 75 },
   'claude-3-haiku-20240307': { input: 0.25, output: 1.25 },
@@ -82,7 +85,7 @@ async function callAnthropic(req: LLMRequest): Promise<LLMResponse> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
-  const model = req.model || 'claude-sonnet-4-6-20251001';
+  const model = req.model || 'claude-sonnet-4-6';
   const start = Date.now();
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -321,8 +324,8 @@ export function getAvailableProviders(): ProviderConfig[] {
       id: 'anthropic',
       name: 'Anthropic Claude',
       available: !!process.env.ANTHROPIC_API_KEY,
-      defaultModel: 'claude-sonnet-4-6-20251001',
-      models: ['claude-sonnet-4-6-20251001', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
+      defaultModel: 'claude-sonnet-4-6',
+      models: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001', 'claude-3-5-sonnet-20241022'],
     },
     {
       id: 'openai',
@@ -364,6 +367,21 @@ export function getDefaultProvider(): LLMProviderId {
   if (process.env.GEMINI_API_KEY) return 'gemini';
   if (process.env.OLLAMA_BASE_URL) return 'ollama';
   return 'anthropic'; // fallback
+}
+
+// ---------------------------------------------------------------------------
+// Key presence check — used by server.ts to auto-default simulate mode
+// ---------------------------------------------------------------------------
+
+/** Returns true when at least one LLM provider has credentials configured. */
+export function hasAnyLLMKey(): boolean {
+  return !!(
+    process.env.ANTHROPIC_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_KEY) ||
+    process.env.OLLAMA_BASE_URL
+  );
 }
 
 // ---------------------------------------------------------------------------

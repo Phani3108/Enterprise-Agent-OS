@@ -26,6 +26,31 @@
 import { createHash } from 'node:crypto';
 import type http from 'node:http';
 import type { Duplex } from 'node:stream';
+import { getRedis } from './redis-client.js';
+
+const WS_CHANNEL = 'agentos:ws:events';
+
+// Initialize Redis pub/sub for multi-instance broadcast on startup
+(async () => {
+    try {
+        const redis = await getRedis();
+        if (!redis) return;
+
+        // Subscriber uses a dedicated connection
+        const { default: Redis } = await import('ioredis') as any;
+        const sub = new Redis((process.env.REDIS_URL ?? 'redis://localhost:6379'), {
+            lazyConnect: true, connectTimeout: 3000, maxRetriesPerRequest: 1, enableOfflineQueue: false,
+        });
+        await sub.connect();
+        await sub.subscribe(WS_CHANNEL);
+        sub.on('message', (_ch: string, msg: string) => {
+            // Deliver to all local WS clients
+            for (const client of clients) {
+                writeToClient(client, msg);
+            }
+        });
+    } catch { /* Redis unavailable — single-instance mode */ }
+})();
 
 // ---------------------------------------------------------------------------
 // Types & Constants
@@ -282,6 +307,7 @@ export function broadcastEvent(
     };
     const payload = JSON.stringify(event);
 
+    // Local delivery
     for (const client of clients) {
         if (
             client.subscriptions.has(sessionId) ||
@@ -291,6 +317,11 @@ export function broadcastEvent(
             writeToClient(client, payload);
         }
     }
+
+    // Redis pub/sub for multi-instance delivery (fire-and-forget)
+    getRedis().then(redis => {
+        if (redis) redis.publish(WS_CHANNEL, payload).catch(() => {});
+    }).catch(() => {});
 }
 
 /**

@@ -466,3 +466,8 @@ export class PostgresStore implements Store {
     if (_pool) await (_pool as PgPool).end();
   }
 }
+
+/** Expose the raw pg.Pool for direct queries (e.g. API key management, tenant GUC). */
+export async function getRawPool(): Promise<PgPool> {
+  return getPool();
+}

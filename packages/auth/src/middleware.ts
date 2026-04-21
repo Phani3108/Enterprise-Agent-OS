@@ -9,7 +9,7 @@
  * @copyright © 2026 Phani Marupaka. All rights reserved.
  */
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export type UserRole = 'user' | 'operator' | 'admin';
 export type PersonaScope = 'engineering' | 'product' | 'hr' | 'marketing' | '*';
@@ -22,13 +22,33 @@ export interface AuthUser {
     teams: string[];
     /** Persona scopes — restricts which persona APIs the user can access */
     personaScopes?: PersonaScope[];
+    /** Tenant this user belongs to (default: 'default') */
+    tenantId: string;
+}
+
+/** Result of generating a new API key — raw key is shown once, only hash is stored. */
+export interface GeneratedApiKey {
+    rawKey: string;
+    keyHash: string;
+    keyPrefix: string;
+}
+
+/**
+ * Generate a cryptographically random API key.
+ * Returns the raw key (show once to user), its HMAC-SHA256 hash, and a safe prefix for display.
+ */
+export function generateApiKey(secret?: string): GeneratedApiKey {
+    const rawKey = `ak_${randomBytes(32).toString('hex')}`;
+    const keyHash = createHmac('sha256', secret ?? JWT_SECRET ?? 'agentos').update(rawKey).digest('hex');
+    const keyPrefix = rawKey.slice(0, 10);
+    return { rawKey, keyHash, keyPrefix };
 }
 
 // Dev mode API keys — in production, these are hashed and stored in DB
 const DEV_API_KEYS: Record<string, AuthUser> = {
-    'eos-dev-key': { id: 'dev-user', email: 'dev@zeta.tech', name: 'Developer', role: 'admin', teams: ['engineering'], personaScopes: ['*'] },
-    'eos-demo-key': { id: 'demo-user', email: 'demo@zeta.tech', name: 'Demo User', role: 'user', teams: ['engineering', 'marketing'], personaScopes: ['engineering', 'marketing'] },
-    'eos-operator-key': { id: 'ops-user', email: 'ops@zeta.tech', name: 'Operator', role: 'operator', teams: ['engineering', 'product', 'marketing', 'hr'], personaScopes: ['*'] },
+    'eos-dev-key': { id: 'dev-user', email: 'dev@zeta.tech', name: 'Developer', role: 'admin', teams: ['engineering'], personaScopes: ['*'], tenantId: 'default' },
+    'eos-demo-key': { id: 'demo-user', email: 'demo@zeta.tech', name: 'Demo User', role: 'user', teams: ['engineering', 'marketing'], personaScopes: ['engineering', 'marketing'], tenantId: 'default' },
+    'eos-operator-key': { id: 'ops-user', email: 'ops@zeta.tech', name: 'Operator', role: 'operator', teams: ['engineering', 'product', 'marketing', 'hr'], personaScopes: ['*'], tenantId: 'default' },
 };
 
 /** JWT signing secret — set via env (required in production) */
@@ -76,7 +96,7 @@ export function authenticateRequest(headers: Record<string, string | undefined>)
     if (!IS_PRODUCTION && ALLOW_ANON) {
         return {
             authenticated: true,
-            user: { id: 'anonymous', email: 'anon@local', name: 'Anonymous', role: 'user', teams: [], personaScopes: ['*'] },
+            user: { id: 'anonymous', email: 'anon@local', name: 'Anonymous', role: 'user', teams: [], personaScopes: ['*'], tenantId: 'default' },
         };
     }
 
@@ -110,6 +130,7 @@ export function generateJWT(user: AuthUser, expiresInSec = 86400): string {
         role: user.role,
         teams: user.teams,
         personaScopes: user.personaScopes ?? ['*'],
+        tenantId: user.tenantId ?? 'default',
         iat: now,
         exp: now + expiresInSec,
     };
@@ -173,6 +194,7 @@ function verifyJWT(token: string): AuthUser | null {
             role: payload.role ?? 'user',
             teams: payload.teams ?? [],
             personaScopes: payload.personaScopes ?? ['*'],
+            tenantId: payload.tenantId ?? 'default',
         };
     } catch {
         return null;
