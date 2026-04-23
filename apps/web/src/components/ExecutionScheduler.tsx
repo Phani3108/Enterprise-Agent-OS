@@ -350,7 +350,7 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
           {/* Schedule Type */}
           <div>
             <label className="text-xs font-medium text-slate-500 mb-2 block">Schedule Type</label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               {(['cron', 'interval', 'event', 'one-time'] as ScheduleType[]).map((t) => (
                 <button key={t}
                   onClick={() => setScheduleType(t)}
@@ -417,7 +417,7 @@ function NewJobModal({ onClose, onSave }: { onClose: () => void; onSave: (job: P
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1 block">Timeout (sec)</label>
               <input type="number" value={timeout} onChange={(e) => setTimeout_(e.target.value)}
@@ -542,7 +542,7 @@ export function ExecutionScheduler() {
       skillId: data.skillId ?? '',
       skillName: data.skillName ?? '',
       personaId: 'engineering',
-      scheduleType: (data.scheduleType ?? 'cron') as string,
+      scheduleType: (data.scheduleType ?? 'cron') as 'cron' | 'interval' | 'event' | 'one-time',
       cronExpression: data.cronExpression,
       intervalMs: data.intervalMs,
       eventTrigger: data.eventTrigger,
@@ -607,7 +607,7 @@ export function ExecutionScheduler() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-px bg-slate-100 border-b border-slate-100 flex-shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-slate-100 border-b border-slate-100 flex-shrink-0">
         {[
           { label: 'Total', value: stats.total, color: 'text-slate-700' },
           { label: 'Active', value: stats.active, color: 'text-emerald-600' },

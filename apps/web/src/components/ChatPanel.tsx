@@ -240,7 +240,7 @@ export default function ChatPanel() {
                     'Conversations persist across sessions with rolling summary + memory graph',
                 ]} />}
 
-                <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-1 min-h-0">
                     {/* Left rail: sessions */}
                     <div className="col-span-1 card overflow-hidden flex flex-col">
                         <div className="card-header">

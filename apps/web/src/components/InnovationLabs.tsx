@@ -146,7 +146,7 @@ export default function InnovationLabs() {
       <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl p-8 text-white mb-8">
         <h1 className="text-3xl font-bold mb-2">Innovation Labs</h1>
         <p className="text-violet-200 mb-6">Prototype, experiment, and graduate ideas across regiments</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/10 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">{backlog?.total ?? 0}</div>
             <div className="text-sm text-violet-200">Experiments</div>
@@ -226,7 +226,7 @@ export default function InnovationLabs() {
                 </div>
                 <button onClick={() => setSelectedExp(null)} className="text-gray-400 hover:text-gray-600">✕</button>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                 <div><span className="text-gray-500">Hypothesis:</span><p className="dark:text-white">{selectedExp.hypothesis}</p></div>
                 <div><span className="text-gray-500">Score:</span><p className="text-2xl font-bold dark:text-white">{selectedExp.score ?? '—'}/100</p></div>
                 <div><span className="text-gray-500">Results:</span><p className="dark:text-white">{selectedExp.results.length} recorded</p></div>
@@ -359,7 +359,7 @@ export default function InnovationLabs() {
         <div className="space-y-6">
           <h2 className="text-lg font-semibold dark:text-white">Innovation Backlog</h2>
           {/* Status distribution */}
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {(Object.entries(backlog.byStatus) as [ExperimentStatus, number][]).map(([status, count]) => (
               <div key={status} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm text-center">
                 <div className="text-2xl font-bold dark:text-white">{count}</div>
@@ -370,7 +370,7 @@ export default function InnovationLabs() {
           {/* Category distribution */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
             <h3 className="font-medium dark:text-white mb-4">By Category</h3>
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {(Object.entries(backlog.byCategory) as [ExperimentCategory, number][]).map(([cat, count]) => (
                 <div key={cat} className="text-center">
                   <div className="text-2xl mb-1">{CATEGORY_ICONS[cat]}</div>

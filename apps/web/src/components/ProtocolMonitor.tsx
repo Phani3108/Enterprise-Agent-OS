@@ -230,7 +230,7 @@ export default function ProtocolMonitor() {
         {tab === 'mcp' && (
           <div className="space-y-5">
             {/* Tool Stats */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {Object.entries(mcpStats).map(([toolId, stat]) => (
                 <div key={toolId} className="card p-4">
                   <h4 className="text-xs font-semibold text-slate-900 mb-2">{toolId}</h4>
@@ -303,7 +303,7 @@ export default function ProtocolMonitor() {
         {tab === 'costs' && costMeter && (
           <div className="space-y-5">
             {/* Summary */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="card p-4">
                 <p className="text-2xl font-bold text-slate-800">${costMeter.totalCostUsd.toFixed(2)}</p>
                 <p className="text-xs text-slate-500 mt-1">Total Cost</p>
@@ -325,7 +325,7 @@ export default function ProtocolMonitor() {
             </div>
 
             {/* Breakdowns */}
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <div className="card p-5">
                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">By Provider</h3>
                 {Object.entries(costMeter.costByProvider).map(([provider, cost]) => (

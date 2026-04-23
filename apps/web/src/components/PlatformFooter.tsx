@@ -12,8 +12,8 @@ const _PM = /* @__PURE__ */ atob('UGhhbmkgTWFydXBha2E=');
 
 export default function PlatformFooter() {
   return (
-    <footer className="flex-shrink-0 border-t border-slate-100 bg-white px-6 py-2 flex items-center justify-between">
-      <span className="text-[11px] text-slate-400">
+    <footer className="flex-shrink-0 border-t border-slate-100 bg-white px-4 sm:px-6 py-2 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-4 text-center sm:text-left">
+      <span className="text-[11px] text-slate-400 hidden sm:inline">
         Enterprise Agent OS &mdash; AI Operating System Platform
       </span>
       <span className="text-[11px] text-slate-500">

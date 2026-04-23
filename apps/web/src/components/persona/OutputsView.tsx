@@ -70,7 +70,7 @@ export function OutputsView({ executions, accentColor }: OutputsViewProps) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Total Runs', value: executions.length, color: 'text-slate-900' },
           { label: 'Completed', value: completedCount, color: 'text-emerald-600' },

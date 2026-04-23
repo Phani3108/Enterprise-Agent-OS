@@ -208,7 +208,7 @@ export default function HomeCommandCenter() {
               </div>
 
               {/* Steps */}
-              <div className="grid grid-cols-3 gap-4 mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                 {[
                   { step: '1', title: 'Connect Tools', desc: 'Link AI models, CRM, dev tools, and more', icon: '🔌', action: 'conn-ai-models' },
                   { step: '2', title: 'Choose a Workspace', desc: 'Marketing, Engineering, or Product', icon: '🏢', action: 'ws-marketing' },
@@ -232,7 +232,7 @@ export default function HomeCommandCenter() {
             {/* Workspace shortcuts — still show even for new users */}
             <div>
               <h2 className="section-title">Workspaces</h2>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {WORKSPACES.map(ws => (
                   <button
                     key={ws.id}
@@ -317,7 +317,7 @@ export default function HomeCommandCenter() {
         </div>
 
         {/* ── Platform pulse (3 metrics) ── */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { label: 'Active Agents',   value: platformStats.agents, icon: (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
@@ -342,7 +342,7 @@ export default function HomeCommandCenter() {
         {/* ── Workspace shortcuts ── */}
         <div>
           <h2 className="section-title">Workspaces</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {WORKSPACES.map(ws => (
               <button
                 key={ws.id}
@@ -372,7 +372,7 @@ export default function HomeCommandCenter() {
         <PlatformArchitecture />
 
         {/* ── Continue working + Pending attention ── */}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
 
           {/* Continue Working */}
           <div className="col-span-3 card overflow-hidden">
@@ -454,7 +454,7 @@ export default function HomeCommandCenter() {
             </button>
           </div>
           <div className="card-body">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {SYSTEM_SERVICES.map(svc => (
                 <div key={svc.name} className="flex items-center gap-2.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />

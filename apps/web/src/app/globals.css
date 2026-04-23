@@ -87,8 +87,24 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
 }
+
+/* Prevent iOS zoom on input focus by ensuring base input font-size ≥ 16px
+   on small viewports. */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* Dynamic viewport height — collapses the browser chrome offset on mobile
+   so h-screen doesn't scroll a blank sliver under the URL bar. */
+.h-dscreen { height: 100dvh; }
+.min-h-dscreen { min-height: 100dvh; }
 
 /* ── Scrollbar ───────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

@@ -372,7 +372,7 @@ export function ProductProgramManagement() {
         </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Active Programs', value: SAMPLE_PROGRAMS.filter(p => p.status === 'active').length, color: 'text-violet-600' },
           { label: 'Total Story Points', value: SAMPLE_PROGRAMS.reduce((s, p) => s + p.workstreams.reduce((s2, w) => s2 + w.storyPoints, 0), 0), color: 'text-slate-900' },
@@ -386,7 +386,7 @@ export function ProductProgramManagement() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="space-y-3">
           <h3 className="text-sm font-bold text-slate-700">Programs</h3>
           {SAMPLE_PROGRAMS.map(pgm => (

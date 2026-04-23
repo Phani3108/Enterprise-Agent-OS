@@ -35,7 +35,7 @@ export default function StatsBar() {
     ];
 
     return (
-        <div className="grid grid-cols-6 gap-3" data-tour="stats-bar">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" data-tour="stats-bar">
             {cards.map((card, i) => (
                 <div key={i} className="bg-white border border-slate-200 rounded-xl p-3">
                     <div className="text-xs text-slate-400 mb-1">{card.label}</div>

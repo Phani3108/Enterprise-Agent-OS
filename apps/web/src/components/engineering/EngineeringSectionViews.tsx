@@ -41,7 +41,7 @@ export function EngineeringCodeReviewView() {
         <p className="text-sm text-slate-600">AI-assisted pull request reviews, automated suggestions, and review queue management.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Open PRs', value: SAMPLE_PRS.length, color: 'text-blue-600' },
           { label: 'Ready for Review', value: SAMPLE_PRS.filter(p => p.status === 'ready').length, color: 'text-emerald-600' },
@@ -139,7 +139,7 @@ export function EngineeringIncidentsView() {
         <p className="text-sm text-slate-600">Track incidents, generate AI postmortems, and identify patterns.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Total Incidents', value: SAMPLE_INCIDENTS.length, color: 'text-slate-900' },
           { label: 'Active', value: SAMPLE_INCIDENTS.filter(i => i.status === 'active').length, color: 'text-red-600' },
@@ -209,7 +209,7 @@ export function EngineeringArchitectureView() {
         <p className="text-sm text-slate-600">Architecture Decision Records, system design documentation, and AI-generated architecture reviews.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {[
           { label: 'Total ADRs', value: SAMPLE_ADRS.length, color: 'text-slate-900' },
           { label: 'Accepted', value: SAMPLE_ADRS.filter(a => a.status === 'accepted').length, color: 'text-emerald-600' },
@@ -271,7 +271,7 @@ export function EngineeringTestingView() {
         <p className="text-sm text-slate-600">Test suite results, coverage reports, and AI-generated test suggestions.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Total Tests', value: suites.reduce((s, t) => s + t.total, 0), color: 'text-slate-900' },
           { label: 'Passing', value: suites.reduce((s, t) => s + t.passed, 0), color: 'text-emerald-600' },
@@ -355,7 +355,7 @@ export function EngineeringDeploymentsView() {
         <p className="text-sm text-slate-600">Recent deployments, release tracking, and rollback management.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Total Deploys (7d)', value: SAMPLE_DEPLOYS.length, color: 'text-slate-900' },
           { label: 'Success Rate', value: `${Math.round((SAMPLE_DEPLOYS.filter(d => d.status === 'success').length / SAMPLE_DEPLOYS.length) * 100)}%`, color: 'text-emerald-600' },
@@ -475,7 +475,7 @@ export function EngineeringSecurityView() {
         <p className="text-sm text-slate-600">Vulnerability tracking, dependency audits, and compliance monitoring.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Open Findings', value: findings.filter(f => f.status === 'open').length, color: 'text-red-600' },
           { label: 'In Progress', value: findings.filter(f => f.status === 'in-progress').length, color: 'text-amber-600' },
@@ -676,7 +676,7 @@ export function EngineeringTechDebtView() {
         <p className="text-sm text-slate-600">Prioritized technical debt items with effort estimation and impact scoring.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Total Items', value: items.length, color: 'text-slate-900' },
           { label: 'High Impact', value: items.filter(i => i.impact === 'high').length, color: 'text-red-600' },

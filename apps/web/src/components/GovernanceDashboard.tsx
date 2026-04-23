@@ -231,7 +231,7 @@ export default function GovernanceDashboard() {
 
       {/* Summary tiles */}
       <div className="flex-shrink-0 px-6 py-3 bg-white border-b border-slate-100">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryTile label="Tool Licenses" value={`${licenses.length}`} sub={`${licenses.filter(l => l.status === 'expired').length} expired`} icon="🔌" />
           <SummaryTile label="Monthly Tool Cost" value={`$${(totalMonthly).toLocaleString()}`} sub="across all tools" icon="💳" />
           <SummaryTile label="AI Spend (MTD)" value={`$${totalSpend.toFixed(0)}`} sub={`of $${totalBudget} budget (${Math.round(totalSpend / totalBudget * 100)}%)`} icon="🤖" />

@@ -15,7 +15,7 @@ export function QuickActions() {
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
                 Quick Actions
             </h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {QUICK_ACTIONS.map((action) => (
                     <button
                         key={action.action}

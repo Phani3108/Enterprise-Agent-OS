@@ -275,7 +275,7 @@ function WorkflowExecutionsTab() {
   useEffect(() => {
     getObservabilityExecutions()
       .then(d => {
-        if (d.executions?.length) setExecutions(d.executions as WorkflowExecution[]);
+        if (d.executions?.length) setExecutions(d.executions as unknown as WorkflowExecution[]);
       })
       .catch(() => { /* keep generated fallback */ });
   }, []);
@@ -292,7 +292,7 @@ function WorkflowExecutionsTab() {
       {/* List */}
       <div className={`${selected ? 'w-1/2' : 'w-full'} overflow-y-auto border-r border-slate-100`}>
         {/* Summary */}
-        <div className="grid grid-cols-4 gap-px bg-slate-100 border-b border-slate-100">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-slate-100 border-b border-slate-100">
           {[
             { label: 'Executions', value: String(executions.length) },
             { label: 'Success Rate', value: `${successRate}%` },
@@ -390,7 +390,7 @@ function AgentActivityTab() {
   useEffect(() => {
     getObservabilityAgents()
       .then(d => {
-        if (d.agents?.length) setAgents(d.agents as AgentActivity[]);
+        if (d.agents?.length) setAgents(d.agents as unknown as AgentActivity[]);
       })
       .catch(() => { /* keep generated fallback */ });
   }, []);
@@ -399,7 +399,7 @@ function AgentActivityTab() {
     const interval = setInterval(() => {
       getObservabilityAgents()
         .then(d => {
-          if (d.agents?.length) setAgents(d.agents as AgentActivity[]);
+          if (d.agents?.length) setAgents(d.agents as unknown as AgentActivity[]);
         })
         .catch(() => {
           setAgents((prev) => prev.map((a) =>
@@ -420,7 +420,7 @@ function AgentActivityTab() {
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-px bg-slate-100 border-b border-slate-100">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-slate-100 border-b border-slate-100">
         {[
           { label: 'Active', value: String(active), color: 'text-emerald-600' },
           { label: 'Idle', value: String(idle), color: 'text-slate-500' },
@@ -533,7 +533,7 @@ function ApiLogsTab() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-px bg-slate-100 border-b border-slate-100 flex-shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-slate-100 border-b border-slate-100 flex-shrink-0">
         {[
           { label: 'Requests', value: String(totalReqs) },
           { label: 'Errors', value: String(errors), color: errors > 0 ? 'text-red-600' : undefined },

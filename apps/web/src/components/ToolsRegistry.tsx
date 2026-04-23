@@ -125,7 +125,7 @@ export function ToolsRegistry() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                     { label: 'Total Tools', value: filtered.length, color: 'text-slate-900' },
                     { label: 'Active', value: activeCount, color: 'text-emerald-600' },
@@ -159,7 +159,7 @@ export function ToolsRegistry() {
 
             {/* Grid view */}
             {viewMode === 'grid' ? (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {filtered.map(tool => {
                         const meta = CATEGORY_META[tool.category] || CATEGORY_META.custom;
                         return (
@@ -173,7 +173,7 @@ export function ToolsRegistry() {
                                 <h4 className="text-sm font-bold text-slate-900 mb-0.5">{tool.name}</h4>
                                 <p className="text-[11px] text-slate-700 font-medium line-clamp-2 mb-3">{tool.description}</p>
                                 <code className="text-[11px] text-blue-600 font-mono block mb-3">{tool.id}</code>
-                                <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-center">
                                     <div>
                                         <div className="text-[11px] text-slate-600 font-medium">Uses</div>
                                         <div className="text-xs text-slate-900 font-mono font-semibold">{tool.usageCount}</div>

@@ -161,7 +161,7 @@ export default function AboutPage() {
 
             {/* ── Core Concepts ── */}
             <Section title="Core Concepts" icon="🧱">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <ConceptCard icon="🤖" title="Agents" description="Autonomous AI workers that execute multi-step tasks. Each agent has a domain focus (engineering, marketing, etc.), access to specific tools, and follows governed policies." />
                     <ConceptCard icon="🧩" title="Skills" description="Reusable capabilities like 'Incident Root Cause Analysis' or 'Campaign Strategy'. Skills have success rates, latency metrics, and quality tiers (beta → production → certified)." />
                     <ConceptCard icon="⚡" title="Workflows" description="DAG-based pipelines that chain agents and tools. Define steps, conditions, approval gates, and retry policies. Visual builder or YAML definitions." />
@@ -229,7 +229,7 @@ export default function AboutPage() {
 
             {/* ── Demo Videos ── */}
             <Section title="Demo Videos" icon="🎬">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {DEMO_VIDEOS.map(video => (
                         <DemoVideoCard key={video.id} video={video} />
                     ))}

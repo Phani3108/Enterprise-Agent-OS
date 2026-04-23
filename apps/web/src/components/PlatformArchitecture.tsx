@@ -347,7 +347,7 @@ export default function PlatformArchitecture() {
                 <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-500 font-medium">{OVERSIGHT_LAYER.subtitle}</span>
               </div>
               <p className="text-[12px] text-slate-500 leading-relaxed mb-3">{OVERSIGHT_LAYER.description}</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {OVERSIGHT_LAYER.items.map(item => (
                   <div key={item.label} className="flex items-start gap-2 p-2 rounded-lg bg-white border border-slate-200">
                     <div>
@@ -473,7 +473,7 @@ export default function PlatformArchitecture() {
                     </div>
 
                     {/* Captains */}
-                    <div className="grid grid-cols-3 gap-2 mb-2 ml-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-2 ml-6">
                       {reg.captains.map(cap => (
                         <div key={cap.callSign} className="flex items-center gap-2 p-2.5 rounded-lg bg-blue-50 border border-blue-200">
                           <span className="text-lg">{cap.icon}</span>
@@ -493,7 +493,7 @@ export default function PlatformArchitecture() {
                           <div className="w-0.5 h-4 bg-slate-200" />
                           <span className="text-[9px] text-slate-400 font-semibold uppercase">reports reviewed by captain</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 ml-10">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 ml-10">
                           {reg.corporals.map(corp => (
                             <div key={corp.callSign} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                               <span className="text-lg">{corp.icon}</span>

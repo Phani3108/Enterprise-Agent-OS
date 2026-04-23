@@ -322,7 +322,7 @@ export default function ControlPlane() {
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-5">
           {/* Metric tiles */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {liveTiles.map(tile => (
               <div key={tile.label} className="bg-white rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center justify-between mb-1">

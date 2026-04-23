@@ -121,7 +121,7 @@ export default function BudgetIntelligence() {
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-8 text-white mb-8">
         <h1 className="text-3xl font-bold mb-2">Budget Intelligence</h1>
         <p className="text-emerald-200 mb-6">Per-agent cost tracking, burn-rate projections & CFO analytics</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/10 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">${(dashboard?.totalBudgetUsd ?? 0).toFixed(0)}</div>
             <div className="text-sm text-emerald-200">Total Budget</div>
@@ -242,7 +242,7 @@ export default function BudgetIntelligence() {
 
           {showForm && (
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Agent ID</label>
                   <input value={fAgentId} onChange={e => setFAgentId(e.target.value)} className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="e.g. zeus" />
@@ -279,7 +279,7 @@ export default function BudgetIntelligence() {
                 <h3 className="font-medium dark:text-white">Burn Rate — {selectedAgent}</h3>
                 <button onClick={() => setSelectedAgent(null)} className="text-gray-400 hover:text-gray-600">✕</button>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-xl font-bold dark:text-white">${burnRate.dailyAvgUsd.toFixed(2)}</div>
                   <div className="text-xs text-gray-500">Daily Avg</div>

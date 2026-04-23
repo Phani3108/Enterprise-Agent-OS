@@ -210,7 +210,7 @@ function LandingNav() {
 
   return (
     <nav className="fixed top-0 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 z-50">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-950 font-bold text-xs">A</div>
@@ -227,18 +227,23 @@ function LandingNav() {
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setActiveSection('dashboard')}
             className="hidden md:inline text-sm text-slate-400 hover:text-white transition-colors"
           >
             Go to Dashboard
           </button>
-          <button className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-5 py-2 text-sm font-semibold transition-colors">
-            Request Early Access
+          <button className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-3.5 sm:px-5 py-2 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap">
+            <span className="hidden sm:inline">Request Early Access</span>
+            <span className="sm:hidden">Early Access</span>
           </button>
           {/* Mobile menu toggle */}
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-slate-400 hover:text-white text-lg">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+            className="md:hidden text-slate-400 hover:text-white text-lg w-9 h-9 flex items-center justify-center -mr-1"
+          >
             {mobileOpen ? '✕' : '☰'}
           </button>
         </div>
@@ -263,16 +268,16 @@ function LandingNav() {
 
 function HeroSection() {
   return (
-    <section className="relative pt-32 pb-20 landing-glow">
-      <div className="max-w-6xl mx-auto px-6 text-center">
+    <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-20 landing-glow">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-slate-700 bg-slate-900 text-sm text-slate-300 mb-8">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-slate-700 bg-slate-900 text-xs sm:text-sm text-slate-300 mb-6 sm:mb-8">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
           Early Access Opening Soon
         </div>
 
         {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight">
           <span className="text-white">The AI Operating System</span>
           <br />
           <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -281,12 +286,12 @@ function HeroSection() {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-lg text-slate-400 max-w-2xl mx-auto mt-6 leading-relaxed">
+        <p className="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto mt-5 sm:mt-6 leading-relaxed">
           Orchestrate AI agents across every team — with governance, observability, and cost control built in.
         </p>
 
         {/* Problem / Solution card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-4xl mx-auto mt-12">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-8 max-w-4xl mx-auto mt-10 sm:mt-12">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Problem */}
             <div className="text-left">
@@ -318,7 +323,7 @@ function HeroSection() {
         </div>
 
         {/* CTAs */}
-        <div className="flex items-center justify-center gap-4 mt-10">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 mt-8 sm:mt-10 max-w-sm sm:max-w-none mx-auto">
           <button className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-8 py-3 text-sm font-semibold transition-colors shadow-lg shadow-blue-600/20">
             Get Started
           </button>
@@ -333,16 +338,16 @@ function HeroSection() {
 
 function ProblemSection() {
   return (
-    <section className="py-24 border-t border-slate-900">
-      <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">Why Enterprise AI Breaks Today</h2>
-        <p className="text-lg text-slate-400 text-center max-w-2xl mx-auto mb-14">
+    <section className="py-16 sm:py-24 border-t border-slate-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-4">Why Enterprise AI Breaks Today</h2>
+        <p className="text-base sm:text-lg text-slate-400 text-center max-w-2xl mx-auto mb-10 sm:mb-14 px-2">
           If every team runs its own AI tools, you&apos;re forced into bad trade-offs.
         </p>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Card 1 */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8">
             <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 mb-4">
               SILOED TOOLS
             </span>
@@ -364,7 +369,7 @@ function ProblemSection() {
           </div>
 
           {/* Card 2 */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8">
             <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-4">
               SHADOW AI
             </span>
@@ -398,18 +403,18 @@ function ValueSection() {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <section id="features" className="py-24 border-t border-slate-900">
-      <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">What AgentOS Unlocks</h2>
-        <p className="text-lg text-slate-400 text-center max-w-2xl mx-auto mb-14">
+    <section id="features" className="py-16 sm:py-24 border-t border-slate-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-4">What AgentOS Unlocks</h2>
+        <p className="text-base sm:text-lg text-slate-400 text-center max-w-2xl mx-auto mb-10 sm:mb-14 px-2">
           A unified operating layer for AI agents across your entire organization.
         </p>
 
         {/* 3-step flow */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mb-16">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-4 md:gap-6 mb-16">
           {VALUE_STEPS.map((step, i) => (
-            <div key={step.title} className="flex items-center gap-4 md:gap-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center w-64">
+            <div key={step.title} className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center w-full md:w-64 max-w-sm">
                 <div className="w-14 h-14 rounded-full bg-blue-600/15 border border-blue-500/20 flex items-center justify-center mx-auto mb-4 text-2xl">
                   {step.icon}
                 </div>
@@ -432,13 +437,13 @@ function ValueSection() {
         </div>
 
         {/* Audience tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex gap-1 bg-slate-900 rounded-full p-1 border border-slate-800">
+        <div className="flex sm:justify-center mb-8 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="inline-flex gap-1 bg-slate-900 rounded-full p-1 border border-slate-800 flex-shrink-0">
             {AUDIENCE_TABS.map((tab, i) => (
               <button
                 key={tab.label}
                 onClick={() => setActiveTab(i)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 sm:px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === i ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -450,7 +455,7 @@ function ValueSection() {
         </div>
 
         {/* Tab content */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8">
           <div className="grid md:grid-cols-2 gap-8">
             <div>
               <ul className="space-y-4">
@@ -479,22 +484,22 @@ function HowItWorksSection() {
   const tab = HOW_TABS[activeTab];
 
   return (
-    <section id="how-it-works" className="py-24 border-t border-slate-900">
-      <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-2">How This Actually Works</h2>
-        <p className="text-lg text-center mb-14">
+    <section id="how-it-works" className="py-16 sm:py-24 border-t border-slate-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-2">How This Actually Works</h2>
+        <p className="text-base sm:text-lg text-center mb-10 sm:mb-14 px-2">
           <span className="text-slate-400">You don&apos;t rip and replace. </span>
           <span className="text-blue-400 font-medium">You layer AgentOS on top.</span>
         </p>
 
         {/* Tabs */}
-        <div className="flex justify-center mb-10">
-          <div className="inline-flex bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="flex sm:justify-center mb-10 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="inline-flex bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex-shrink-0">
             {HOW_TABS.map((t, i) => (
               <button
                 key={t.label}
                 onClick={() => setActiveTab(i)}
-                className={`px-6 py-3 text-sm font-semibold transition-all ${
+                className={`px-4 sm:px-6 py-3 text-sm font-semibold transition-all whitespace-nowrap ${
                   activeTab === i
                     ? 'bg-blue-600 text-white'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -507,7 +512,7 @@ function HowItWorksSection() {
         </div>
 
         {/* Content */}
-        <div className="grid md:grid-cols-2 gap-10">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-10">
           {/* Steps */}
           <div className="space-y-6">
             {tab.steps.map((step, i) => (
@@ -579,10 +584,10 @@ function HowItWorksSection() {
 
 function EnterpriseFeaturesSection() {
   return (
-    <section id="enterprise" className="py-24 border-t border-slate-900">
-      <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">Built for Enterprise</h2>
-        <p className="text-lg text-slate-400 text-center max-w-2xl mx-auto mb-14">
+    <section id="enterprise" className="py-16 sm:py-24 border-t border-slate-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-4">Built for Enterprise</h2>
+        <p className="text-base sm:text-lg text-slate-400 text-center max-w-2xl mx-auto mb-10 sm:mb-14 px-2">
           Every feature designed with governance, security, and scale in mind.
         </p>
 
@@ -602,13 +607,13 @@ function EnterpriseFeaturesSection() {
 
 function SecuritySection() {
   return (
-    <section className="py-24 border-t border-slate-900">
-      <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+    <section className="py-16 sm:py-24 border-t border-slate-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4">
           <span className="text-white">Total Control — </span>
           <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">without slowing down.</span>
         </h2>
-        <p className="text-lg text-slate-400 text-center max-w-2xl mx-auto mb-14">
+        <p className="text-base sm:text-lg text-slate-400 text-center max-w-2xl mx-auto mb-10 sm:mb-14 px-2">
           AgentOS separates authorization from execution. Your policies decide what can run. Agents execute within your rules.
         </p>
 
@@ -629,7 +634,7 @@ function SecuritySection() {
 
         {/* Two cards */}
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8">
             <h3 className="text-white font-semibold text-lg mb-4">Human-in-the-Loop</h3>
             <ul className="space-y-3">
               {['Approval gates on high-stakes agent actions', 'Per-execution authorization with full audit trail', 'Configurable thresholds per persona and skill', 'Real-time notifications for pending approvals'].map(b => (
@@ -640,7 +645,7 @@ function SecuritySection() {
               ))}
             </ul>
           </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8">
             <h3 className="text-white font-semibold text-lg mb-4">Policy-Driven Governance</h3>
             <ul className="space-y-3">
               {['Budget caps per team, persona, and agent', 'Model selection restrictions (e.g., Opus for legal only)', 'Tool access scoping by role and compliance level', 'Immutable audit log with 365-day retention'].map(b => (
@@ -659,10 +664,10 @@ function SecuritySection() {
 
 function PricingSection() {
   return (
-    <section id="pricing" className="py-24 border-t border-slate-900">
-      <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">Simple, Transparent Pricing</h2>
-        <p className="text-lg text-slate-400 text-center max-w-2xl mx-auto mb-14">
+    <section id="pricing" className="py-16 sm:py-24 border-t border-slate-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-4">Simple, Transparent Pricing</h2>
+        <p className="text-base sm:text-lg text-slate-400 text-center max-w-2xl mx-auto mb-10 sm:mb-14 px-2">
           Start free. Scale as your AI operations grow.
         </p>
 
@@ -712,18 +717,18 @@ function PricingSection() {
 
 function CTASection() {
   return (
-    <section className="py-32 border-t border-slate-900">
-      <div className="max-w-4xl mx-auto px-6 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+    <section className="py-20 sm:py-32 border-t border-slate-900">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
           Ready to transform how your teams work with AI?
         </h2>
-        <p className="text-lg text-slate-400 mb-4">
+        <p className="text-base sm:text-lg text-slate-400 mb-4">
           Join enterprises already orchestrating AI agents with governance and control.
         </p>
         <p className="text-sm text-blue-400 uppercase tracking-wider font-bold mb-8">
           START YOUR FREE TRIAL TODAY.
         </p>
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 max-w-sm sm:max-w-none mx-auto">
           <button className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-8 py-3 text-sm font-semibold transition-colors shadow-lg shadow-blue-600/20">
             Get Started Free
           </button>
@@ -740,12 +745,12 @@ function CTASection() {
 function LandingFooter() {
   return (
     <footer className="border-t border-slate-800 py-8">
-      <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center text-slate-950 font-bold text-[10px]">A</div>
           <span className="text-sm text-slate-500">&copy; 2026 Phani Marupaka. All rights reserved.</span>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:gap-6">
           {['Documentation', 'GitHub', 'Privacy', 'Terms'].map(link => (
             <button key={link} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
               {link}
@@ -763,7 +768,7 @@ function LandingFooter() {
 
 export default function LandingPage() {
   return (
-    <div className="h-screen overflow-y-auto bg-slate-950 text-white landing-dot-grid">
+    <div className="h-dscreen overflow-y-auto bg-slate-950 text-white landing-dot-grid">
       <LandingNav />
       <HeroSection />
       <ProblemSection />

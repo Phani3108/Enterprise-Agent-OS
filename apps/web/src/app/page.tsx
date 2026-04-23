@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { RightPanel } from '../components/RightPanel';
@@ -117,6 +117,7 @@ export default function Home() {
   const setActiveSection = useEAOSStore(s => s.setActiveSection);
   const setCommandOpen   = useEAOSStore(s => s.setCommandOpen);
   const commandOpen      = useEAOSStore(s => s.commandOpen);
+  const [mobileNavOpen, setMobileNavOpen]   = useState(false);
 
   // -----------------------------------------------------------------------
   // URL ↔ activeSection sync — enables deep-linking & back/forward nav
@@ -186,10 +187,10 @@ export default function Home() {
   const gatewayOk = useGatewayReachable();
 
   return (
-    <div className="flex h-screen bg-white text-slate-900 overflow-hidden">
-      <Sidebar />
+    <div className="flex h-dscreen md:h-screen bg-white text-slate-900 overflow-hidden">
+      <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar />
+        <TopBar onOpenMobileNav={() => setMobileNavOpen(true)} />
         {!gatewayOk && (
           <DemoModeBanner
             active
@@ -203,7 +204,7 @@ export default function Home() {
           </div>
         )}
         <div className="flex-1 flex overflow-hidden">
-          <main className="flex-1 overflow-auto bg-slate-50">
+          <main className="flex-1 overflow-auto bg-slate-50 min-w-0">
             <MainContent section={activeSection} />
           </main>
           <RightPanel />

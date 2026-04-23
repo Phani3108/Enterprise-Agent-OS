@@ -412,7 +412,7 @@ export default function PersonaSkillsView() {
                   <h3 className="text-sm font-semibold text-slate-900 mb-4">License Governance Dashboard</h3>
 
                   {/* Summary cards */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {[
                       { label: 'Monthly Cost', value: `$${licenseSummary.totalCost.toLocaleString()}`, color: '#3b82f6' },
                       { label: 'Active Users', value: licenseSummary.totalUsers.toLocaleString(), color: '#10b981' },

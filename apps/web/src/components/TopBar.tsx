@@ -51,7 +51,11 @@ const CREATE_ITEMS = [
   { label: 'New Discussion',icon: '💬', section: 'ops-discussions'    },
 ];
 
-export function TopBar() {
+interface TopBarProps {
+  onOpenMobileNav?: () => void;
+}
+
+export function TopBar({ onOpenMobileNav }: TopBarProps = {}) {
   const activeSection   = useEAOSStore(s => s.activeSection);
   const setActiveSection = useEAOSStore(s => s.setActiveSection);
   const setCommandOpen  = useEAOSStore(s => s.setCommandOpen);
@@ -66,19 +70,33 @@ export function TopBar() {
   const group    = GROUP_LABELS[activeSection] ?? '';
 
   return (
-    <header className="flex items-center justify-between px-5 h-[52px] border-b border-slate-200 bg-white flex-shrink-0 z-10">
-      {/* Left: breadcrumb */}
-      <div className="flex items-center gap-1.5 text-[13px] text-slate-500 min-w-0">
-        <button onClick={() => setActiveSection('home')} className="text-slate-400 hover:text-slate-600 transition-colors">AgentOS</button>
-        {group && <><span className="text-slate-300">/</span><span className="text-slate-400">{group}</span></>}
-        <span className="text-slate-300">/</span>
-        <span className="text-slate-900 font-medium truncate">{title}</span>
+    <header className="flex items-center justify-between gap-2 px-3 sm:px-5 h-[52px] border-b border-slate-200 bg-white flex-shrink-0 z-10">
+      {/* Left: mobile menu + breadcrumb */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        {onOpenMobileNav && (
+          <button
+            type="button"
+            onClick={onOpenMobileNav}
+            aria-label="Open navigation"
+            className="md:hidden flex items-center justify-center w-9 h-9 -ml-1 rounded-md text-slate-600 hover:bg-slate-100"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        )}
+        <div className="flex items-center gap-1.5 text-[13px] text-slate-500 min-w-0">
+          <button onClick={() => setActiveSection('home')} className="hidden sm:inline text-slate-400 hover:text-slate-600 transition-colors">AgentOS</button>
+          {group && <><span className="hidden sm:inline text-slate-300">/</span><span className="hidden md:inline text-slate-400">{group}</span></>}
+          <span className="hidden sm:inline text-slate-300">/</span>
+          <span className="text-slate-900 font-medium truncate">{title}</span>
+        </div>
       </div>
 
-      {/* Center: command trigger */}
+      {/* Center: command trigger — full bar on md+, icon-only on mobile */}
       <button
         onClick={() => setCommandOpen(true)}
-        className="flex items-center gap-3 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[13px] text-slate-400 hover:border-slate-300 hover:bg-white transition-all w-72 group"
+        className="hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[13px] text-slate-400 hover:border-slate-300 hover:bg-white transition-all w-56 lg:w-72 group"
         data-tour="command-palette"
       >
         <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,17 +105,27 @@ export function TopBar() {
         <span className="flex-1 text-left">Search or ask anything…</span>
         <kbd className="text-[11px] font-mono bg-white text-slate-400 px-1.5 py-0.5 rounded border border-slate-200">⌘K</kbd>
       </button>
+      <button
+        onClick={() => setCommandOpen(true)}
+        aria-label="Search"
+        className="md:hidden flex items-center justify-center w-9 h-9 rounded-md text-slate-500 hover:bg-slate-100"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </button>
 
       {/* Right: actions */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
         {/* Create */}
         <div className="relative">
           <button
             onClick={() => { setShowCreate(v => !v); setShowNotifications(false); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[13px] font-medium hover:bg-blue-700 transition-colors"
+            aria-label="Create"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[13px] font-medium hover:bg-blue-700 transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            <span>Create</span>
+            <span className="hidden sm:inline">Create</span>
           </button>
           {showCreate && (
             <>

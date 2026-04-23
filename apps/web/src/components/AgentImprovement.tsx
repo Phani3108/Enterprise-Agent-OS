@@ -133,7 +133,7 @@ export default function AgentImprovement() {
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-8 text-white mb-8">
         <h1 className="text-3xl font-bold mb-2">Agent Improvement</h1>
         <p className="text-indigo-200 mb-6">Performance reviews, feedback loops & continuous upskilling</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/10 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">{health?.totalReviews ?? 0}</div>
             <div className="text-sm text-indigo-200">Reviews</div>
@@ -232,7 +232,7 @@ export default function AgentImprovement() {
 
           {showReviewForm && (
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Agent ID</label>
                   <input value={rAgentId} onChange={e => setRAgentId(e.target.value)} className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
@@ -246,7 +246,7 @@ export default function AgentImprovement() {
                   <input value={rPeriod} onChange={e => setRPeriod(e.target.value)} className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="2026-Q1" />
                 </div>
               </div>
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 {[
                   { l: 'Reliability', v: rReliability, s: setRReliability },
                   { l: 'Efficiency', v: rEfficiency, s: setREfficiency },
@@ -282,7 +282,7 @@ export default function AgentImprovement() {
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${OUTCOME_COLORS[r.outcome]}`}>{r.outcome.replace(/-/g, ' ')}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-center text-xs">
                   {Object.entries(r.scores).filter(([k]) => k !== 'overall').map(([k, v]) => (
                     <div key={k} className="bg-gray-50 dark:bg-gray-700 rounded p-1">
                       <div className="font-bold dark:text-white">{v}</div>

@@ -197,7 +197,7 @@ export default function AgentMeetingView() {
           'Watch agents discuss, vote on decisions, and produce action items',
         ]} />}
 
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {/* Left panel */}
           <div className="col-span-1 space-y-4">
             {tab === 'templates' ? (

@@ -116,7 +116,7 @@ export function RightPanel() {
   if (!visible) return null;
 
   return (
-    <aside className="w-[288px] flex-shrink-0 flex flex-col border-l border-slate-200 bg-white overflow-hidden">
+    <aside className="hidden md:flex w-[288px] flex-shrink-0 flex-col border-l border-slate-200 bg-white overflow-hidden">
       {effectiveMode === 'help' ? <HelpMode /> : <ExecutionMode />}
     </aside>
   );

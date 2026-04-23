@@ -2106,7 +2106,7 @@ function AgentCard({ agent, liveStatus }: { agent: AgentEmployee; liveStatus?: M
                 <h4 className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">Growth Path</h4>
                 <p className="text-xs text-emerald-800 leading-relaxed">{agent.growth}</p>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 text-center">
                   <p className="text-sm font-bold text-slate-900">{agent.autonomy}/10</p>
                   <p className="text-[10px] text-slate-500">Autonomy</p>
@@ -2198,7 +2198,7 @@ export default function AgentsPanel({ personaFilter }: { personaFilter?: Persona
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {levels.map(l => {
           const lc = LEVEL_CONFIG[l];
           return (

@@ -193,7 +193,7 @@ export default function SwarmView() {
         ]} />}
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
             { label: 'Active Swarms', value: stats.active, color: 'text-blue-600' },
             { label: 'Completed', value: stats.completed, color: 'text-emerald-600' },
@@ -217,7 +217,7 @@ export default function SwarmView() {
           ))}
         </div>
 
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {/* Left — Swarm list or templates */}
           <div className="col-span-1 space-y-3">
             {tab === 'templates' ? (
@@ -331,7 +331,7 @@ export default function SwarmView() {
                 {/* Metrics */}
                 <div className="px-5 py-4">
                   <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Execution Metrics</h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
                       { label: 'Messages', value: selectedSwarm.metrics.total_messages },
                       { label: 'Tool Calls', value: selectedSwarm.metrics.total_tool_calls },

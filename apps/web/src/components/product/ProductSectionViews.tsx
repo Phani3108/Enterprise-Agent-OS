@@ -132,7 +132,7 @@ export function ProductPRDsView() {
         <p className="text-sm text-slate-600">Product Requirements Documents, feature specs, and technical designs.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {[
           { label: 'Total PRDs', value: prds.length, color: 'text-slate-900' },
           { label: 'Approved', value: prds.filter(p => p.status === 'approved').length, color: 'text-emerald-600' },
@@ -198,7 +198,7 @@ export function ProductEpicsView() {
         <p className="text-sm text-slate-600">Track epics, user stories, story points, and sprint assignments.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Active Epics', value: epics.filter(e => e.completed < e.stories).length, color: 'text-violet-600' },
           { label: 'Total Stories', value: epics.reduce((s, e) => s + e.stories, 0), color: 'text-slate-900' },
@@ -271,7 +271,7 @@ export function ProductUserResearchView() {
         <p className="text-sm text-slate-600">Research studies, usability tests, customer interviews, and insights.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Active Studies', value: studies.filter(s => s.status === 'in-progress').length, color: 'text-violet-600' },
           { label: 'Completed', value: studies.filter(s => s.status === 'completed').length, color: 'text-emerald-600' },
@@ -402,7 +402,7 @@ export function ProductAnalyticsView() {
         <p className="text-sm text-slate-600">Usage metrics, retention analysis, and product health indicators.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {metrics.map(m => (
           <div key={m.label} className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-[11px] text-slate-500 mb-1">{m.label}</p>
@@ -712,7 +712,7 @@ export function ProductFeedbackView() {
         <p className="text-sm text-slate-600">Aggregated feedback from support, NPS, reviews, and feature requests.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Total Feedback', value: feedback.length, color: 'text-slate-900' },
           { label: 'Feature Requests', value: feedback.filter(f => f.category === 'Feature Request').length, color: 'text-violet-600' },

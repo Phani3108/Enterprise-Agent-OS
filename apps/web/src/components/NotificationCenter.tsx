@@ -256,7 +256,7 @@ export default function NotificationCenter() {
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-8 text-white mb-8">
         <h1 className="text-3xl font-bold mb-2">Notification Center</h1>
         <p className="text-indigo-200 mb-6">Multi-channel dispatch, webhook connectors & delivery tracking</p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/10 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">{channels.length}</div>
             <div className="text-sm text-indigo-200">Channels</div>
@@ -416,7 +416,7 @@ export default function NotificationCenter() {
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm text-center">
               <div className="text-2xl font-bold dark:text-white">{stats.total}</div>
               <div className="text-sm text-gray-500">Total</div>

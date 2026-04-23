@@ -64,7 +64,7 @@ export function PersonalizationDashboard() {
                 </p>
 
                 {/* Quick stats */}
-                <div className="grid grid-cols-4 gap-3 mt-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
                     {[
                         { label: 'This Week', value: '142', sub: 'queries' },
                         { label: 'Time Saved', value: '18h', sub: 'estimated' },

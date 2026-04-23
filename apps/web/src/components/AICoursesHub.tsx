@@ -183,7 +183,7 @@ export function AICoursesHub() {
                 </div>
 
                 {/* Global stats bar */}
-                <div className="grid grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {[
                         { label: 'Total Courses', value: courses.length, color: 'text-slate-900' },
                         { label: 'Total Views', value: totalViews.toLocaleString(), color: 'text-blue-700' },
@@ -205,7 +205,7 @@ export function AICoursesHub() {
             {activeTab === 'providers' && (
                 <div className="space-y-4">
                     <p className="text-sm text-slate-600 font-medium">Top AI learning platforms — free and paid courses from the companies building AI.</p>
-                    <div className="grid grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                         {PROVIDERS.map(p => (
                             <a key={p.name} href={p.url} target="_blank" rel="noreferrer"
                                 className={`group relative rounded-xl border border-slate-200 bg-gradient-to-br ${p.bgGradient} p-5 hover:border-slate-300 hover:shadow-md hover:scale-[1.03] transition-all duration-200 cursor-pointer`}>
